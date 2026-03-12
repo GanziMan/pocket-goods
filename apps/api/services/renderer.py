@@ -255,7 +255,11 @@ def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed
     _paste_rotated(canvas, txt_img, cx, cy, angle)
 
 
-def render_canvas(canvas_json: dict, product_type: str) -> Image.Image:
+def render_canvas(
+    canvas_json: dict,
+    product_type: str,
+    transparent_bg: bool = False,
+) -> Image.Image:
     """
     Fabric.js JSON → PIL Image (300 DPI + 3mm 재단선 포함)
     """
@@ -274,8 +278,11 @@ def render_canvas(canvas_json: dict, product_type: str) -> Image.Image:
     final_w = print_w + 2 * bleed_px
     final_h = print_h + 2 * bleed_px
 
-    bg = canvas_json.get("background", "#ffffff") or "#ffffff"
-    result = Image.new("RGBA", (final_w, final_h), bg)
+    if transparent_bg:
+        result = Image.new("RGBA", (final_w, final_h), (0, 0, 0, 0))
+    else:
+        bg = canvas_json.get("background", "#ffffff") or "#ffffff"
+        result = Image.new("RGBA", (final_w, final_h), bg)
 
     objects = canvas_json.get("objects", [])
     logger.info("[renderer] product=%s objects=%d", product_type, len(objects))
