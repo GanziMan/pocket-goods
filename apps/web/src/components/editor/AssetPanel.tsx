@@ -31,10 +31,7 @@ export default function AssetPanel({
     <aside className="w-64 border-r bg-white flex flex-col shrink-0">
       <Tabs defaultValue="characters" className="flex flex-col h-full">
         <TabsList className="w-full rounded-none border-b h-10 shrink-0">
-          <TabsTrigger value="characters" className="flex-1 gap-1 text-xs">
-            <ImageIcon className="w-3.5 h-3.5" />
-            캐릭터
-          </TabsTrigger>
+         
           <TabsTrigger value="text" className="flex-1 gap-1 text-xs">
             <Type className="w-3.5 h-3.5" />
             텍스트
