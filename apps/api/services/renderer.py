@@ -105,6 +105,24 @@ CUTTING_LINE_COLOR = (255, 0, 255, 255)  # Magenta RGB(255,0,255) / CMYK(0,100,0
 CUTTING_LINE_OFFSET_PX = 2
 
 
+def _get_exterior_mask(alpha: Image.Image) -> Image.Image:
+    """
+    외부(캐릭터 바깥)에서 접근 가능한 투명 영역 마스크를 반환한다.
+    내부 구멍(internal holes)은 포함하지 않는다.
+    """
+    w, h = alpha.size
+    # 이진화: 투명=255, 불투명=0
+    binary = alpha.point(lambda x: 255 if x < 128 else 0).convert("L")
+    # 1px 패딩 추가 — 캐릭터가 코너에 붙어있어도 flood fill 시작점 확보
+    padded = Image.new("L", (w + 2, h + 2), 255)
+    padded.paste(binary, (1, 1))
+    # 코너(0,0)에서 외부 투명 영역을 128로 flood fill
+    ImageDraw.floodfill(padded, xy=(0, 0), value=128)
+    # 패딩 제거 후 외부 마스크 추출
+    cropped = padded.crop((1, 1, w + 1, h + 1))
+    return cropped.point(lambda x: 255 if x == 128 else 0)
+
+
 def _render_cutting_line(
     canvas: Image.Image,
     obj_img: Image.Image,
@@ -113,7 +131,8 @@ def _render_cutting_line(
     angle: float,
 ) -> None:
     """
-    RGBA 이미지 외곽에 마젠타 칼선을 2px 오프셋으로 그린다.
+    RGBA 이미지 외각에만 마젠타 칼선을 2px 오프셋으로 그린다.
+    내부 투명 구멍에는 칼선을 그리지 않는다.
     캐릭터보다 먼저 합성해야 칼선이 캐릭터 아래에 위치한다.
     """
     if obj_img.mode != "RGBA":
@@ -121,13 +140,19 @@ def _render_cutting_line(
 
     alpha = obj_img.split()[3]
 
-    # 완전 불투명 이미지는 칼선 생략 (outline이 0px이 되므로)
+    # 완전 불투명 이미지는 칼선 생략
     if alpha.getextrema()[0] > 0:
         return
+
+    # 외부 투명 영역 마스크 (내부 구멍 제외)
+    exterior_mask = _get_exterior_mask(alpha)
 
     dilated = alpha.filter(ImageFilter.MaxFilter(size=CUTTING_LINE_OFFSET_PX * 2 + 1))
 
     outline_alpha = ImageChops.subtract(dilated, alpha)
+
+    # 외각에만 칼선 — 내부 구멍 outline 제거
+    outline_alpha = ImageChops.multiply(outline_alpha, exterior_mask)
 
     # 반투명 픽셀도 완전 불투명 칼선으로 처리 (인쇄 플로터 인식용)
     outline_alpha = outline_alpha.point(lambda x: 255 if x > 0 else 0)
