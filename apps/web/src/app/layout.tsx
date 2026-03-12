@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s | 포켓굿즈",
   },
   description:
-    "우리 강아지, 고양이, 아기 사진으로 나만의 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
+    "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
   keywords: [
     "포켓굿즈",
     "PocketGoods",
@@ -32,6 +32,8 @@ export const metadata: Metadata = {
     "아기 스티커",
     "취미 굿즈",
     "덕질 굿즈",
+    "나만의 캐릭터 굿즈",
+    "커스텀 캐릭터 키링",
     "커스텀 키링",
     "나만의 키링",
     "키링 만들기",
@@ -53,7 +55,7 @@ export const metadata: Metadata = {
     siteName: "포켓굿즈",
     title: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
     description:
-      "우리 강아지, 고양이, 아기 사진으로 나만의 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
+      "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
     images: [
       {
         url: "/og-image.png",
@@ -67,7 +69,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
     description:
-      "우리 강아지, 고양이, 아기 사진으로 나만의 키링·스티커를 1분 만에 만들어보세요.",
+      "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요.",
     images: ["/og-image.png"],
   },
   robots: {
