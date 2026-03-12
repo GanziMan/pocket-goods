@@ -2,7 +2,6 @@
 POST /api/export
 Fabric.js JSON → 300 DPI PNG 생성 → Supabase Storage 업로드
 """
-import io
 import logging
 import uuid
 from typing import Literal
