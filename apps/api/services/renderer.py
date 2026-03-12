@@ -101,6 +101,38 @@ def _origin_to_center(
     return cx, cy
 
 
+CUTTING_LINE_COLOR = (255, 0, 255, 255)  # Magenta RGB(255,0,255) / CMYK(0,100,0,0)
+CUTTING_LINE_OFFSET_PX = 2
+
+
+def _render_cutting_line(
+    canvas: Image.Image,
+    obj_img: Image.Image,
+    cx: int,
+    cy: int,
+    angle: float,
+) -> None:
+    """
+    RGBA 이미지 외곽에 마젠타 칼선을 2px 오프셋으로 그린다.
+    캐릭터보다 먼저 합성해야 칼선이 캐릭터 아래에 위치한다.
+    """
+    if obj_img.mode != "RGBA":
+        return
+
+    from PIL import ImageChops, ImageFilter
+
+    alpha = obj_img.split()[3]
+
+    dilated = alpha.filter(ImageFilter.MaxFilter(size=CUTTING_LINE_OFFSET_PX * 2 + 1))
+
+    outline_alpha = ImageChops.subtract(dilated, alpha)
+
+    magenta = Image.new("RGBA", obj_img.size, CUTTING_LINE_COLOR)
+    magenta.putalpha(outline_alpha)
+
+    _paste_rotated(canvas, magenta, cx, cy, angle)
+
+
 def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int) -> None:
     src = obj.get("src", "")
     if not src:
@@ -138,6 +170,8 @@ def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, blee
     cx = round(cx_disp * sx) + bleed
     cy = round(cy_disp * sy) + bleed
 
+    # 칼선 먼저 합성 (캐릭터 아래에 위치)
+    _render_cutting_line(canvas, img, cx, cy, angle)
     _paste_rotated(canvas, img, cx, cy, angle)
 
 
@@ -224,14 +258,6 @@ def render_canvas(canvas_json: dict, product_type: str) -> Image.Image:
             _render_text_obj(result, obj, sx, sy, bleed_px)
         else:
             logger.warning("[renderer] unknown type=%r — skipped", obj_type)
-
-    # 재단선 가이드 (빨간 점선) — 인쇄용이므로 포함
-    draw = ImageDraw.Draw(result)
-    draw.rectangle(
-        [bleed_px, bleed_px, final_w - bleed_px - 1, final_h - bleed_px - 1],
-        outline=(255, 0, 0, 120),
-        width=2,
-    )
 
     return result
 
