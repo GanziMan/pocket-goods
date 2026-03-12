@@ -15,6 +15,7 @@ export default function EditorLayout() {
 
   const {
     canvasRef,
+    isCanvasReady,
     canUndo,
     canRedo,
     selectedInfo,
@@ -51,8 +52,9 @@ export default function EditorLayout() {
   // 저장되지 않은 변경사항 있을 때 브라우저 이탈 경고
   useBeforeUnload(isDirty);
 
-  // 마운트 시 저장된 드래프트 복원 여부 확인
+  // 캔버스 준비 완료 후 저장된 드래프트 복원 여부 확인
   useEffect(() => {
+    if (!isCanvasReady) return;
     const draft = loadDraft();
     if (!draft) return;
     const savedDate = new Date(draft.savedAt);
@@ -67,7 +69,7 @@ export default function EditorLayout() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isCanvasReady]);
 
   const handleProductTypeChange = useCallback(
     (type: ProductType) => {

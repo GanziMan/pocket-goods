@@ -20,6 +20,7 @@ export interface SelectedObjectInfo {
 
 export interface UseCanvasReturn {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  isCanvasReady: boolean;
   canUndo: boolean;
   canRedo: boolean;
   selectedInfo: SelectedObjectInfo | null;
@@ -74,6 +75,7 @@ export function useCanvas(
   const historyPointerRef = useRef<number>(-1);
   const isRestoringRef = useRef(false);
 
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [selectedInfo, setSelectedInfo] = useState<SelectedObjectInfo | null>(
@@ -143,6 +145,7 @@ export function useCanvas(
         selection: true,
       });
       fabricRef.current = canvas;
+      setIsCanvasReady(true);
 
       // 초기 빈 상태 히스토리 저장
       historyRef.current = [JSON.stringify(canvas.toJSON())];
@@ -392,6 +395,7 @@ export function useCanvas(
 
   return {
     canvasRef,
+    isCanvasReady,
     canUndo,
     canRedo,
     selectedInfo,
