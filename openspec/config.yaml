@@ -1,0 +1,34 @@
+schema: spec-driven
+
+context: |
+  Project: Nano Pocket (나노굿즈) — Web-based POD goods design & order service
+  Full spec: openspec/specs/nano-goods.md
+
+  Tech stack:
+    - Frontend: Next.js 15 (App Router), TypeScript, Tailwind CSS
+    - Canvas: Fabric.js (JSON serialization is critical — do not break schema)
+    - Backend: FastAPI (Python 3.12), Pillow, CairoSVG
+    - DB/Storage: Supabase (PostgreSQL + Storage)
+    - Payment: Toss Payments
+
+  Key domain terms:
+    - Design: Fabric.js canvas state (JSON) + associated print/thumbnail files
+    - Order: 결제된 주문 (status: pending → paid → in_production → shipped → done)
+    - Export: 서버에서 300 DPI PNG 생성 (인쇄용)
+    - Mockup Preview: 클라이언트 사이드 실시간 목업 합성
+
+  Conventions:
+    - API responses use { data, error } pattern
+    - Components are Server Components by default; add "use client" only when needed
+    - Conventional Commits (feat:, fix:, chore:)
+    - print_url is private — never expose to client directly
+
+rules:
+  proposal:
+    - 항상 Non-goals 섹션 포함
+    - P0/P1 우선순위 명시
+    - 500단어 이내
+  tasks:
+    - 각 태스크는 2시간 이내 완료 가능한 단위로 분리
+    - 완료 기준(Definition of Done) 명시
+    - 관련 스펙 섹션 번호 참조 (예: "Spec 4.1")
