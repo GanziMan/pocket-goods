@@ -95,13 +95,29 @@ export default function EditorLayout() {
         }
       );
       if (!res.ok) throw new Error("Export 실패");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `pocketgoods-print-${productType}-${Date.now()}.png`;
-      link.click();
-      URL.revokeObjectURL(url);
+      const data = await res.json() as { png_base64: string; cutting_line_svg: string | null };
+      const ts = Date.now();
+
+      // PNG 다운로드
+      const pngBytes = Uint8Array.from(atob(data.png_base64), (c) => c.charCodeAt(0));
+      const pngBlob = new Blob([pngBytes], { type: "image/png" });
+      const pngUrl = URL.createObjectURL(pngBlob);
+      const pngLink = document.createElement("a");
+      pngLink.href = pngUrl;
+      pngLink.download = `pocketgoods-print-${productType}-${ts}.png`;
+      pngLink.click();
+      URL.revokeObjectURL(pngUrl);
+
+      // 칼선 SVG 다운로드 (스티커만)
+      if (data.cutting_line_svg) {
+        const svgBlob = new Blob([data.cutting_line_svg], { type: "image/svg+xml" });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        const svgLink = document.createElement("a");
+        svgLink.href = svgUrl;
+        svgLink.download = `pocketgoods-cutting-line-${ts}.svg`;
+        svgLink.click();
+        URL.revokeObjectURL(svgUrl);
+      }
     } catch {
       // 서버 미실행 시 클라이언트 PNG로 fallback
       const dataURL = toDataURL();
