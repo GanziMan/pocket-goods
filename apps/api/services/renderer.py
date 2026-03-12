@@ -13,7 +13,7 @@ import logging
 import math
 from typing import Literal
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 from services.fonts import get_pil_font
 
@@ -119,13 +119,18 @@ def _render_cutting_line(
     if obj_img.mode != "RGBA":
         return
 
-    from PIL import ImageChops, ImageFilter
-
     alpha = obj_img.split()[3]
+
+    # 완전 불투명 이미지는 칼선 생략 (outline이 0px이 되므로)
+    if alpha.getextrema()[0] > 0:
+        return
 
     dilated = alpha.filter(ImageFilter.MaxFilter(size=CUTTING_LINE_OFFSET_PX * 2 + 1))
 
     outline_alpha = ImageChops.subtract(dilated, alpha)
+
+    # 반투명 픽셀도 완전 불투명 칼선으로 처리 (인쇄 플로터 인식용)
+    outline_alpha = outline_alpha.point(lambda x: 255 if x > 0 else 0)
 
     magenta = Image.new("RGBA", obj_img.size, CUTTING_LINE_COLOR)
     magenta.putalpha(outline_alpha)
