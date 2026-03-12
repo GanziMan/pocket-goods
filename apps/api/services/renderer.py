@@ -102,7 +102,7 @@ def _origin_to_center(
 
 
 CUTTING_LINE_COLOR = (255, 0, 255, 255)  # Magenta RGB(255,0,255) / CMYK(0,100,0,0)
-CUTTING_LINE_OFFSET_PX = 2
+CUTTING_LINE_OFFSET_PX = 41
 
 
 def _get_exterior_mask(alpha: Image.Image) -> Image.Image:
