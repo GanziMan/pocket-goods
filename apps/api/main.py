@@ -19,7 +19,7 @@ app = FastAPI(title="Pocket Goods API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
