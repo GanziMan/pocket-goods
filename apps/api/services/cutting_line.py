@@ -8,7 +8,7 @@
 
 mm 기반 offset으로 변경 시:
   offset_px = mm_to_px(offset_mm, dpi)
-  예: mm_to_px(3.5, 300) → 41px
+  예: mm_to_px(3.5, 300) → 2px
 """
 import logging
 from typing import Optional
@@ -28,7 +28,7 @@ def mm_to_px(mm: float, dpi: int = 300) -> int:
     """
     mm → 픽셀 변환.
     offset을 mm 단위로 지정할 때 사용한다.
-    예: mm_to_px(3.5, 300) = 41
+    예: mm_to_px(3.5, 300) = 2
     """
     return round(mm * dpi / 25.4)
 
@@ -154,7 +154,7 @@ def _points_to_svg_path(points: np.ndarray) -> str:
 
 def generate_cutting_line_svg(
     image: Image.Image,
-    offset_px: int = 41,
+    offset_px: int = 2,
     alpha_threshold: float = 0.1,
     dpi: int = 300,
 ) -> Optional[str]:
@@ -163,7 +163,7 @@ def generate_cutting_line_svg(
 
     파라미터:
         image           : PIL RGBA 이미지 (투명 배경)
-        offset_px       : 칼선 여백(px). 기본 41px ≈ 3.5mm @300DPI
+        offset_px       : 칼선 여백(px). 기본 2px ≈ 3.5mm @300DPI
                           mm 기반으로 변경: offset_px = mm_to_px(3.5, dpi)
         alpha_threshold : 불투명 기준 (0.0~1.0). 기본 0.1
         dpi             : 출력 DPI. 현재는 로깅용, mm 변환 시 사용
