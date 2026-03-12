@@ -7,8 +7,6 @@ import logging
 import uuid
 from typing import Literal
 
-logger = logging.getLogger(__name__)
-
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -16,6 +14,8 @@ from pydantic import BaseModel
 from services.cutting_line import generate_cutting_line_svg
 from services.renderer import render_canvas, to_png_bytes
 from services.storage import upload_print_file, upload_thumbnail
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["export"])
 
@@ -76,7 +76,7 @@ async def export_design(req: ExportRequest):
         thumbnail_url = upload_thumbnail(png_bytes, design_id)
     except RuntimeError as e:
         # Supabase 미설정 시 — URL 없이 성공 처리 (개발 환경)
-        print(f"[export] storage skip: {e}")
+        logger.warning("[export] storage skip: %s", e)
         print_url = None
         thumbnail_url = None
 
