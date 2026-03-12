@@ -74,8 +74,9 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   verification: {
-    // google: "구글 서치콘솔 인증 코드",
-    // naver: "네이버 서치어드바이저 인증 코드",
+    other: {
+      "naver-site-verification": "554aa601f00482f1cc4666b09ce4775b46accf91",
+    },
   },
 };
 
