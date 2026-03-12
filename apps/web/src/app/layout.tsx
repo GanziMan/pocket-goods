@@ -17,22 +17,32 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://pocketgoods.kr";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "포켓굿즈 — 나만의 키링 & 스티커",
+    default: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
     template: "%s | 포켓굿즈",
   },
   description:
-    "나만의 캐릭터로 굿즈를 1분 만에 디자인하고 주문하세요. 아크릴 키링, 투명 스티커 POD 서비스.",
+    "우리 강아지, 고양이, 아기 사진으로 나만의 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
   keywords: [
     "포켓굿즈",
     "PocketGoods",
+    "강아지 키링",
+    "고양이 키링",
+    "반려동물 굿즈",
+    "아기 키링",
+    "아기 스티커",
+    "취미 굿즈",
+    "덕질 굿즈",
+    "커스텀 키링",
+    "나만의 키링",
     "키링 만들기",
     "스티커 만들기",
-    "굿즈 제작",
-    "POD",
-    "다꾸",
-    "폰꾸",
     "아크릴 키링",
     "투명 스티커",
+    "POD 굿즈",
+    "굿즈 제작",
+    "다꾸",
+    "폰꾸",
+    "선물 굿즈",
   ],
   authors: [{ name: "포켓굿즈" }],
   creator: "포켓굿즈",
@@ -41,9 +51,9 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     url: BASE_URL,
     siteName: "포켓굿즈",
-    title: "포켓굿즈 — 나만의 키링 & 스티커",
+    title: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
     description:
-      "나만의 캐릭터로 굿즈를 1분 만에 디자인하고 주문하세요.",
+      "우리 강아지, 고양이, 아기 사진으로 나만의 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
     images: [
       {
         url: "/og-image.png",
@@ -55,9 +65,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "포켓굿즈 — 나만의 키링 & 스티커",
+    title: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
     description:
-      "나만의 캐릭터로 굿즈를 1분 만에 디자인하고 주문하세요.",
+      "우리 강아지, 고양이, 아기 사진으로 나만의 키링·스티커를 1분 만에 만들어보세요.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -70,8 +80,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
   verification: {
     other: {
