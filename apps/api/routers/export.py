@@ -29,7 +29,12 @@ class ExportRequest(BaseModel):
 class ExportResponse(BaseModel):
     print_url: str | None = None    # Supabase signed URL (save_to_storage=True)
     thumbnail_url: str | None = None
-    cutting_line_svg: str | None = None  # 스티커 칼선 SVG path — save_to_storage=True 시에만 포함
+    cutting_line_svg: str | None = None  # 스티커 칼선 SVG path (save_to_storage=True)
+
+
+class PreviewExportResponse(BaseModel):
+    png_base64: str
+    cutting_line_svg: str | None = None  # 스티커+objects 있을 때만 포함
 
 
 @router.post("/export")
@@ -60,13 +65,14 @@ async def export_design(req: ExportRequest):
                     pw = mm_to_px(w_mm)
                     ph = mm_to_px(h_mm)
                     cutting_svg = (
-                        f'<svg xmlns="http://www.w3.org/2000/svg" width="{pw}" height="{ph}">'
+                        f'<svg xmlns="http://www.w3.org/2000/svg" '
+                        f'viewBox="0 0 {pw} {ph}" width="{pw}" height="{ph}">'
                         f'<path d="{path}" fill="none" stroke="#ff00ff" stroke-width="2"/>'
                         f'</svg>'
                     )
             except Exception as e:
                 logger.warning("[export] 칼선 미리보기 생성 실패 (무시): %s", e)
-        return {"png_base64": png_b64, "cutting_line_svg": cutting_svg}
+        return PreviewExportResponse(png_base64=png_b64, cutting_line_svg=cutting_svg)
 
     # 칼선 생성 — 투명 배경으로 재렌더링 (오브젝트가 있는 스티커만)
     cutting_line_svg: str | None = None
