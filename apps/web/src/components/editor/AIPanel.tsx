@@ -12,7 +12,6 @@ import {
   LayoutTemplate,
   Loader2,
   ImagePlus,
-  Scissors,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -43,7 +42,6 @@ export default function AIPanel({
   const [mode, setMode] = useState<Mode>("prompt-only");
   const [style, setStyle] = useState<Style>("ghibli");
   const [prompt, setPrompt] = useState("");
-  const [autoRemoveBg, setAutoRemoveBg] = useState(true);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
@@ -98,13 +96,11 @@ export default function AIPanel({
       const data = await response.json();
       let finalImage: string = data.image;
 
-      // 자동 누끼 처리
-      if (autoRemoveBg) {
-        setLoadingStep("removing-bg");
-        const { removeBackground } = await import("@imgly/background-removal");
-        const blob = await removeBackground(finalImage);
-        finalImage = URL.createObjectURL(blob);
-      }
+      // 자동 누끼 처리 (항상 적용)
+      setLoadingStep("removing-bg");
+      const { removeBackground } = await import("@imgly/background-removal");
+      const blob = await removeBackground(finalImage);
+      finalImage = URL.createObjectURL(blob);
 
       setResult(finalImage);
     } catch (e) {
@@ -224,18 +220,6 @@ export default function AIPanel({
           </button>
         ))}
       </div>
-
-      {/* 자동 누끼 토글 */}
-      <label className="flex items-center gap-2 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={autoRemoveBg}
-          onChange={(e) => setAutoRemoveBg(e.target.checked)}
-          className="w-3.5 h-3.5 accent-primary"
-        />
-        <Scissors className="w-3.5 h-3.5 text-zinc-400" />
-        <span className="text-xs text-zinc-600">생성 후 자동 누끼</span>
-      </label>
 
       {/* 생성 버튼 */}
       <Button
