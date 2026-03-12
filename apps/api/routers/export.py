@@ -29,7 +29,7 @@ class ExportRequest(BaseModel):
 class ExportResponse(BaseModel):
     print_url: str | None = None    # Supabase signed URL (save_to_storage=True)
     thumbnail_url: str | None = None
-    cutting_line_svg: str | None = None  # 스티커 칼선 SVG path
+    cutting_line_svg: str | None = None  # 스티커 칼선 SVG path — save_to_storage=True 시에만 포함
 
 
 @router.post("/export")
@@ -55,9 +55,9 @@ async def export_design(req: ExportRequest):
             },
         )
 
-    # 칼선 생성 — 투명 배경으로 재렌더링
+    # 칼선 생성 — 투명 배경으로 재렌더링 (오브젝트가 있는 스티커만)
     cutting_line_svg: str | None = None
-    if req.product_type == "sticker":
+    if req.product_type == "sticker" and req.canvas_json.get("objects"):
         try:
             img_transparent = render_canvas(
                 req.canvas_json, req.product_type, transparent_bg=True

@@ -139,6 +139,8 @@ def _points_to_svg_path(points: np.ndarray) -> str:
       <path d="{result}" fill="none" stroke="#ff00ff" stroke-width="2"/>
     """
     pts = points.reshape(-1, 2)
+    if len(pts) == 0:
+        raise ValueError("points array is empty — cannot build SVG path")
     parts = [f"M {pts[0][0]:.1f} {pts[0][1]:.1f}"]
     for x, y in pts[1:]:
         parts.append(f"L {x:.1f} {y:.1f}")
