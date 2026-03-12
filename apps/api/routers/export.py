@@ -3,13 +3,17 @@ POST /api/export
 Fabric.js JSON → 300 DPI PNG 생성 → Supabase Storage 업로드
 """
 import io
+import logging
 import uuid
 from typing import Literal
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from services.cutting_line import generate_cutting_line_svg
 from services.renderer import render_canvas, to_png_bytes
 from services.storage import upload_print_file, upload_thumbnail
 
@@ -26,6 +30,7 @@ class ExportRequest(BaseModel):
 class ExportResponse(BaseModel):
     print_url: str | None = None    # Supabase signed URL (save_to_storage=True)
     thumbnail_url: str | None = None
+    cutting_line_svg: str | None = None  # 스티커 칼선 SVG path
 
 
 @router.post("/export")
@@ -51,6 +56,17 @@ async def export_design(req: ExportRequest):
             },
         )
 
+    # 칼선 생성 — 투명 배경으로 재렌더링
+    cutting_line_svg: str | None = None
+    if req.product_type == "sticker":
+        try:
+            img_transparent = render_canvas(
+                req.canvas_json, req.product_type, transparent_bg=True
+            )
+            cutting_line_svg = generate_cutting_line_svg(img_transparent)
+        except Exception as e:
+            logger.warning("[export] 칼선 생성 실패 (무시): %s", e)
+
     # Supabase 업로드
     order_id = req.order_id or str(uuid.uuid4())
     design_id = str(uuid.uuid4())
@@ -64,4 +80,8 @@ async def export_design(req: ExportRequest):
         print_url = None
         thumbnail_url = None
 
-    return ExportResponse(print_url=print_url, thumbnail_url=thumbnail_url)
+    return ExportResponse(
+        print_url=print_url,
+        thumbnail_url=thumbnail_url,
+        cutting_line_svg=cutting_line_svg,
+    )
