@@ -43,6 +43,8 @@ def _alpha_to_binary_mask(image: Image.Image, alpha_threshold: float = 0.1) -> n
     alpha_threshold: 0.0~1.0 — 이 값 이상이면 불투명으로 처리.
     0.1로 설정 시 AI 생성 이미지의 반투명 엣지 노이즈를 대부분 제거한다.
     """
+    if not (0.0 <= alpha_threshold <= 1.0):
+        raise ValueError(f"alpha_threshold must be in [0.0, 1.0], got {alpha_threshold}")
     if image.mode != "RGBA":
         image = image.convert("RGBA")
     alpha = np.array(image.split()[3], dtype=np.uint8)
@@ -76,6 +78,8 @@ def _dilate(binary: np.ndarray, offset_px: int) -> np.ndarray:
     원형(MORPH_ELLIPSE) 커널로 binary mask를 offset_px만큼 팽창.
     원형 커널 사용 이유: 직사각형 커널보다 모서리가 자연스럽게 둥글게 나온다.
     """
+    if offset_px < 1:
+        raise ValueError(f"offset_px must be >= 1, got {offset_px}")
     kernel_size = offset_px * 2 + 1
     kernel = cv2.getStructuringElement(
         cv2.MORPH_ELLIPSE, (kernel_size, kernel_size)
