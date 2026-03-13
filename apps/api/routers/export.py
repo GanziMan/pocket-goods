@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from services.cutting_line import generate_cutting_line_svg
-from services.renderer import render_canvas, to_png_bytes, mm_to_px, PRINT_SIZES_MM
+from services.renderer import render_canvas, to_png_bytes
 from services.storage import upload_print_file, upload_thumbnail
 
 logger = logging.getLogger(__name__)
@@ -63,9 +63,7 @@ async def export_design(req: ExportRequest):
                 )
                 path = generate_cutting_line_svg(img_transparent)
                 if path:
-                    w_mm, h_mm = PRINT_SIZES_MM.get(req.product_type, (60.0, 60.0))
-                    pw = mm_to_px(w_mm)
-                    ph = mm_to_px(h_mm)
+                    pw, ph = img_transparent.size  # bleed 포함 실제 렌더 크기
                     buf = io.BytesIO()
                     img_transparent.save(buf, format="PNG")
                     img_b64 = base64.b64encode(buf.getvalue()).decode()
