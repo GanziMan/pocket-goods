@@ -21,11 +21,12 @@ interface AIPanelProps {
 }
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
-type Style = "ghibli" | "sd";
+type Style = "ghibli" | "sd" | "steampunk";
 
 const STYLES: { value: Style; label: string; emoji: string }[] = [
   { value: "ghibli", label: "지브리풍", emoji: "🌿" },
   { value: "sd", label: "SD 캐릭터", emoji: "🎀" },
+  { value: "steampunk", label: "스팀펑크", emoji: "⚙️" },
 ];
 
 const EXAMPLE_PROMPTS = [

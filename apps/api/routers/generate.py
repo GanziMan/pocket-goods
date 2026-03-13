@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
-# NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
-NANO_BANANA_MODEL = "gemini-2.5-flash-image"
+NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
+# NANO_BANANA_MODEL = "gemini-2.5-flash-image"
 STYLE_PROMPTS: dict[str, str] = {
     "ghibli": """
 Studio Ghibli 애니메이션 스타일로 그려줘.
@@ -27,6 +27,12 @@ Studio Ghibli 애니메이션 스타일로 그려줘.
 SD(슈퍼 디포르메) 캐릭터 스타일로 그려줘.
 머리가 크고 몸이 작은 2~3등신 귀여운 치비(chibi) 스타일.
 크고 반짝이는 눈, 단순하고 깔끔한 선, 밝고 채도 높은 색감.
+배경은 투명하게(누끼) 처리하고, 굿즈(키링, 스티커) 인쇄에 적합하게 만들어줘.
+""",
+    "steampunk": """
+스팀펑크 스타일로 그려줘.
+톱니바퀴, 증기 파이프, 황동·구리 금속 질감, 빅토리아 시대 복식.
+어둡고 따뜻한 세피아·브라운 톤, 정교한 기계 부품과 가죽 질감.
 배경은 투명하게(누끼) 처리하고, 굿즈(키링, 스티커) 인쇄에 적합하게 만들어줘.
 """,
 }
