@@ -58,7 +58,8 @@ async def export_design(req: ExportRequest):
         if req.product_type == "sticker" and req.canvas_json.get("objects"):
             try:
                 img_transparent = render_canvas(
-                    req.canvas_json, req.product_type, transparent_bg=True
+                    req.canvas_json, req.product_type,
+                    transparent_bg=True, with_cutting_line=False,
                 )
                 path = generate_cutting_line_svg(img_transparent)
                 if path:

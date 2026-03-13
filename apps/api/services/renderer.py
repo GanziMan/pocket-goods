@@ -163,7 +163,7 @@ def _render_cutting_line(
     _paste_rotated(canvas, magenta, cx, cy, angle)
 
 
-def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int) -> None:
+def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int, with_cutting_line: bool = True) -> None:
     src = obj.get("src", "")
     if not src:
         return
@@ -200,8 +200,8 @@ def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, blee
     cx = round(cx_disp * sx) + bleed
     cy = round(cy_disp * sy) + bleed
 
-    # 칼선 먼저 합성 (캐릭터 아래에 위치)
-    _render_cutting_line(canvas, img, cx, cy, angle)
+    if with_cutting_line:
+        _render_cutting_line(canvas, img, cx, cy, angle)
     _paste_rotated(canvas, img, cx, cy, angle)
 
 
@@ -259,6 +259,7 @@ def render_canvas(
     canvas_json: dict,
     product_type: str,
     transparent_bg: bool = False,
+    with_cutting_line: bool = True,
 ) -> Image.Image:
     """
     Fabric.js JSON → PIL Image (300 DPI + 3mm 재단선 포함)
@@ -290,7 +291,7 @@ def render_canvas(
         obj_type = obj.get("type", "")
         logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
         if obj_type.lower() == "image":
-            _render_image_obj(result, obj, sx, sy, bleed_px)
+            _render_image_obj(result, obj, sx, sy, bleed_px, with_cutting_line=with_cutting_line)
         elif obj_type.lower() in ("i-text", "text"):
             _render_text_obj(result, obj, sx, sy, bleed_px)
         else:
