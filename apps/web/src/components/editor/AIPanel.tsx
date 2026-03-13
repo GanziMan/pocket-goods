@@ -21,12 +21,13 @@ interface AIPanelProps {
 }
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
-type Style = "ghibli" | "sd" | "steampunk";
+type Style = "ghibli" | "sd" | "steampunk" | "akatsuki";
 
 const STYLES: { value: Style; label: string; emoji: string }[] = [
-  { value: "ghibli", label: "지브리풍", emoji: "🌿" },
-  { value: "sd", label: "SD 캐릭터", emoji: "🎀" },
+  { value: "ghibli", label: "지브리", emoji: "🌿" },
+  { value: "sd", label: "SD", emoji: "🎀" },
   { value: "steampunk", label: "스팀펑크", emoji: "⚙️" },
+  { value: "akatsuki", label: "아카츠키", emoji: "🔴" },
 ];
 
 const EXAMPLE_PROMPTS = [
@@ -122,12 +123,12 @@ export default function AIPanel({
       </div>
 
       {/* 스타일 토글 */}
-      <div className="flex gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {STYLES.map((s) => (
           <button
             key={s.value}
             onClick={() => setStyle(s.value)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg border p-1 text-xs font-medium transition-all ${
               style === s.value
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-zinc-200 hover:border-zinc-300 text-zinc-500"
