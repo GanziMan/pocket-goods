@@ -3,6 +3,7 @@ POST /api/export
 Fabric.js JSON → 300 DPI PNG 생성 → Supabase Storage 업로드
 """
 import base64
+import io
 import logging
 import uuid
 from typing import Literal
@@ -64,9 +65,13 @@ async def export_design(req: ExportRequest):
                     w_mm, h_mm = PRINT_SIZES_MM.get(req.product_type, (60.0, 60.0))
                     pw = mm_to_px(w_mm)
                     ph = mm_to_px(h_mm)
+                    buf = io.BytesIO()
+                    img_transparent.save(buf, format="PNG")
+                    img_b64 = base64.b64encode(buf.getvalue()).decode()
                     cutting_svg = (
                         f'<svg xmlns="http://www.w3.org/2000/svg" '
                         f'viewBox="0 0 {pw} {ph}" width="{pw}" height="{ph}">'
+                        f'<image href="data:image/png;base64,{img_b64}" width="{pw}" height="{ph}"/>'
                         f'<path d="{path}" fill="none" stroke="#ff00ff" stroke-width="2"/>'
                         f'</svg>'
                     )
