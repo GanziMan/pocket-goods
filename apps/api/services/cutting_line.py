@@ -2,9 +2,9 @@
 스티커용 칼선 SVG 자동 생성 서비스
 
 파이프라인:
-  alpha threshold → binary mask → 최대 blob 유지(노이즈/hole 제거)
-  → dilate(offset_px) → RETR_EXTERNAL contour → approxPolyDP 단순화
-  → Chaikin 스무딩 → SVG path 문자열 출력
+  alpha threshold → binary mask → dilate(offset_px)
+  → RETR_EXTERNAL contours (모든 blob) → approxPolyDP 단순화
+  → Chaikin 스무딩 → 복합 SVG path 문자열 출력
 
 mm 기반 offset으로 변경 시:
   offset_px = mm_to_px(offset_mm, dpi)
