@@ -36,6 +36,9 @@ export default function EditorLayout() {
     loadDesign,
     setProductType,
     onChangeCb,
+    zoom,
+    zoomIn,
+    zoomOut,
   } = useCanvas(productType);
 
   const { save, loadDraft, markDirty, savedAt, isDirty } = useSaveDesign(
@@ -150,6 +153,9 @@ export default function EditorLayout() {
         onSave={save}
         onExportPreview={handleExportPreview}
         onOrder={handleOrder}
+        zoom={zoom}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -161,7 +167,7 @@ export default function EditorLayout() {
         />
 
         <main className="flex-1 overflow-auto p-8">
-          <DesignCanvas canvasRef={canvasRef} productType={productType} />
+          <DesignCanvas canvasRef={canvasRef} productType={productType} zoom={zoom} />
         </main>
 
         <PropertiesPanel
