@@ -13,6 +13,8 @@ import {
   ShoppingCart,
   Save,
   CheckCheck,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import type { ProductType } from "@/lib/assets";
 
@@ -32,6 +34,9 @@ interface ToolbarProps {
   onSave: () => void;
   onExportPreview: () => void;
   onOrder: () => void;
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
 }
 
 const PRODUCT_LABELS: Record<ProductType, string> = {
@@ -62,6 +67,9 @@ export default function Toolbar({
   onSave,
   onExportPreview,
   onOrder,
+  zoom,
+  onZoomIn,
+  onZoomOut,
 }: ToolbarProps) {
   return (
     <header className="flex items-center gap-2 px-4 h-14 border-b bg-white shrink-0">
@@ -101,6 +109,31 @@ export default function Toolbar({
           title="다시 실행 (Ctrl+Y)"
         >
           <Redo2 className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* 줌 */}
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onZoomOut}
+          disabled={zoom <= 0.5}
+          title="줌 아웃"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </Button>
+        <span className="text-xs text-zinc-500 w-10 text-center tabular-nums">
+          {Math.round(zoom * 100)}%
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onZoomIn}
+          disabled={zoom >= 2.0}
+          title="줌 인"
+        >
+          <ZoomIn className="w-4 h-4" />
         </Button>
       </div>
 
