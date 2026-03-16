@@ -101,6 +101,18 @@ def _extract_outer_contour(binary: np.ndarray) -> Optional[np.ndarray]:
     return max(contours, key=cv2.contourArea)
 
 
+def _extract_all_outer_contours(binary: np.ndarray) -> list[np.ndarray]:
+    """
+    RETR_EXTERNAL: 가장 바깥 contour만 추출. 내부 hole 자동 무시.
+    면적 100px 미만의 작은 노이즈 contour 제거.
+    텍스트, 이미지 등 여러 blob을 모두 반환한다.
+    """
+    contours, _ = cv2.findContours(
+        binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+    )
+    return [c for c in contours if cv2.contourArea(c) >= 100]
+
+
 def _simplify_contour(contour: np.ndarray, epsilon_factor: float = 0.002) -> np.ndarray:
     """
     Ramer-Douglas-Peucker 알고리즘으로 점 수 감소.
@@ -186,16 +198,19 @@ def generate_cutting_line_svg(
     )
     try:
         binary = _alpha_to_binary_mask(image, alpha_threshold)
-        binary = _keep_largest_blob(binary)
+        # _keep_largest_blob 단계 제거 — 텍스트/이미지 모든 blob 유지
         dilated = _dilate(binary, offset_px)
-        contour = _extract_outer_contour(dilated)
-        if contour is None:
+        contours = _extract_all_outer_contours(dilated)
+        if not contours:
             logger.warning("[cutting_line] contour not found — returning None")
             return None
-        simplified = _simplify_contour(contour)
-        smoothed = _chaikin_smooth(simplified, iterations=2)
-        path = _points_to_svg_path(smoothed)
-        logger.info("[cutting_line] done path_len=%d", len(path))
+        paths = []
+        for contour in contours:
+            simplified = _simplify_contour(contour)
+            smoothed = _chaikin_smooth(simplified, iterations=2)
+            paths.append(_points_to_svg_path(smoothed))
+        path = " ".join(paths)
+        logger.info("[cutting_line] done contours=%d path_len=%d", len(contours), len(path))
         return path
     except Exception as e:
         logger.exception("[cutting_line] 칼선 생성 실패: %s", e)
