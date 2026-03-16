@@ -167,7 +167,7 @@ export default function EditorLayout() {
         />
 
         <main className="flex-1 overflow-auto p-8">
-          <DesignCanvas canvasRef={canvasRef} productType={productType} zoom={zoom} />
+          <DesignCanvas canvasRef={canvasRef} productType={productType} />
         </main>
 
         <PropertiesPanel

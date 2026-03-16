@@ -77,6 +77,7 @@ export function useCanvas(
 ): UseCanvasReturn {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<FabricCanvas | null>(null);
+  const originalSizeRef = useRef(PRODUCT_CANVAS_SIZE[productType]);
   const onChangeCb = useRef<(() => void) | null>(null);
   const historyRef = useRef<string[]>([]);
   const historyPointerRef = useRef<number>(-1);
@@ -170,6 +171,8 @@ export function useCanvas(
         z *= 0.999 ** delta;
         z = Math.min(Math.max(z, ZOOM_MIN), ZOOM_MAX);
         canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, z);
+        const { width: ow, height: oh } = originalSizeRef.current;
+        canvas.setDimensions({ width: ow * z, height: oh * z });
         setZoomState(Math.round(z * 100) / 100);
         opt.e.preventDefault();
         opt.e.stopPropagation();
@@ -404,9 +407,12 @@ export function useCanvas(
   const setProductType = useCallback(
     async (type: ProductType) => {
       if (!fabricRef.current) return;
-      const { width, height } = PRODUCT_CANVAS_SIZE[type];
-      fabricRef.current.setDimensions({ width, height });
+      const size = PRODUCT_CANVAS_SIZE[type];
+      originalSizeRef.current = size;
+      fabricRef.current.setZoom(1);
+      fabricRef.current.setDimensions({ width: size.width, height: size.height });
       fabricRef.current.renderAll();
+      setZoomState(1);
       saveHistory();
     },
     [saveHistory]
@@ -419,7 +425,9 @@ export function useCanvas(
       Math.round((canvas.getZoom() + ZOOM_STEP) * 100) / 100,
       ZOOM_MAX
     );
+    const { width: ow, height: oh } = originalSizeRef.current;
     canvas.setZoom(next);
+    canvas.setDimensions({ width: ow * next, height: oh * next });
     canvas.renderAll();
     setZoomState(next);
   }, []);
@@ -431,7 +439,9 @@ export function useCanvas(
       Math.round((canvas.getZoom() - ZOOM_STEP) * 100) / 100,
       ZOOM_MIN
     );
+    const { width: ow, height: oh } = originalSizeRef.current;
     canvas.setZoom(next);
+    canvas.setDimensions({ width: ow * next, height: oh * next });
     canvas.renderAll();
     setZoomState(next);
   }, []);
@@ -440,7 +450,9 @@ export function useCanvas(
     const canvas = fabricRef.current;
     if (!canvas) return;
     const clamped = Math.min(Math.max(level, ZOOM_MIN), ZOOM_MAX);
+    const { width: ow, height: oh } = originalSizeRef.current;
     canvas.setZoom(clamped);
+    canvas.setDimensions({ width: ow * clamped, height: oh * clamped });
     canvas.renderAll();
     setZoomState(clamped);
   }, []);
