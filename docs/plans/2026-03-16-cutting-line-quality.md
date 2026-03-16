@@ -59,6 +59,21 @@ alpha_mask → morphological_close(24px) → dilate(30px) → extract_contours
 - 최종 아웃라인에 `GaussianBlur(3,3)` anti-aliasing 적용
 - offset 2px → 6px로 증가 (세밀한 요철 자연스럽게 넘김)
 
+### renderer.py — 통합 칼선 (2-pass 렌더링)
+
+#### 5. 텍스트 오브젝트 칼선 지원
+- `_render_text_obj`에 `with_cutting_line` 파라미터 추가
+- `render_canvas` 호출 시 텍스트에도 칼선 파라미터 전달
+
+#### 6. 겹친 오브젝트 통합 칼선 (2-pass 방식)
+- 기존: 오브젝트마다 개별 `_render_cutting_line` → 겹친 부분에 칼선 중복
+- 변경: 2-pass 렌더링으로 전환
+  - Pass 1: 모든 오브젝트를 투명 레이어에 칼선 없이 렌더
+  - Pass 2: 합쳐진 알파 채널로 `_render_combined_cutting_line` 생성 → 배경 위에 합성
+  - Pass 3: 오브젝트를 칼선 위에 합성
+- `_render_combined_cutting_line()` 신규 함수: morphological close(24px) + 원형 커널 팽창 + anti-aliasing
+- `CUTTING_LINE_CLOSE_GAP_PX = 24` 상수 추가 (~2mm @300DPI 이내 인접 오브젝트 병합)
+
 ---
 
 ## 코드 리뷰 반영 사항

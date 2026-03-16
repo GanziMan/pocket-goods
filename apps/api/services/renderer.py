@@ -105,6 +105,7 @@ def _origin_to_center(
 
 CUTTING_LINE_COLOR = (255, 0, 255, 255)  # Magenta RGB(255,0,255) / CMYK(0,100,0,0)
 CUTTING_LINE_OFFSET_PX = 6  # 래스터 프리뷰용 아웃라인 — 세밀한 요철을 자연스럽게 스무딩
+CUTTING_LINE_CLOSE_GAP_PX = 24  # 인접 오브젝트 병합 간격 (~2mm @300DPI)
 
 
 def _get_exterior_mask(alpha: Image.Image) -> Image.Image:
@@ -186,6 +187,64 @@ def _render_cutting_line(
     _paste_rotated(canvas, magenta, cx, cy, angle)
 
 
+def _render_combined_cutting_line(canvas: Image.Image, obj_layer: Image.Image) -> None:
+    """
+    모든 오브젝트가 합쳐진 레이어의 알파 채널로 통합 칼선을 생성한다.
+    겹친 이미지/텍스트가 하나의 칼선으로 처리된다.
+    """
+    if obj_layer.mode != "RGBA":
+        return
+
+    alpha = obj_layer.split()[3]
+
+    # 완전 불투명(투명 픽셀 없음) → 칼선 불필요
+    if alpha.getextrema()[0] > 0:
+        return
+
+    alpha_np = np.array(alpha, dtype=np.uint8)
+
+    # 알파 노이즈 제거 + 이진화
+    _, binary = cv2.threshold(alpha_np, 25, 255, cv2.THRESH_BINARY)
+
+    # GaussianBlur → 재이진화: 거친 엣지 스무딩
+    blurred = cv2.GaussianBlur(binary, (7, 7), 0)
+    _, binary = cv2.threshold(blurred, 128, 255, cv2.THRESH_BINARY)
+
+    # Morphological close: 인접 오브젝트 병합
+    if CUTTING_LINE_CLOSE_GAP_PX > 0:
+        close_kernel_size = CUTTING_LINE_CLOSE_GAP_PX * 2 + 1
+        close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (close_kernel_size, close_kernel_size))
+        binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, close_kernel, iterations=1)
+
+    # 원형 커널로 바깥 팽창
+    offset = CUTTING_LINE_OFFSET_PX
+    kernel_size = offset * 2 + 1
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+    dilated = cv2.dilate(binary, kernel, iterations=1)
+
+    # 안쪽 팽창 (일정 두께 띠 생성)
+    inner_offset = max(offset - 2, 1)
+    inner_kernel_size = inner_offset * 2 + 1
+    inner_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (inner_kernel_size, inner_kernel_size))
+    inner_dilated = cv2.dilate(binary, inner_kernel, iterations=1)
+
+    outline = cv2.subtract(dilated, inner_dilated)
+
+    # 외부 마스크: 내부 구멍 칼선 제거
+    exterior_mask = _get_exterior_mask(Image.fromarray(binary))
+    exterior_np = np.array(exterior_mask, dtype=np.uint8)
+    outline = cv2.bitwise_and(outline, exterior_np)
+
+    # Anti-aliasing
+    outline = cv2.GaussianBlur(outline, (3, 3), 0)
+
+    outline_alpha = Image.fromarray(outline)
+    magenta = Image.new("RGBA", obj_layer.size, CUTTING_LINE_COLOR)
+    magenta.putalpha(outline_alpha)
+
+    canvas.paste(magenta, (0, 0), magenta)
+
+
 def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int, with_cutting_line: bool = True) -> None:
     src = obj.get("src", "")
     if not src:
@@ -228,7 +287,7 @@ def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, blee
     _paste_rotated(canvas, img, cx, cy, angle)
 
 
-def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int) -> None:
+def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int, with_cutting_line: bool = True) -> None:
     text = obj.get("text", "")
     if not text:
         return
@@ -275,6 +334,8 @@ def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed
     cx = round(cx_disp * sx) + bleed
     cy = round(cy_disp * sy) + bleed
 
+    if with_cutting_line:
+        _render_cutting_line(canvas, txt_img, cx, cy, angle)
     _paste_rotated(canvas, txt_img, cx, cy, angle)
 
 
@@ -310,15 +371,36 @@ def render_canvas(
 
     objects = canvas_json.get("objects", [])
     logger.info("[renderer] product=%s objects=%d", product_type, len(objects))
-    for obj in objects:
-        obj_type = obj.get("type", "")
-        logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
-        if obj_type.lower() == "image":
-            _render_image_obj(result, obj, sx, sy, bleed_px, with_cutting_line=with_cutting_line)
-        elif obj_type.lower() in ("i-text", "text"):
-            _render_text_obj(result, obj, sx, sy, bleed_px)
-        else:
-            logger.warning("[renderer] unknown type=%r — skipped", obj_type)
+
+    if with_cutting_line:
+        # 2-pass 렌더링: 겹친 오브젝트를 하나의 통합 칼선으로 처리
+        # Pass 1: 모든 오브젝트를 투명 캔버스에 렌더 (칼선 없이)
+        obj_layer = Image.new("RGBA", (final_w, final_h), (0, 0, 0, 0))
+        for obj in objects:
+            obj_type = obj.get("type", "")
+            logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
+            if obj_type.lower() == "image":
+                _render_image_obj(obj_layer, obj, sx, sy, bleed_px, with_cutting_line=False)
+            elif obj_type.lower() in ("i-text", "text"):
+                _render_text_obj(obj_layer, obj, sx, sy, bleed_px, with_cutting_line=False)
+            else:
+                logger.warning("[renderer] unknown type=%r — skipped", obj_type)
+
+        # Pass 2: 합쳐진 알파 채널로 통합 칼선 생성 → 배경 위에 합성
+        _render_combined_cutting_line(result, obj_layer)
+
+        # Pass 3: 오브젝트를 칼선 위에 합성
+        result.paste(obj_layer, (0, 0), obj_layer)
+    else:
+        for obj in objects:
+            obj_type = obj.get("type", "")
+            logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
+            if obj_type.lower() == "image":
+                _render_image_obj(result, obj, sx, sy, bleed_px, with_cutting_line=False)
+            elif obj_type.lower() in ("i-text", "text"):
+                _render_text_obj(result, obj, sx, sy, bleed_px, with_cutting_line=False)
+            else:
+                logger.warning("[renderer] unknown type=%r — skipped", obj_type)
 
     return result
 

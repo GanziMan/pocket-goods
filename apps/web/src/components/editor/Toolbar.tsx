@@ -82,7 +82,7 @@ export default function Toolbar({
           <Badge
             key={type}
             variant={productType === type ? "default" : "outline"}
-            className="cursor-pointer select-none"
+            className="cursor-pointer select-none py-3"
             onClick={() => onProductTypeChange(type)}
           >
             {PRODUCT_LABELS[type]}
