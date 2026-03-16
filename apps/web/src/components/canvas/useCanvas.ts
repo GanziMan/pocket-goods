@@ -141,7 +141,7 @@ export function useCanvas(
     let cancelled = false;
 
     const initCanvas = async () => {
-      const { Canvas } = await import("fabric");
+      const { Canvas, Point } = await import("fabric");
 
       // StrictMode 두 번째 실행 시 이미 cleanup됐으면 중단
       if (cancelled || !canvasRef.current) return;
@@ -170,7 +170,7 @@ export function useCanvas(
         let z = canvas.getZoom();
         z *= 0.999 ** delta;
         z = Math.min(Math.max(z, ZOOM_MIN), ZOOM_MAX);
-        canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, z);
+        canvas.zoomToPoint(new Point(opt.e.offsetX, opt.e.offsetY), z);
         const { width: ow, height: oh } = originalSizeRef.current;
         canvas.setDimensions({ width: ow * z, height: oh * z });
         setZoomState(Math.round(z * 100) / 100);
