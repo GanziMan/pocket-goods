@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
-NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
-# NANO_BANANA_MODEL = "gemini-2.5-flash-image"
+# NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
+NANO_BANANA_MODEL = "gemini-2.5-flash-image"
 STYLE_PROMPTS: dict[str, str] = {
     "ghibli": """
 Studio Ghibli 애니메이션 스타일로 그려줘.
@@ -36,7 +36,7 @@ SD(슈퍼 디포르메) 캐릭터 스타일로 그려줘.
 배경은 투명하게(누끼) 처리하고, 굿즈(키링, 스티커) 인쇄에 적합하게 만들어줘.
 """,
     "akatsuki": """
-나루토 애니메이션의 아카츠키 스타일로 그려줘.
+나루토 애니메이션의 아카츠키 스타일로 실사화로 만들어줘.
 검은 망토에 붉은 구름 문양, 날카롭고 강렬한 눈빛, 어둡고 신비로운 분위기.
 채도 높은 붉은색과 검정의 강한 대비, 선명하고 굵은 윤곽선의 일본 닌자 애니메이션 스타일.
 배경은 투명하게(누끼) 처리하고, 굿즈(키링, 스티커) 인쇄에 적합하게 만들어줘.

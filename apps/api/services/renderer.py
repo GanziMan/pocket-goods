@@ -13,6 +13,8 @@ import logging
 import math
 from typing import Literal
 
+import cv2
+import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 from services.fonts import get_pil_font
@@ -102,7 +104,7 @@ def _origin_to_center(
 
 
 CUTTING_LINE_COLOR = (255, 0, 255, 255)  # Magenta RGB(255,0,255) / CMYK(0,100,0,0)
-CUTTING_LINE_OFFSET_PX = 2
+CUTTING_LINE_OFFSET_PX = 6  # 래스터 프리뷰용 아웃라인 — 세밀한 요철을 자연스럽게 스무딩
 
 
 def _get_exterior_mask(alpha: Image.Image) -> Image.Image:
@@ -131,7 +133,8 @@ def _render_cutting_line(
     angle: float,
 ) -> None:
     """
-    RGBA 이미지 외각에만 마젠타 칼선을 2px 오프셋으로 그린다.
+    RGBA 이미지 외각에만 마젠타 칼선을 그린다.
+    OpenCV 원형 커널로 부드러운 아웃라인 생성.
     내부 투명 구멍에는 칼선을 그리지 않는다.
     캐릭터보다 먼저 합성해야 칼선이 캐릭터 아래에 위치한다.
     """
@@ -144,19 +147,39 @@ def _render_cutting_line(
     if alpha.getextrema()[0] > 0:
         return
 
-    # 외부 투명 영역 마스크 (내부 구멍 제외)
-    exterior_mask = _get_exterior_mask(alpha)
+    alpha_np = np.array(alpha, dtype=np.uint8)
 
-    dilated = alpha.filter(ImageFilter.MaxFilter(size=CUTTING_LINE_OFFSET_PX * 2 + 1))
+    # 알파 노이즈 제거 + 이진화: 10% 미만 → 투명 처리
+    _, binary = cv2.threshold(alpha_np, 25, 255, cv2.THRESH_BINARY)
 
-    outline_alpha = ImageChops.subtract(dilated, alpha)
+    # GaussianBlur → 재이진화: 거친 엣지와 세밀한 요철을 부드럽게
+    blurred = cv2.GaussianBlur(binary, (7, 7), 0)
+    _, binary = cv2.threshold(blurred, 128, 255, cv2.THRESH_BINARY)
 
-    # 외각에만 칼선 — 내부 구멍 outline 제거
-    outline_alpha = ImageChops.multiply(outline_alpha, exterior_mask)
+    # 원형 커널로 팽창 (정사각형 MaxFilter 대비 모서리가 둥글고 균일)
+    offset = CUTTING_LINE_OFFSET_PX
+    kernel_size = offset * 2 + 1
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+    dilated = cv2.dilate(binary, kernel, iterations=1)
 
-    # 반투명 픽셀도 완전 불투명 칼선으로 처리 (인쇄 플로터 인식용)
-    outline_alpha = outline_alpha.point(lambda x: 255 if x > 0 else 0)
+    # 두 번째 팽창: 아웃라인 두께용 (안쪽 경계)
+    inner_offset = max(offset - 2, 1)
+    inner_kernel_size = inner_offset * 2 + 1
+    inner_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (inner_kernel_size, inner_kernel_size))
+    inner_dilated = cv2.dilate(binary, inner_kernel, iterations=1)
 
+    # 아웃라인 = 바깥 팽창 - 안쪽 팽창 (일정한 두께의 띠)
+    outline = cv2.subtract(dilated, inner_dilated)
+
+    # 외부 마스크: 내부 구멍의 아웃라인 제거
+    exterior_mask = _get_exterior_mask(Image.fromarray(binary))
+    exterior_np = np.array(exterior_mask, dtype=np.uint8)
+    outline = cv2.bitwise_and(outline, exterior_np)
+
+    # Anti-aliasing: 아웃라인 엣지를 부드럽게
+    outline = cv2.GaussianBlur(outline, (3, 3), 0)
+
+    outline_alpha = Image.fromarray(outline)
     magenta = Image.new("RGBA", obj_img.size, CUTTING_LINE_COLOR)
     magenta.putalpha(outline_alpha)
 
