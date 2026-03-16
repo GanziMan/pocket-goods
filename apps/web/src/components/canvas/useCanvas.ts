@@ -40,6 +40,10 @@ export interface UseCanvasReturn {
   getSelectedImageDataURL: () => string | null;
   loadDesign: (json: object) => Promise<void>;
   setProductType: (type: ProductType) => void;
+  zoom: number;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  setZoom: (level: number) => void;
   onChangeCb: React.MutableRefObject<(() => void) | null>;
 }
 
@@ -51,6 +55,9 @@ export interface TextUpdateProps {
 }
 
 const MAX_HISTORY = 30;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.0;
+const ZOOM_STEP = 0.25;
 
 /** blob: URL → data URL 변환 (백엔드 전송 가능하도록) */
 async function toDataURLFromSrc(src: string): Promise<string> {
@@ -76,6 +83,7 @@ export function useCanvas(
   const isRestoringRef = useRef(false);
 
   const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [zoom, setZoomState] = useState(1.0);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [selectedInfo, setSelectedInfo] = useState<SelectedObjectInfo | null>(
@@ -155,6 +163,17 @@ export function useCanvas(
       canvas.on("object:added", saveHistory);
       canvas.on("object:modified", saveHistory);
       canvas.on("object:removed", saveHistory);
+
+      canvas.on("mouse:wheel", (opt) => {
+        const delta = opt.e.deltaY;
+        let z = canvas.getZoom();
+        z *= 0.999 ** delta;
+        z = Math.min(Math.max(z, ZOOM_MIN), ZOOM_MAX);
+        canvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, z);
+        setZoomState(Math.round(z * 100) / 100);
+        opt.e.preventDefault();
+        opt.e.stopPropagation();
+      });
 
       canvas.on("selection:created", (e) => {
         updateSelectedInfo(e.selected?.[0] ?? null);
@@ -393,6 +412,39 @@ export function useCanvas(
     [saveHistory]
   );
 
+  const zoomIn = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const next = Math.min(
+      Math.round((canvas.getZoom() + ZOOM_STEP) * 100) / 100,
+      ZOOM_MAX
+    );
+    canvas.setZoom(next);
+    canvas.renderAll();
+    setZoomState(next);
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const next = Math.max(
+      Math.round((canvas.getZoom() - ZOOM_STEP) * 100) / 100,
+      ZOOM_MIN
+    );
+    canvas.setZoom(next);
+    canvas.renderAll();
+    setZoomState(next);
+  }, []);
+
+  const setZoom = useCallback((level: number) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const clamped = Math.min(Math.max(level, ZOOM_MIN), ZOOM_MAX);
+    canvas.setZoom(clamped);
+    canvas.renderAll();
+    setZoomState(clamped);
+  }, []);
+
   return {
     canvasRef,
     isCanvasReady,
@@ -415,6 +467,10 @@ export function useCanvas(
     loadDesign,
     replaceSelectedImage,
     setProductType,
+    zoom,
+    zoomIn,
+    zoomOut,
+    setZoom,
     onChangeCb,
   };
 }
