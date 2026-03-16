@@ -141,7 +141,7 @@ export function useCanvas(
     let cancelled = false;
 
     const initCanvas = async () => {
-      const { Canvas, Point } = await import("fabric");
+      const { Canvas } = await import("fabric");
 
       // StrictMode 두 번째 실행 시 이미 cleanup됐으면 중단
       if (cancelled || !canvasRef.current) return;
@@ -170,9 +170,10 @@ export function useCanvas(
         let z = canvas.getZoom();
         z *= 0.999 ** delta;
         z = Math.min(Math.max(z, ZOOM_MIN), ZOOM_MAX);
-        canvas.zoomToPoint(new Point(opt.e.offsetX, opt.e.offsetY), z);
         const { width: ow, height: oh } = originalSizeRef.current;
+        canvas.viewportTransform = [z, 0, 0, z, 0, 0] as typeof canvas.viewportTransform;
         canvas.setDimensions({ width: ow * z, height: oh * z });
+        canvas.renderAll();
         setZoomState(Math.round(z * 100) / 100);
         opt.e.preventDefault();
         opt.e.stopPropagation();
@@ -346,15 +347,34 @@ export function useCanvas(
     updateSelectedInfo(null);
   }, [updateHistoryState, updateSelectedInfo]);
 
-  const toJSON = useCallback(() => {
-    return fabricRef.current?.toJSON() ?? {};
+  /** export 전 zoom=1로 리셋, 캡처 후 원래 zoom 복원 */
+  const withOriginalSize = useCallback(<T,>(fn: (canvas: FabricCanvas) => T): T | null => {
+    const canvas = fabricRef.current;
+    if (!canvas) return null;
+    const vpt = canvas.viewportTransform.slice() as typeof canvas.viewportTransform;
+    const curW = canvas.getWidth();
+    const curH = canvas.getHeight();
+    const { width: ow, height: oh } = originalSizeRef.current;
+    // 줌 리셋
+    canvas.viewportTransform = [1, 0, 0, 1, 0, 0] as typeof canvas.viewportTransform;
+    canvas.setDimensions({ width: ow, height: oh });
+    const result = fn(canvas);
+    // 줌 복원
+    canvas.viewportTransform = vpt;
+    canvas.setDimensions({ width: curW, height: curH });
+    canvas.renderAll();
+    return result;
   }, []);
 
+  const toJSON = useCallback(() => {
+    return withOriginalSize((canvas) => canvas.toJSON()) ?? {};
+  }, [withOriginalSize]);
+
   const toDataURL = useCallback(() => {
-    return (
-      fabricRef.current?.toDataURL({ multiplier: 1, format: "png" }) ?? ""
-    );
-  }, []);
+    return withOriginalSize((canvas) =>
+      canvas.toDataURL({ multiplier: 1, format: "png" })
+    ) ?? "";
+  }, [withOriginalSize]);
 
   const loadDesign = useCallback(async (json: object) => {
     if (!fabricRef.current) return;
@@ -418,6 +438,14 @@ export function useCanvas(
     [saveHistory]
   );
 
+  const applyZoom = useCallback((canvas: FabricCanvas, z: number) => {
+    const { width: ow, height: oh } = originalSizeRef.current;
+    canvas.viewportTransform = [z, 0, 0, z, 0, 0] as typeof canvas.viewportTransform;
+    canvas.setDimensions({ width: ow * z, height: oh * z });
+    canvas.renderAll();
+    setZoomState(z);
+  }, []);
+
   const zoomIn = useCallback(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -425,12 +453,8 @@ export function useCanvas(
       Math.round((canvas.getZoom() + ZOOM_STEP) * 100) / 100,
       ZOOM_MAX
     );
-    const { width: ow, height: oh } = originalSizeRef.current;
-    canvas.setZoom(next);
-    canvas.setDimensions({ width: ow * next, height: oh * next });
-    canvas.renderAll();
-    setZoomState(next);
-  }, []);
+    applyZoom(canvas, next);
+  }, [applyZoom]);
 
   const zoomOut = useCallback(() => {
     const canvas = fabricRef.current;
@@ -439,23 +463,15 @@ export function useCanvas(
       Math.round((canvas.getZoom() - ZOOM_STEP) * 100) / 100,
       ZOOM_MIN
     );
-    const { width: ow, height: oh } = originalSizeRef.current;
-    canvas.setZoom(next);
-    canvas.setDimensions({ width: ow * next, height: oh * next });
-    canvas.renderAll();
-    setZoomState(next);
-  }, []);
+    applyZoom(canvas, next);
+  }, [applyZoom]);
 
   const setZoom = useCallback((level: number) => {
     const canvas = fabricRef.current;
     if (!canvas) return;
     const clamped = Math.min(Math.max(level, ZOOM_MIN), ZOOM_MAX);
-    const { width: ow, height: oh } = originalSizeRef.current;
-    canvas.setZoom(clamped);
-    canvas.setDimensions({ width: ow * clamped, height: oh * clamped });
-    canvas.renderAll();
-    setZoomState(clamped);
-  }, []);
+    applyZoom(canvas, clamped);
+  }, [applyZoom]);
 
   return {
     canvasRef,
