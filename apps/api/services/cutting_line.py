@@ -53,26 +53,6 @@ def _alpha_to_binary_mask(image: Image.Image, alpha_threshold: float = 0.1) -> n
     return binary
 
 
-def _keep_largest_blob(binary: np.ndarray) -> np.ndarray:
-    """
-    연결 요소 분석(connected components)으로 가장 큰 blob만 유지.
-    내부 hole, 작은 노이즈 점 모두 제거된다.
-    connectivity=8: 대각선 방향도 연결로 처리.
-    """
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
-        binary, connectivity=8
-    )
-    if num_labels <= 1:
-        return binary  # 배경만 있음
-
-    # label 0은 배경이므로 제외, 나머지 중 가장 큰 것 선택
-    areas = stats[1:, cv2.CC_STAT_AREA]
-    largest_label = int(np.argmax(areas)) + 1
-    mask = np.zeros_like(binary)
-    mask[labels == largest_label] = 255
-    return mask
-
-
 def _dilate(binary: np.ndarray, offset_px: int) -> np.ndarray:
     """
     원형(MORPH_ELLIPSE) 커널로 binary mask를 offset_px만큼 팽창.
@@ -86,19 +66,6 @@ def _dilate(binary: np.ndarray, offset_px: int) -> np.ndarray:
     )
     return cv2.dilate(binary, kernel, iterations=1)
 
-
-def _extract_outer_contour(binary: np.ndarray) -> Optional[np.ndarray]:
-    """
-    RETR_EXTERNAL: 가장 바깥 contour만 추출. 내부 hole 자동 무시.
-    CHAIN_APPROX_NONE: 모든 점 유지 (이후 단계에서 줄임).
-    여러 contour 중 면적이 가장 큰 것 하나만 반환.
-    """
-    contours, _ = cv2.findContours(
-        binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-    )
-    if not contours:
-        return None
-    return max(contours, key=cv2.contourArea)
 
 
 def _extract_all_outer_contours(binary: np.ndarray) -> list[np.ndarray]:
