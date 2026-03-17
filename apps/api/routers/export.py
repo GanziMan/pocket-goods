@@ -5,7 +5,6 @@ Fabric.js JSON → 300 DPI PNG 생성 → Supabase Storage 업로드
 import io
 import logging
 import uuid
-import zipfile
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -56,21 +55,14 @@ async def export_design(req: ExportRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"렌더링 실패: {e}")
 
-    # 미리보기 다운로드 — PNG + SVG를 ZIP으로 묶어서 반환
+    # 미리보기 다운로드 — 단일 PNG 파일 반환
     if not req.save_to_storage:
-        zip_buf = io.BytesIO()
-        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr(f"pocketgoods-{req.product_type}.png", png_bytes)
-
-            # 칼선 기능(생성/저장) 임시 비활성화
-            # if req.canvas_json.get("objects"):
-            #     ...
-
-        zip_buf.seek(0)
-        filename = f"pocketgoods-{req.product_type}.zip"
+        png_buf = io.BytesIO(png_bytes)
+        png_buf.seek(0)
+        filename = f"pocketgoods-{req.product_type}-{req.output_size}.png"
         return StreamingResponse(
-            zip_buf,
-            media_type="application/zip",
+            png_buf,
+            media_type="image/png",
             headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
 

@@ -12,9 +12,17 @@ import MobileHeader from "@/components/editor/MobileHeader";
 import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import type { ProductType } from "@/lib/assets";
-import type { OutputSize } from "@/components/editor/Toolbar";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+type OutputSize = "A4" | "A5" | "A6";
+
+const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
+  A4: { width: 210, height: 297 },
+  A5: { width: 148, height: 210 },
+  A6: { width: 105, height: 148 },
+};
 
 export default function EditorLayout() {
   const [productType, setProductTypeState] = useState<ProductType>("keyring");
@@ -165,13 +173,13 @@ export default function EditorLayout() {
         }
       );
       if (!res.ok) throw new Error("Export 실패");
-      const zipBlob = await res.blob();
-      const zipUrl = URL.createObjectURL(zipBlob);
+      const pngBlob = await res.blob();
+      const pngUrl = URL.createObjectURL(pngBlob);
       const link = document.createElement("a");
-      link.href = zipUrl;
-      link.download = `pocketgoods-${productType}-${outputSize}-${Date.now()}.zip`;
+      link.href = pngUrl;
+      link.download = `pocketgoods-${productType}-${outputSize}-${Date.now()}.png`;
       link.click();
-      URL.revokeObjectURL(zipUrl);
+      URL.revokeObjectURL(pngUrl);
     } catch {
       // 서버 미실행 시 클라이언트 PNG로 fallback
       const dataURL = toDataURL();
@@ -195,8 +203,6 @@ export default function EditorLayout() {
         <Toolbar
           productType={productType}
           onProductTypeChange={handleProductTypeChange}
-          outputSize={outputSize}
-          onOutputSizeChange={setOutputSize}
           canUndo={canUndo}
           canRedo={canRedo}
           hasSelection={!!selectedInfo}
@@ -218,8 +224,6 @@ export default function EditorLayout() {
           productType={productType}
           onProductTypeChange={handleProductTypeChange}
           onSave={save}
-          outputSize={outputSize}
-          onOutputSizeChange={setOutputSize}
           isDirty={isDirty}
           savedAt={savedAt}
         />
@@ -263,6 +267,32 @@ export default function EditorLayout() {
             >
               <ZoomIn className="w-4 h-4" />
             </Button>
+
+            <div className="ml-4 pl-4 border-l flex items-center gap-2">
+              {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
+                <Badge
+                  key={size}
+                  variant={outputSize === size ? "default" : "outline"}
+                  className="cursor-pointer select-none"
+                  onClick={() => setOutputSize(size)}
+                >
+                  {size}
+                </Badge>
+              ))}
+              <span className="text-xs text-zinc-500 tabular-nums select-none">
+                {OUTPUT_SIZE_MM[outputSize].width} × {OUTPUT_SIZE_MM[outputSize].height} mm
+              </span>
+              <div
+                className="rounded-sm border border-zinc-400 bg-zinc-100"
+                style={{
+                  width: 18,
+                  height: Math.round(
+                    (18 * OUTPUT_SIZE_MM[outputSize].height) / OUTPUT_SIZE_MM[outputSize].width
+                  ),
+                }}
+                title={`${OUTPUT_SIZE_MM[outputSize].width} x ${OUTPUT_SIZE_MM[outputSize].height} mm`}
+              />
+            </div>
           </div>
         </main>
 
