@@ -12,9 +12,12 @@ from google.genai import types
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
+from supabase import create_client as create_supabase_client
 
-# IP별 일일 요청 제한
-DAILY_LIMIT = 2
+# IP별 일일 요청 제한 (비로그인)
+DAILY_LIMIT_ANONYMOUS = 2
+# 유저별 일일 요청 제한 (로그인)
+DAILY_LIMIT_USER = 10
 _usage: dict[str, dict[str, int]] = defaultdict(lambda: {"date": "", "count": 0})
 
 logger = logging.getLogger(__name__)
@@ -62,15 +65,39 @@ def _pil_to_part(image: Image.Image, mime: str = "image/png") -> types.Part:
     return types.Part.from_bytes(data=buffer.getvalue(), mime_type=mime)
 
 
-def _check_rate_limit(ip: str) -> int:
+def _check_rate_limit(key: str, limit: int) -> int:
     """남은 횟수를 반환. 0이면 제한 초과."""
     today = date.today().isoformat()
-    entry = _usage[ip]
+    entry = _usage[key]
     if entry["date"] != today:
         entry["date"] = today
         entry["count"] = 0
-    remaining = DAILY_LIMIT - entry["count"]
+    remaining = limit - entry["count"]
     return remaining
+
+
+def _get_user_id_from_token(request: Request) -> Optional[str]:
+    """Authorization 헤더에서 Supabase JWT를 검증하고 user_id를 반환."""
+    auth_header = request.headers.get("authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+
+    token = auth_header[7:]
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not supabase_key:
+        logger.warning("[auth] SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY 미설정")
+        return None
+
+    try:
+        supabase = create_supabase_client(supabase_url, supabase_key)
+        user_response = supabase.auth.get_user(token)
+        if user_response and user_response.user:
+            return user_response.user.id
+    except Exception as e:
+        logger.warning("[auth] 토큰 검증 실패: %s", e)
+
+    return None
 
 
 @router.post("/generate-image")
@@ -85,14 +112,25 @@ async def generate_image(
     프롬프트 + 선택적 이미지(캔버스 캡처 or 사용자 업로드)를 받아
     Nano Banana 2로 이미지를 생성합니다.
     """
-    # IP 기반 일일 요청 제한
+    # 인증 확인: 토큰이 있으면 user_id 기반, 없으면 IP 기반
+    user_id = _get_user_id_from_token(request)
     client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown").split(",")[0].strip()
-    remaining = _check_rate_limit(client_ip)
+
+    if user_id:
+        rate_key = f"user:{user_id}"
+        daily_limit = DAILY_LIMIT_USER
+    else:
+        rate_key = f"ip:{client_ip}"
+        daily_limit = DAILY_LIMIT_ANONYMOUS
+
+    remaining = _check_rate_limit(rate_key, daily_limit)
     if remaining <= 0:
-        logger.warning("[generate] rate limit 초과 ip=%s", client_ip)
-        raise HTTPException(status_code=429, detail="일일 생성 횟수(2회)를 초과했습니다. 내일 다시 이용해주세요.")
-    _usage[client_ip]["count"] += 1
-    logger.info("[generate] ip=%s 오늘 %d/%d회 사용", client_ip, _usage[client_ip]["count"], DAILY_LIMIT)
+        logger.warning("[generate] rate limit 초과 key=%s", rate_key)
+        detail = f"일일 생성 횟수({daily_limit}회)를 초과했습니다. 내일 다시 이용해주세요."
+        error_body = {"detail": detail, "login_required": user_id is None}
+        return JSONResponse(status_code=429, content=error_body)
+    _usage[rate_key]["count"] += 1
+    logger.info("[generate] key=%s 오늘 %d/%d회 사용", rate_key, _usage[rate_key]["count"], daily_limit)
 
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:

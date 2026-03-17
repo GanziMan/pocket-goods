@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { CHARACTER_ASSETS } from "@/lib/assets";
 import { ArrowRight } from "lucide-react";
 
+
 const floatingItems = CHARACTER_ASSETS.map((asset, i) => ({
   ...asset,
   style: {
@@ -63,6 +64,16 @@ export function HeroSection() {
             <ArrowRight className="size-4" />
           </Link>
         </div>
+
+        <p className="mt-4 text-xs text-muted-foreground">
+          AI 이미지 하루 2회 무료 &middot;{" "}
+          <Link
+            href="/login"
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            카카오 로그인하면 하루 10회
+          </Link>
+        </p>
       </div>
     </section>
   );

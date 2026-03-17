@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Save, CheckCheck } from "lucide-react";
 import type { ProductType } from "@/lib/assets";
+import UserMenu from "@/components/auth/UserMenu";
 
 const PRODUCT_LABELS: Record<ProductType, string> = {
   keyring: "키링",
@@ -42,7 +43,7 @@ export default function MobileHeader({
         ))}
       </div>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex items-center gap-2">
         {isDirty ? (
           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
         ) : savedAt ? (
@@ -52,6 +53,7 @@ export default function MobileHeader({
         <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8">
           <Save className="w-4 h-4" />
         </Button>
+        <UserMenu compact />
       </div>
     </header>
   );

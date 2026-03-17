@@ -17,6 +17,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import type { ProductType } from "@/lib/assets";
+import UserMenu from "@/components/auth/UserMenu";
 
 interface ToolbarProps {
   productType: ProductType;
@@ -207,6 +208,9 @@ export default function Toolbar({
           <ShoppingCart className="w-4 h-4 mr-1" />
           주문하기
         </Button>
+
+        <Separator orientation="vertical" className="h-6" />
+        <UserMenu />
       </div>
     </header>
   );

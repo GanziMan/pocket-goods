@@ -12,8 +12,12 @@ import {
   LayoutTemplate,
   Loader2,
   ImagePlus,
+  LogIn,
+  X,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 interface AIPanelProps {
   onGetCanvasImage: () => string; // toDataURL()
@@ -52,6 +56,7 @@ export default function AIPanel({
     "generating",
   );
   const [error, setError] = useState<string | null>(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,12 +90,28 @@ export default function AIPanel({
         formData.append("upload_image", uploadedFile);
       }
 
+      // 로그인 유저는 토큰을 헤더에 포함
+      const headers: HeadersInit = {};
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/generate-image`,
-        { method: "POST", body: formData },
+        { method: "POST", body: formData, headers },
       );
 
       if (!response.ok) {
+        if (response.status === 429) {
+          const err = await response.json();
+          if (err.login_required) {
+            setShowLoginPrompt(true);
+            return;
+          }
+          throw new Error(err.detail ?? "일일 생성 횟수를 초과했습니다.");
+        }
         const err = await response.json();
         throw new Error(err.detail ?? "생성 실패");
       }
@@ -236,6 +257,37 @@ export default function AIPanel({
           </>
         )}
       </Button>
+
+      {/* 로그인 유도 */}
+      {showLoginPrompt && (
+        <div className="relative rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+          <button
+            onClick={() => setShowLoginPrompt(false)}
+            className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-primary" />
+            <span className="text-sm font-semibold">더 많이 만들어보세요!</span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            오늘 무료 생성 횟수(2회)를 모두 사용했어요.
+            <br />
+            카카오 로그인하면{" "}
+            <span className="font-semibold text-primary">하루 10회 무료</span>로
+            이용할 수 있어요!
+          </p>
+          <Link
+            href="/login?next=/design"
+            className="flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-colors w-full"
+            style={{ backgroundColor: "#FEE500", color: "#191919" }}
+          >
+            <LogIn className="size-4" />
+            카카오로 시작하기
+          </Link>
+        </div>
+      )}
 
       {/* 에러 */}
       {error && (

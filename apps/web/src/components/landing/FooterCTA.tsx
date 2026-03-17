@@ -16,6 +16,15 @@ export function FooterCTA() {
         <p className="mt-3 text-muted-foreground">
           지금 바로 에디터에서 디자인해보세요.
         </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          <Link
+            href="/login"
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            카카오 로그인
+          </Link>
+          하면 AI 이미지 생성 하루 10회 무료
+        </p>
         <div className="mt-8">
           <Link
             href="/design"
