@@ -242,7 +242,10 @@ export default function EditorLayout() {
 
         <main className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 overflow-auto p-2 md:p-8">
-            <DesignCanvas canvasRef={canvasRef} productType={productType} />
+            <DesignCanvas
+              canvasRef={canvasRef}
+              outputSizeMm={OUTPUT_SIZE_MM[outputSize]}
+            />
           </div>
           {/* 줌 컨트롤 — 캔버스 바로 아래 (데스크탑 전용) */}
           <div className="hidden md:flex items-center justify-center gap-2 py-2 border-t bg-white shrink-0">
@@ -279,19 +282,7 @@ export default function EditorLayout() {
                   {size}
                 </Badge>
               ))}
-              <span className="text-xs text-zinc-500 tabular-nums select-none">
-                {OUTPUT_SIZE_MM[outputSize].width} × {OUTPUT_SIZE_MM[outputSize].height} mm
-              </span>
-              <div
-                className="rounded-sm border border-zinc-400 bg-zinc-100"
-                style={{
-                  width: 18,
-                  height: Math.round(
-                    (18 * OUTPUT_SIZE_MM[outputSize].height) / OUTPUT_SIZE_MM[outputSize].width
-                  ),
-                }}
-                title={`${OUTPUT_SIZE_MM[outputSize].width} x ${OUTPUT_SIZE_MM[outputSize].height} mm`}
-              />
+
             </div>
           </div>
         </main>
