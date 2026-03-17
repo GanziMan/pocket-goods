@@ -140,7 +140,7 @@ export default function EditorLayout() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-zinc-50">
+    <div className="flex flex-col h-dvh overflow-hidden bg-zinc-50">
       {/* 상단: 데스크탑=Toolbar, 모바일=MobileHeader */}
       <div className="hidden md:block">
         <Toolbar
