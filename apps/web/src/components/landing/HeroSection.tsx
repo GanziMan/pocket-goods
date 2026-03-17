@@ -45,9 +45,9 @@ export function HeroSection() {
           </span>
         </h1>
 
-        <p className="mt-4 text-base text-muted-foreground sm:mt-6 sm:text-lg">
+        <p className="mt-4 text-base text-muted-foreground sm:mt-6 sm:text-lg break-keep">
           좋아하는 캐릭터, 반려동물, 아기 사진으로
-          <br className="hidden sm:block" />
+          <br className="sm:block break-keep" />
           키링과 스티커를 1분 만에 디자인하세요.
         </p>
 
