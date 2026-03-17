@@ -30,12 +30,12 @@ class ExportRequest(BaseModel):
 class ExportResponse(BaseModel):
     print_url: str | None = None    # Supabase signed URL (save_to_storage=True)
     thumbnail_url: str | None = None
-    cutting_line_svg: str | None = None  # 스티커 칼선 SVG path (save_to_storage=True)
+    cutting_line_svg: str | None = None  # 칼선 SVG path (save_to_storage=True)
 
 
 class PreviewExportResponse(BaseModel):
     png_base64: str
-    cutting_line_svg: str | None = None  # 스티커+objects 있을 때만 포함
+    cutting_line_svg: str | None = None  # objects 있을 때만 포함
 
 
 @router.post("/export")
@@ -55,7 +55,7 @@ async def export_design(req: ExportRequest):
     if not req.save_to_storage:
         png_b64 = base64.b64encode(png_bytes).decode()
         cutting_svg: str | None = None
-        if req.product_type == "sticker" and req.canvas_json.get("objects"):
+        if req.canvas_json.get("objects"):
             try:
                 img_transparent = render_canvas(
                     req.canvas_json, req.product_type,
@@ -78,9 +78,9 @@ async def export_design(req: ExportRequest):
                 logger.warning("[export] 칼선 미리보기 생성 실패 (무시): %s", e)
         return PreviewExportResponse(png_base64=png_b64, cutting_line_svg=cutting_svg)
 
-    # 칼선 생성 — 투명 배경으로 재렌더링 (오브젝트가 있는 스티커만)
+    # 칼선 생성 — 투명 배경으로 재렌더링 (오브젝트가 있을 때만)
     cutting_line_svg: str | None = None
-    if req.product_type == "sticker" and req.canvas_json.get("objects"):
+    if req.canvas_json.get("objects"):
         try:
             img_transparent = render_canvas(
                 req.canvas_json, req.product_type, transparent_bg=True

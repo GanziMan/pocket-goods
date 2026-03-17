@@ -111,13 +111,13 @@ export default function EditorLayout() {
       pngLink.click();
       URL.revokeObjectURL(pngUrl);
 
-      // 칼선 SVG 다운로드 (스티커만)
+      // 칼선 SVG 다운로드
       if (data.cutting_line_svg) {
         const svgBlob = new Blob([data.cutting_line_svg], { type: "image/svg+xml" });
         const svgUrl = URL.createObjectURL(svgBlob);
         const svgLink = document.createElement("a");
         svgLink.href = svgUrl;
-        svgLink.download = `pocketgoods-cutting-line-${ts}.svg`;
+        svgLink.download = `pocketgoods-cutting-line-${productType}-${ts}.svg`;
         svgLink.click();
         URL.revokeObjectURL(svgUrl);
       }
