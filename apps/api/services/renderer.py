@@ -29,6 +29,9 @@ BASE_PRINT_SIZES_MM: dict[str, tuple[float, float]] = {
     "sticker": (148.0, 210.0),  # A5
 }
 
+# 외부 업로드 도구에서 사방 2mm(총 4mm) 보정이 더해지는 환경 대응용 역보정값
+EXTERNAL_SIZE_PADDING_MM = 4.0
+
 OutputSize = Literal["A4", "A5", "A6"]
 
 # 출력 캔버스(배경) 크기: 300 DPI 고정
@@ -36,6 +39,12 @@ OUTPUT_SIZES_PX: dict[OutputSize, tuple[int, int]] = {
     "A4": (2480, 3508),
     "A5": (1748, 2480),
     "A6": (1240, 1748),
+}
+
+OUTPUT_SIZES_MM: dict[OutputSize, tuple[float, float]] = {
+    "A4": (210.0, 297.0),
+    "A5": (148.0, 210.0),
+    "A6": (105.0, 148.0),
 }
 
 # 캔버스 표시 크기 (px) — assets.ts와 동기화
@@ -358,7 +367,10 @@ def render_canvas(
     """
     Fabric.js JSON → PIL Image (지정 DPI + 3mm 재단선 포함)
     """
-    w_mm, h_mm = BASE_PRINT_SIZES_MM.get(product_type, (148.0, 210.0))
+    target_w_mm, target_h_mm = OUTPUT_SIZES_MM.get(output_size, (148.0, 210.0))
+    # 역계산 보정: 외부 시스템에서 +4mm로 보이는 문제를 상쇄
+    w_mm = max(target_w_mm - EXTERNAL_SIZE_PADDING_MM, 1.0)
+    h_mm = max(target_h_mm - EXTERNAL_SIZE_PADDING_MM, 1.0)
     canvas_w, canvas_h = CANVAS_DISPLAY_PX.get(product_type, (480, 480))
 
     print_w = mm_to_px(w_mm, dpi)
