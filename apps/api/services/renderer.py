@@ -23,26 +23,13 @@ logger = logging.getLogger(__name__)
 
 DPI = 300
 
-# 작업물 렌더 기준 인쇄 크기 (mm)
-BASE_PRINT_SIZES_MM: dict[str, tuple[float, float]] = {
-    "keyring": (148.0, 210.0),  # A5
-    "sticker": (148.0, 210.0),  # A5
-}
-
 OutputSize = Literal["A4", "A5", "A6"]
 
-# 출력 캔버스(배경) 크기: 300 DPI 고정
+# 출력 캔버스(배경) 크기: 300 DPI 기준에서 4mm 역보정한 픽셀값
 OUTPUT_SIZES_PX: dict[OutputSize, tuple[int, int]] = {
-    "A4": (2480, 3508),
-    "A5": (1748, 2480),
-    "A6": (1240, 1748),
-}
-
-OUTPUT_SIZES_MM: dict[OutputSize, tuple[float, float]] = {
-    # 내부 작업 영역(mm): 외부 시스템 여백 보정을 반영한 실사용 사이즈
-    "A4": (206.0, 293.0),
-    "A5": (144.0, 206.0),
-    "A6": (101.0, 144.0),
+    "A4": (2433, 3461),
+    "A5": (1701, 2433),
+    "A6": (1193, 1701),
 }
 
 # 캔버스 표시 크기 (px) — assets.ts와 동기화
@@ -365,12 +352,12 @@ def render_canvas(
     """
     Fabric.js JSON → PIL Image (지정 DPI + 3mm 재단선 포함)
     """
-    w_mm, h_mm = OUTPUT_SIZES_MM.get(output_size, (144.0, 206.0))
+    final_w, final_h = OUTPUT_SIZES_PX.get(output_size, OUTPUT_SIZES_PX["A5"])
     canvas_w, canvas_h = CANVAS_DISPLAY_PX.get(product_type, (480, 480))
 
-    print_w = mm_to_px(w_mm, dpi)
-    print_h = mm_to_px(h_mm, dpi)
-    final_w, final_h = OUTPUT_SIZES_PX.get(output_size, OUTPUT_SIZES_PX["A5"])
+    # 출력 해상도(px) 자체를 기준으로 오브젝트 스케일 계산
+    print_w = final_w
+    print_h = final_h
 
     # 표시 px → 인쇄 px 스케일 비율
     sx = print_w / canvas_w
