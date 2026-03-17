@@ -58,6 +58,9 @@ const MAX_HISTORY = 30;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.0;
 const ZOOM_STEP = 0.25;
+const BASE_CORNER_SIZE = 13;
+const BASE_BORDER_WIDTH = 1;
+const BASE_TOUCH_CORNER_SIZE = 24;
 
 /** blob: URL → data URL 변환 (백엔드 전송 가능하도록) */
 async function toDataURLFromSrc(src: string): Promise<string> {
@@ -170,11 +173,7 @@ export function useCanvas(
         let z = canvas.getZoom();
         z *= 0.999 ** delta;
         z = Math.min(Math.max(z, ZOOM_MIN), ZOOM_MAX);
-        const { width: ow, height: oh } = originalSizeRef.current;
-        canvas.viewportTransform = [z, 0, 0, z, 0, 0] as typeof canvas.viewportTransform;
-        canvas.setDimensions({ width: ow * z, height: oh * z });
-        canvas.renderAll();
-        setZoomState(Math.round(z * 100) / 100);
+        applyZoom(canvas, Math.round(z * 100) / 100);
         opt.e.preventDefault();
         opt.e.stopPropagation();
       });
@@ -442,6 +441,18 @@ export function useCanvas(
     const { width: ow, height: oh } = originalSizeRef.current;
     canvas.viewportTransform = [z, 0, 0, z, 0, 0] as typeof canvas.viewportTransform;
     canvas.setDimensions({ width: ow * z, height: oh * z });
+
+    // 선택 핸들 크기를 zoom에 반비례 → 화면상 항상 동일한 크기로 표시
+    const cornerSize = BASE_CORNER_SIZE / z;
+    const borderWidth = BASE_BORDER_WIDTH / z;
+    const touchCornerSize = BASE_TOUCH_CORNER_SIZE / z;
+    canvas.forEachObject((obj: FabricObject) => {
+      obj.cornerSize = cornerSize;
+      (obj as unknown as Record<string, number>).borderWidth = borderWidth;
+      obj.touchCornerSize = touchCornerSize;
+      obj.setCoords();
+    });
+
     canvas.renderAll();
     setZoomState(z);
   }, []);
