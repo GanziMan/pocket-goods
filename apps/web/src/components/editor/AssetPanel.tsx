@@ -11,12 +11,14 @@ import { Separator } from "@/components/ui/separator";
 import { CHARACTER_ASSETS, STICKER_ASSETS } from "@/lib/assets";
 import { ImageIcon, Type, Smile, Sparkles } from "lucide-react";
 import AIPanel from "@/components/editor/AIPanel";
+import { cn } from "@/lib/utils";
 
 interface AssetPanelProps {
   onAddCharacter: (src: string) => void;
   onAddText: (text: string) => void;
   onAddSticker: (emoji: string) => void;
   onGetCanvasImage: () => string;
+  className?: string;
 }
 
 export default function AssetPanel({
@@ -24,14 +26,18 @@ export default function AssetPanel({
   onAddText,
   onAddSticker,
   onGetCanvasImage,
+  className,
 }: AssetPanelProps) {
   const [inputText, setInputText] = useState("나만의 문구");
 
   return (
-    <aside className="w-64 border-r bg-white flex flex-col shrink-0">
+    <aside className={cn("flex flex-col shrink-0 bg-white", className ?? "w-64 border-r")}>
       <Tabs defaultValue="characters" className="flex flex-col h-full">
         <TabsList className="w-full rounded-none border-b h-10 shrink-0">
-         
+          <TabsTrigger value="characters" className="flex-1 gap-1 text-xs">
+            <ImageIcon className="w-3.5 h-3.5" />
+            캐릭터
+          </TabsTrigger>
           <TabsTrigger value="text" className="flex-1 gap-1 text-xs">
             <Type className="w-3.5 h-3.5" />
             텍스트
@@ -109,7 +115,7 @@ export default function AssetPanel({
         {/* ── 스티커 탭 ── */}
         <TabsContent value="stickers" className="flex-1 m-0">
           <ScrollArea className="h-full">
-            <div className="p-3 grid grid-cols-4 gap-2">
+            <div className="p-3 grid grid-cols-3 md:grid-cols-4 gap-2">
               {STICKER_ASSETS.map((sticker) => (
                 <button
                   key={sticker.id}

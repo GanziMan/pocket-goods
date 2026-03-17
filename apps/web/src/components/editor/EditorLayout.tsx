@@ -8,10 +8,14 @@ import DesignCanvas from "@/components/canvas/DesignCanvas";
 import Toolbar from "@/components/editor/Toolbar";
 import AssetPanel from "@/components/editor/AssetPanel";
 import PropertiesPanel from "@/components/editor/PropertiesPanel";
+import MobileHeader from "@/components/editor/MobileHeader";
+import MobileActionBar from "@/components/editor/MobileActionBar";
+import MobileDrawer from "@/components/editor/MobileDrawer";
 import type { ProductType } from "@/lib/assets";
 
 export default function EditorLayout() {
   const [productType, setProductTypeState] = useState<ProductType>("keyring");
+  const [mobilePanel, setMobilePanel] = useState<"assets" | "properties" | null>(null);
 
   const {
     canvasRef,
@@ -137,47 +141,111 @@ export default function EditorLayout() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-zinc-50">
-      <Toolbar
-        productType={productType}
-        onProductTypeChange={handleProductTypeChange}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        hasSelection={!!selectedInfo}
-        isDirty={isDirty}
-        savedAt={savedAt}
-        onUndo={undo}
-        onRedo={redo}
-        onDelete={deleteSelected}
-        onBringForward={bringForward}
-        onSendBackward={sendBackward}
-        onSave={save}
-        onExportPreview={handleExportPreview}
-        onOrder={handleOrder}
-        zoom={zoom}
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-      />
+      {/* 상단: 데스크탑=Toolbar, 모바일=MobileHeader */}
+      <div className="hidden md:block">
+        <Toolbar
+          productType={productType}
+          onProductTypeChange={handleProductTypeChange}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          hasSelection={!!selectedInfo}
+          isDirty={isDirty}
+          savedAt={savedAt}
+          onUndo={undo}
+          onRedo={redo}
+          onDelete={deleteSelected}
+          onBringForward={bringForward}
+          onSendBackward={sendBackward}
+          onSave={save}
+          onExportPreview={handleExportPreview}
+          onOrder={handleOrder}
+          zoom={zoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+        />
+      </div>
+      <div className="block md:hidden">
+        <MobileHeader
+          productType={productType}
+          onProductTypeChange={handleProductTypeChange}
+          onSave={save}
+          isDirty={isDirty}
+          savedAt={savedAt}
+        />
+      </div>
 
+      {/* 메인 영역 */}
       <div className="flex flex-1 min-h-0">
+        <div className="hidden md:flex">
+          <AssetPanel
+            onAddCharacter={addCharacter}
+            onAddText={addText}
+            onAddSticker={addSticker}
+            onGetCanvasImage={toDataURL}
+          />
+        </div>
+
+        <main className="flex-1 overflow-auto p-2 md:p-8">
+          <DesignCanvas canvasRef={canvasRef} productType={productType} />
+        </main>
+
+        <div className="hidden md:flex">
+          <PropertiesPanel
+            selectedInfo={selectedInfo}
+            onUpdateText={updateSelectedText}
+            onUpdateOpacity={updateSelectedOpacity}
+            onGetSelectedImageDataURL={getSelectedImageDataURL}
+            onReplaceSelectedImage={replaceSelectedImage}
+          />
+        </div>
+      </div>
+
+      {/* 모바일 하단 액션바 */}
+      <div className="block md:hidden">
+        <MobileActionBar
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={undo}
+          onRedo={redo}
+          hasSelection={!!selectedInfo}
+          onDelete={deleteSelected}
+          onOpenAssets={() => setMobilePanel("assets")}
+          onOpenProperties={() => setMobilePanel("properties")}
+          onExportPreview={handleExportPreview}
+          zoom={zoom}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+        />
+      </div>
+
+      {/* 모바일 하단 시트 */}
+      <MobileDrawer
+        open={mobilePanel === "assets"}
+        onClose={() => setMobilePanel(null)}
+        title="에셋"
+      >
         <AssetPanel
           onAddCharacter={addCharacter}
           onAddText={addText}
           onAddSticker={addSticker}
           onGetCanvasImage={toDataURL}
+          className="w-full border-0"
         />
-
-        <main className="flex-1 overflow-auto p-8">
-          <DesignCanvas canvasRef={canvasRef} productType={productType} />
-        </main>
-
+      </MobileDrawer>
+      <MobileDrawer
+        open={mobilePanel === "properties"}
+        onClose={() => setMobilePanel(null)}
+        title="속성"
+      >
         <PropertiesPanel
           selectedInfo={selectedInfo}
           onUpdateText={updateSelectedText}
           onUpdateOpacity={updateSelectedOpacity}
           onGetSelectedImageDataURL={getSelectedImageDataURL}
           onReplaceSelectedImage={replaceSelectedImage}
+          className="w-full border-0"
         />
-      </div>
+      </MobileDrawer>
     </div>
   );
 }

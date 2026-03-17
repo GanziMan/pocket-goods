@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { FONT_OPTIONS } from "@/lib/assets";
 import type { SelectedObjectInfo, TextUpdateProps } from "@/components/canvas/useCanvas";
 import { MousePointer2, Scissors, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PropertiesPanelProps {
   selectedInfo: SelectedObjectInfo | null;
@@ -23,6 +24,7 @@ interface PropertiesPanelProps {
   onUpdateOpacity: (opacity: number) => void;
   onGetSelectedImageDataURL: () => string | null;
   onReplaceSelectedImage: (src: string) => Promise<void>;
+  className?: string;
 }
 
 export default function PropertiesPanel({
@@ -31,6 +33,7 @@ export default function PropertiesPanel({
   onUpdateOpacity,
   onGetSelectedImageDataURL,
   onReplaceSelectedImage,
+  className,
 }: PropertiesPanelProps) {
   const [removingBg, setRemovingBg] = useState(false);
 
@@ -53,7 +56,7 @@ export default function PropertiesPanel({
   const isEmpty = !selectedInfo;
 
   return (
-    <aside className="w-56 border-l bg-white flex flex-col shrink-0">
+    <aside className={cn("flex flex-col shrink-0 bg-white", className ?? "w-56 border-l")}>
       <div className="px-4 py-3 border-b">
         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
           속성
