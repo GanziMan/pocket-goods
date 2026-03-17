@@ -27,7 +27,7 @@ const STYLES: { value: Style; label: string; emoji: string }[] = [
   { value: "ghibli", label: "지브리", emoji: "🌿" },
   { value: "sd", label: "SD", emoji: "🎀" },
   { value: "steampunk", label: "스팀펑크", emoji: "⚙️" },
-  { value: "akatsuki", label: "아카츠키", emoji: "🔴" },
+  // { value: "akatsuki", label: "아카츠키", emoji: "🔴" },
 ];
 
 const EXAMPLE_PROMPTS = [
@@ -141,19 +141,14 @@ export default function AIPanel({
       </div>
 
       {/* 모드 선택 */}
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <ModeButton
           active={mode === "prompt-only"}
           icon={<Sparkles className="w-3.5 h-3.5" />}
           label="프롬프트"
           onClick={() => setMode("prompt-only")}
         />
-        <ModeButton
-          active={mode === "from-canvas"}
-          icon={<LayoutTemplate className="w-3.5 h-3.5" />}
-          label="현재 디자인"
-          onClick={() => setMode("from-canvas")}
-        />
+       
         <ModeButton
           active={mode === "from-upload"}
           icon={<Upload className="w-3.5 h-3.5" />}
