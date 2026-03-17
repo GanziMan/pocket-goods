@@ -66,7 +66,9 @@ export function HeroSection() {
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">
-          AI 이미지 하루 2회 무료 &middot;{" "}
+          AI 이미지 하루 2회 무료
+          <span className="hidden sm:inline"> &middot; </span>
+          <br className="sm:hidden" />
           <Link
             href="/login"
             className="font-semibold text-primary underline underline-offset-2"
