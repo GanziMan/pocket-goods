@@ -201,7 +201,7 @@ export default function Toolbar({
 
         <Button variant="outline" size="sm" onClick={onExportPreview}>
           <Download className="w-4 h-4 mr-1" />
-          미리보기
+          다운로드
         </Button>
         <Button size="sm" onClick={onOrder}>
           <ShoppingCart className="w-4 h-4 mr-1" />

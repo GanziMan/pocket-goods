@@ -18,7 +18,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://pocketgoods.kr";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
+    default: "포켓굿즈 — 무료 키링·스티커 디자인 | 나만의 굿즈 제작",
     template: "%s | 포켓굿즈",
   },
   description:
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     url: BASE_URL,
     siteName: "포켓굿즈",
-    title: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
+    title: "포켓굿즈 — 무료 키링·스티커 디자인 | 나만의 굿즈 제작",
     description:
       "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
     images: [
@@ -62,13 +62,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "포켓굿즈 — 나만의 키링 & 스티커",
+        alt: "포켓굿즈 — 무료 키링·스티커 디자인",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "포켓굿즈 — 강아지·고양이·취미 맞춤 키링 & 스티커",
+    title: "포켓굿즈 — 무료 키링·스티커 디자인 | 나만의 굿즈 제작",
     description:
       "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요.",
     images: ["/og-image.png"],

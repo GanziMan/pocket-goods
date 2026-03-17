@@ -200,8 +200,8 @@ export default function AIPanel({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="졸린 표정으로 하품하는 캐릭터"
-          className="text-sm resize-none"
-          rows={3}
+          className="text-sm resize-none max-h-20"
+          rows={2}
         />
       </div>
 
