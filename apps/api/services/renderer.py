@@ -22,12 +22,14 @@ from services.fonts import get_pil_font
 logger = logging.getLogger(__name__)
 
 DPI = 300
-BLEED_MM = 3.0
 
-# 제품별 인쇄 실물 크기 (mm)
-PRINT_SIZES_MM: dict[str, tuple[float, float]] = {
-    "keyring": (148.0, 210.0),  # A5
-    "sticker": (148.0, 210.0),  # A5
+OutputSize = Literal["A4", "A5", "A6"]
+
+# 출력 캔버스(배경) 크기: 300 DPI 기준에서 4mm 역보정한 픽셀값
+OUTPUT_SIZES_PX: dict[OutputSize, tuple[int, int]] = {
+    "A4": (2433, 3461),
+    "A5": (1701, 2433),
+    "A6": (1193, 1701),
 }
 
 # 캔버스 표시 크기 (px) — assets.ts와 동기화
@@ -103,9 +105,9 @@ def _origin_to_center(
     return cx, cy
 
 
-CUTTING_LINE_COLOR = (255, 0, 255, 255)  # Magenta RGB(255,0,255) / CMYK(0,100,0,0)
-CUTTING_LINE_OFFSET_PX = 6  # 래스터 프리뷰용 아웃라인 — 세밀한 요철을 자연스럽게 스무딩
-CUTTING_LINE_CLOSE_GAP_PX = 24  # 인접 오브젝트 병합 간격 (~2mm @300DPI)
+# CUTTING_LINE_COLOR = (255, 0, 255, 255)  # 임시 비활성화
+# CUTTING_LINE_OFFSET_PX = 6  # 임시 비활성화
+# CUTTING_LINE_CLOSE_GAP_PX = 24  # 임시 비활성화
 
 
 def _get_exterior_mask(alpha: Image.Image) -> Image.Image:
@@ -139,8 +141,8 @@ def _render_cutting_line(
     내부 투명 구멍에는 칼선을 그리지 않는다.
     캐릭터보다 먼저 합성해야 칼선이 캐릭터 아래에 위치한다.
     """
-    if obj_img.mode != "RGBA":
-        return
+    # 칼선 기능 임시 비활성화
+    return
 
     alpha = obj_img.split()[3]
 
@@ -192,8 +194,8 @@ def _render_combined_cutting_line(canvas: Image.Image, obj_layer: Image.Image) -
     모든 오브젝트가 합쳐진 레이어의 알파 채널로 통합 칼선을 생성한다.
     겹친 이미지/텍스트가 하나의 칼선으로 처리된다.
     """
-    if obj_layer.mode != "RGBA":
-        return
+    # 칼선 기능 임시 비활성화
+    return
 
     alpha = obj_layer.split()[3]
 
@@ -245,7 +247,7 @@ def _render_combined_cutting_line(canvas: Image.Image, obj_layer: Image.Image) -
     canvas.paste(magenta, (0, 0), magenta)
 
 
-def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int, with_cutting_line: bool = True) -> None:
+def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, offset_x: int, offset_y: int, with_cutting_line: bool = True) -> None:
     src = obj.get("src", "")
     if not src:
         return
@@ -279,15 +281,15 @@ def _render_image_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, blee
 
     # 중심 좌표
     cx_disp, cy_disp = _origin_to_center(left, top, disp_w, disp_h, origin_x, origin_y)
-    cx = round(cx_disp * sx) + bleed
-    cy = round(cy_disp * sy) + bleed
+    cx = round(cx_disp * sx) + offset_x
+    cy = round(cy_disp * sy) + offset_y
 
     if with_cutting_line:
         _render_cutting_line(canvas, img, cx, cy, angle)
     _paste_rotated(canvas, img, cx, cy, angle)
 
 
-def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed: int, with_cutting_line: bool = True) -> None:
+def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, offset_x: int, offset_y: int, with_cutting_line: bool = True) -> None:
     text = obj.get("text", "")
     if not text:
         return
@@ -331,8 +333,8 @@ def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed
     disp_h = font_size_disp * scale_x
 
     cx_disp, cy_disp = _origin_to_center(left, top, txt_w / sx, txt_h / sy, origin_x, origin_y)
-    cx = round(cx_disp * sx) + bleed
-    cy = round(cy_disp * sy) + bleed
+    cx = round(cx_disp * sx) + offset_x
+    cy = round(cy_disp * sy) + offset_y
 
     if with_cutting_line:
         _render_cutting_line(canvas, txt_img, cx, cy, angle)
@@ -342,71 +344,54 @@ def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, bleed
 def render_canvas(
     canvas_json: dict,
     product_type: str,
-    transparent_bg: bool = False,
+    transparent_bg: bool = True,
     with_cutting_line: bool = True,
+    output_size: OutputSize = "A5",
     dpi: int = DPI,
 ) -> Image.Image:
     """
     Fabric.js JSON → PIL Image (지정 DPI + 3mm 재단선 포함)
     """
-    w_mm, h_mm = PRINT_SIZES_MM.get(product_type, (60.0, 60.0))
+    final_w, final_h = OUTPUT_SIZES_PX.get(output_size, OUTPUT_SIZES_PX["A5"])
     canvas_w, canvas_h = CANVAS_DISPLAY_PX.get(product_type, (480, 480))
 
-    bleed_px = mm_to_px(BLEED_MM, dpi)
-    print_w = mm_to_px(w_mm, dpi)
-    print_h = mm_to_px(h_mm, dpi)
+    # 출력 해상도(px) 자체를 기준으로 오브젝트 스케일 계산
+    print_w = final_w
+    print_h = final_h
 
     # 표시 px → 인쇄 px 스케일 비율
     sx = print_w / canvas_w
     sy = print_h / canvas_h
 
-    # 재단선 포함 최종 이미지
-    final_w = print_w + 2 * bleed_px
-    final_h = print_h + 2 * bleed_px
+    # 작업물은 기존 인쇄 크기 기준 그대로 두고, 배경 캔버스만 선택 규격으로 변경
+    offset_x = (final_w - print_w) // 2
+    offset_y = (final_h - print_h) // 2
 
     if transparent_bg:
         result = Image.new("RGBA", (final_w, final_h), (0, 0, 0, 0))
     else:
-        bg = canvas_json.get("background", "#ffffff") or "#ffffff"
-        result = Image.new("RGBA", (final_w, final_h), bg)
+        result = Image.new("RGBA", (final_w, final_h), (0, 0, 0, 0))
 
     objects = canvas_json.get("objects", [])
     logger.info("[renderer] product=%s objects=%d", product_type, len(objects))
 
-    if with_cutting_line:
-        # 2-pass 렌더링: 겹친 오브젝트를 하나의 통합 칼선으로 처리
-        # Pass 1: 모든 오브젝트를 투명 캔버스에 렌더 (칼선 없이)
-        obj_layer = Image.new("RGBA", (final_w, final_h), (0, 0, 0, 0))
-        for obj in objects:
-            obj_type = obj.get("type", "")
-            logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
-            if obj_type.lower() == "image":
-                _render_image_obj(obj_layer, obj, sx, sy, bleed_px, with_cutting_line=False)
-            elif obj_type.lower() in ("i-text", "text"):
-                _render_text_obj(obj_layer, obj, sx, sy, bleed_px, with_cutting_line=False)
-            else:
-                logger.warning("[renderer] unknown type=%r — skipped", obj_type)
-
-        # Pass 2: 합쳐진 알파 채널로 통합 칼선 생성 → 배경 위에 합성
-        _render_combined_cutting_line(result, obj_layer)
-
-        # Pass 3: 오브젝트를 칼선 위에 합성
-        result.paste(obj_layer, (0, 0), obj_layer)
-    else:
-        for obj in objects:
-            obj_type = obj.get("type", "")
-            logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
-            if obj_type.lower() == "image":
-                _render_image_obj(result, obj, sx, sy, bleed_px, with_cutting_line=False)
-            elif obj_type.lower() in ("i-text", "text"):
-                _render_text_obj(result, obj, sx, sy, bleed_px, with_cutting_line=False)
-            else:
-                logger.warning("[renderer] unknown type=%r — skipped", obj_type)
+    # 칼선 기능(생성/오프셋/렌더링) 임시 비활성화
+    # if with_cutting_line:
+    #     ...
+    for obj in objects:
+        obj_type = obj.get("type", "")
+        logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
+        if obj_type.lower() == "image":
+            _render_image_obj(result, obj, sx, sy, offset_x, offset_y, with_cutting_line=False)
+        elif obj_type.lower() in ("i-text", "text"):
+            _render_text_obj(result, obj, sx, sy, offset_x, offset_y, with_cutting_line=False)
+        else:
+            logger.warning("[renderer] unknown type=%r — skipped", obj_type)
 
     return result
 
 
 def to_png_bytes(img: Image.Image, dpi: int = DPI) -> bytes:
     buf = io.BytesIO()
-    img.convert("RGB").save(buf, format="PNG", dpi=(dpi, dpi))
+    img.convert("RGBA").save(buf, format="PNG", dpi=(dpi, dpi))
     return buf.getvalue()
