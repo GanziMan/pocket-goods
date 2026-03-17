@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { useCanvas } from "@/components/canvas/useCanvas";
 import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import { useSaveDesign } from "@/hooks/useSaveDesign";
@@ -58,6 +58,24 @@ export default function EditorLayout() {
 
   // 저장되지 않은 변경사항 있을 때 브라우저 이탈 경고
   useBeforeUnload(isDirty);
+
+  // 모바일에서 채널톡 숨기기
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const toggle = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (typeof window.ChannelIO === "function") {
+        window.ChannelIO(e.matches ? "hideChannelButton" : "showChannelButton");
+      }
+    };
+    toggle(mq);
+    mq.addEventListener("change", toggle);
+    return () => {
+      mq.removeEventListener("change", toggle);
+      if (typeof window.ChannelIO === "function") {
+        window.ChannelIO("showChannelButton");
+      }
+    };
+  }, []);
 
   // 캔버스 준비 완료 후 저장된 드래프트 복원 여부 확인
   useEffect(() => {
