@@ -18,9 +18,13 @@ import {
 import type { ProductType } from "@/lib/assets";
 import UserMenu from "@/components/auth/UserMenu";
 
+export type OutputSize = "A4" | "A5" | "A6";
+
 interface ToolbarProps {
   productType: ProductType;
   onProductTypeChange: (type: ProductType) => void;
+  outputSize: OutputSize;
+  onOutputSizeChange: (size: OutputSize) => void;
   canUndo: boolean;
   canRedo: boolean;
   hasSelection: boolean;
@@ -52,6 +56,8 @@ function formatSavedAt(date: Date): string {
 export default function Toolbar({
   productType,
   onProductTypeChange,
+  outputSize,
+  onOutputSizeChange,
   canUndo,
   canRedo,
   hasSelection,
@@ -142,6 +148,19 @@ export default function Toolbar({
 
       {/* 오른쪽 정렬 */}
       <div className="ml-auto flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
+            <Badge
+              key={size}
+              variant={outputSize === size ? "default" : "outline"}
+              className="cursor-pointer select-none"
+              onClick={() => onOutputSizeChange(size)}
+            >
+              {size}
+            </Badge>
+          ))}
+        </div>
+
         {/* 저장 상태 표시 */}
         <div className="flex items-center gap-1.5 text-xs text-zinc-400">
           {isDirty ? (

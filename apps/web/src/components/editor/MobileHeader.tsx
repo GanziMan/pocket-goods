@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Save, CheckCheck } from "lucide-react";
 import type { ProductType } from "@/lib/assets";
 import UserMenu from "@/components/auth/UserMenu";
+import type { OutputSize } from "@/components/editor/Toolbar";
 
 const PRODUCT_LABELS: Record<ProductType, string> = {
   keyring: "키링",
@@ -15,6 +16,8 @@ interface MobileHeaderProps {
   productType: ProductType;
   onProductTypeChange: (type: ProductType) => void;
   onSave: () => void;
+  outputSize: OutputSize;
+  onOutputSizeChange: (size: OutputSize) => void;
   isDirty: boolean;
   savedAt: Date | null;
 }
@@ -23,6 +26,8 @@ export default function MobileHeader({
   productType,
   onProductTypeChange,
   onSave,
+  outputSize,
+  onOutputSizeChange,
   isDirty,
   savedAt,
 }: MobileHeaderProps) {
@@ -39,6 +44,19 @@ export default function MobileHeader({
             onClick={() => onProductTypeChange(type)}
           >
             {PRODUCT_LABELS[type]}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="flex gap-1">
+        {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
+          <Badge
+            key={size}
+            variant={outputSize === size ? "default" : "outline"}
+            className="cursor-pointer select-none text-[10px] px-1.5 py-0"
+            onClick={() => onOutputSizeChange(size)}
+          >
+            {size}
           </Badge>
         ))}
       </div>

@@ -12,6 +12,7 @@ import MobileHeader from "@/components/editor/MobileHeader";
 import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import type { ProductType } from "@/lib/assets";
+import type { OutputSize } from "@/components/editor/Toolbar";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +20,7 @@ export default function EditorLayout() {
   const [productType, setProductTypeState] = useState<ProductType>("keyring");
   const [mobilePanel, setMobilePanel] = useState<"assets" | "properties" | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [outputSize, setOutputSize] = useState<OutputSize>("A5");
 
   const {
     canvasRef,
@@ -157,6 +159,7 @@ export default function EditorLayout() {
           body: JSON.stringify({
             canvas_json: toJSON(),
             product_type: productType,
+            output_size: outputSize,
             save_to_storage: false,
           }),
         }
@@ -166,7 +169,7 @@ export default function EditorLayout() {
       const zipUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement("a");
       link.href = zipUrl;
-      link.download = `pocketgoods-${productType}-${Date.now()}.zip`;
+      link.download = `pocketgoods-${productType}-${outputSize}-${Date.now()}.zip`;
       link.click();
       URL.revokeObjectURL(zipUrl);
     } catch {
@@ -179,7 +182,7 @@ export default function EditorLayout() {
     } finally {
       setIsExporting(false);
     }
-  }, [toJSON, toDataURL, productType, isExporting]);
+  }, [toJSON, toDataURL, productType, outputSize, isExporting]);
 
   const handleOrder = useCallback(() => {
     alert("주문 기능은 준비 중입니다 🛒");
@@ -192,6 +195,8 @@ export default function EditorLayout() {
         <Toolbar
           productType={productType}
           onProductTypeChange={handleProductTypeChange}
+          outputSize={outputSize}
+          onOutputSizeChange={setOutputSize}
           canUndo={canUndo}
           canRedo={canRedo}
           hasSelection={!!selectedInfo}
@@ -213,6 +218,8 @@ export default function EditorLayout() {
           productType={productType}
           onProductTypeChange={handleProductTypeChange}
           onSave={save}
+          outputSize={outputSize}
+          onOutputSizeChange={setOutputSize}
           isDirty={isDirty}
           savedAt={savedAt}
         />
