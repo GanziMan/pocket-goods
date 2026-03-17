@@ -3,13 +3,19 @@ import io
 import logging
 import os
 import time
+from collections import defaultdict
+from datetime import date
 from typing import Optional
 
 from google import genai
 from google.genai import types
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
+
+# IP별 일일 요청 제한
+DAILY_LIMIT = 2
+_usage: dict[str, dict[str, int]] = defaultdict(lambda: {"date": "", "count": 0})
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +62,20 @@ def _pil_to_part(image: Image.Image, mime: str = "image/png") -> types.Part:
     return types.Part.from_bytes(data=buffer.getvalue(), mime_type=mime)
 
 
+def _check_rate_limit(ip: str) -> int:
+    """남은 횟수를 반환. 0이면 제한 초과."""
+    today = date.today().isoformat()
+    entry = _usage[ip]
+    if entry["date"] != today:
+        entry["date"] = today
+        entry["count"] = 0
+    remaining = DAILY_LIMIT - entry["count"]
+    return remaining
+
+
 @router.post("/generate-image")
 async def generate_image(
+    request: Request,
     prompt: str = Form(...),
     style: str = Form(default="ghibli"),  # "ghibli" | "sd"
     canvas_image: Optional[UploadFile] = File(default=None),
@@ -67,6 +85,15 @@ async def generate_image(
     프롬프트 + 선택적 이미지(캔버스 캡처 or 사용자 업로드)를 받아
     Nano Banana 2로 이미지를 생성합니다.
     """
+    # IP 기반 일일 요청 제한
+    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown").split(",")[0].strip()
+    remaining = _check_rate_limit(client_ip)
+    if remaining <= 0:
+        logger.warning("[generate] rate limit 초과 ip=%s", client_ip)
+        raise HTTPException(status_code=429, detail="일일 생성 횟수(2회)를 초과했습니다. 내일 다시 이용해주세요.")
+    _usage[client_ip]["count"] += 1
+    logger.info("[generate] ip=%s 오늘 %d/%d회 사용", client_ip, _usage[client_ip]["count"], DAILY_LIMIT)
+
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY가 설정되지 않았습니다.")
