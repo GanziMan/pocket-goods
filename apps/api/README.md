@@ -42,7 +42,7 @@ docker compose up --build
 - 코드 수정 시 자동 리로드 (volume mount + `--reload`)
 - 종료: `Ctrl+C` 또는 `docker compose down`
 
-> 첫 실행 시 `apps/api/.env` 파일 필요 (없으면 빈 파일이라도 생성)
+- 첫 실행 시 `apps/api/.env` 파일 필요 (없으면 빈 파일이라도 생성)
 
 ### 로컬 (venv) - 이 방법은 왠만해서 쓰지말자 힘들다
 
@@ -63,12 +63,4 @@ pip install -r requirements.txt
 
 # 서버 실행
 uvicorn main:app --reload --port 8000
-```
-
-## 환경 변수 (`apps/api/.env`)
-
-```
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-GEMINI_API_KEY=
 ```

@@ -12,11 +12,17 @@ from google.genai import types
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
-from rembg import remove as rembg_remove, new_session as rembg_new_session
 from supabase import create_client as create_supabase_client
 
-# rembg 모델 서버 시작 시 한 번만 로드 (u2net 기본 모델)
-_rembg_session = rembg_new_session("u2net")
+# rembg 모델 lazy-load (첫 요청 시 로드 — 서버 기동 시간 단축)
+_rembg_session = None
+
+def _get_rembg_session():
+    global _rembg_session
+    if _rembg_session is None:
+        from rembg import new_session as rembg_new_session
+        _rembg_session = rembg_new_session("u2net")
+    return _rembg_session
 
 # IP별 일일 요청 제한 (비로그인)
 DAILY_LIMIT_ANONYMOUS = 2
@@ -193,7 +199,8 @@ async def generate_image(
                 logger.info("[generate] 이미지 추출 성공 size=%dB — rembg 누끼 시작", len(raw_bytes))
 
                 t1 = time.monotonic()
-                removed = rembg_remove(raw_bytes, session=_rembg_session)
+                from rembg import remove as rembg_remove
+                removed = rembg_remove(raw_bytes, session=_get_rembg_session())
                 logger.info("[generate] rembg 완료 (%.1fs)", time.monotonic() - t1)
 
                 image_b64 = base64.b64encode(removed).decode("utf-8")
