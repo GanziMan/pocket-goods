@@ -19,9 +19,9 @@ import { Badge } from "@/components/ui/badge";
 type OutputSize = "A4" | "A5" | "A6";
 
 const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
-  A4: { width: 206, height: 293 },
-  A5: { width: 144, height: 206 },
-  A6: { width: 101, height: 144 },
+  A4: { width: 210, height: 297 },
+  A5: { width: 148, height: 210 },
+  A6: { width: 105, height: 148 },
 };
 
 export default function EditorLayout() {
