@@ -1,3 +1,10 @@
+python -m venv venv
+
+# 가상환경 활성화
+
+source venv/Scripts/activate # 패키지 설치 (최초 1회 또는 requirements 변경 시) pip install -r requirements.txt  
+ # 서버 실행 uvicorn main:app --reload --port 8000
+
 # 칼선 SVG 다운로드 Design
 
 **Date:** 2026-03-13
@@ -15,9 +22,11 @@
 ## API 변경
 
 ### 기존 (`save_to_storage=False`)
+
 raw `image/png` blob 반환.
 
 ### 변경 후
+
 JSON 반환:
 
 ```json
@@ -41,6 +50,7 @@ JSON 반환:
 4. `cutting_line_svg`가 있으면: SVG 문자열 → Blob → `<a>` 다운로드
 
 다운로드 파일명:
+
 - PNG: `pocketgoods-print-sticker-{timestamp}.png`
 - SVG: `pocketgoods-cutting-line-{timestamp}.svg`
 

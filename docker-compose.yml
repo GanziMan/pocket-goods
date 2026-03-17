@@ -12,18 +12,5 @@ services:
       - api_fonts:/app/fonts     # 폰트 캐시 유지
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-  web:
-    build:
-      context: ./apps/web
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    env_file:
-      - ./apps/web/.env.local
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api:8000
-    depends_on:
-      - api
-
 volumes:
   api_fonts:
