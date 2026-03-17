@@ -22,6 +22,7 @@ interface MobileActionBarProps {
   onOpenAssets: () => void;
   onOpenProperties: () => void;
   onExportPreview: () => void;
+  isExporting?: boolean;
   zoom: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -37,6 +38,7 @@ export default function MobileActionBar({
   onOpenAssets,
   onOpenProperties,
   onExportPreview,
+  isExporting,
   zoom,
   onZoomIn,
   onZoomOut,
@@ -96,8 +98,9 @@ export default function MobileActionBar({
         />
         <ActionButton
           icon={<Download className="w-4 h-4" />}
-          label="내보내기"
+          label={isExporting ? "다운로드 중" : "내보내기"}
           onClick={onExportPreview}
+          disabled={isExporting}
         />
       </div>
     </div>

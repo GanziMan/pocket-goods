@@ -12,7 +12,11 @@ from google.genai import types
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
+from rembg import remove as rembg_remove, new_session as rembg_new_session
 from supabase import create_client as create_supabase_client
+
+# rembg 모델 서버 시작 시 한 번만 로드 (u2net 기본 모델)
+_rembg_session = rembg_new_session("u2net")
 
 # IP별 일일 요청 제한 (비로그인)
 DAILY_LIMIT_ANONYMOUS = 2
@@ -48,6 +52,9 @@ SD(슈퍼 디포르메) 캐릭터 스타일로 그려줘.
 나루토 애니메이션의 아카츠키 스타일로 실사화로 만들어줘.
 검은 망토에 붉은 구름 문양, 날카롭고 강렬한 눈빛, 어둡고 신비로운 분위기.
 채도 높은 붉은색과 검정의 강한 대비, 선명하고 굵은 윤곽선의 일본 닌자 애니메이션 스타일.
+배경은 투명하게(누끼) 처리하고, 굿즈(키링, 스티커) 인쇄에 적합하게 만들어줘.
+""",
+    "custom": """
 배경은 투명하게(누끼) 처리하고, 굿즈(키링, 스티커) 인쇄에 적합하게 만들어줘.
 """,
 }
@@ -179,15 +186,20 @@ async def generate_image(
         elapsed = time.monotonic() - t0
         logger.info("[generate] Gemini 응답 수신 (%.1fs)", elapsed)
 
-        # 응답에서 이미지 추출
+        # 응답에서 이미지 추출 + rembg 누끼 처리
         for part in response.candidates[0].content.parts:
             if part.inline_data and part.inline_data.mime_type.startswith("image/"):
-                image_b64 = base64.b64encode(part.inline_data.data).decode("utf-8")
-                mime = part.inline_data.mime_type
-                logger.info("[generate] 이미지 추출 성공 mime=%s size=%dB", mime, len(part.inline_data.data))
+                raw_bytes = part.inline_data.data
+                logger.info("[generate] 이미지 추출 성공 size=%dB — rembg 누끼 시작", len(raw_bytes))
+
+                t1 = time.monotonic()
+                removed = rembg_remove(raw_bytes, session=_rembg_session)
+                logger.info("[generate] rembg 완료 (%.1fs)", time.monotonic() - t1)
+
+                image_b64 = base64.b64encode(removed).decode("utf-8")
                 return JSONResponse({
                     "success": True,
-                    "image": f"data:{mime};base64,{image_b64}",
+                    "image": f"data:image/png;base64,{image_b64}",
                 })
 
         logger.warning("[generate] 응답에 이미지 없음 candidates=%s", response.candidates)

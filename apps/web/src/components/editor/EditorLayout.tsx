@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useLayoutEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useCanvas } from "@/components/canvas/useCanvas";
 import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import { useSaveDesign } from "@/hooks/useSaveDesign";
@@ -12,10 +12,13 @@ import MobileHeader from "@/components/editor/MobileHeader";
 import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import type { ProductType } from "@/lib/assets";
+import { ZoomIn, ZoomOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function EditorLayout() {
   const [productType, setProductTypeState] = useState<ProductType>("keyring");
   const [mobilePanel, setMobilePanel] = useState<"assets" | "properties" | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const {
     canvasRef,
@@ -55,6 +58,44 @@ export default function EditorLayout() {
   useEffect(() => {
     onChangeCb.current = markDirty;
   }, [onChangeCb, markDirty]);
+
+  // 키보드 단축키
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      // Ctrl+Z / Cmd+Z → 실행 취소 (텍스트 입력 중엔 브라우저 기본 동작 유지)
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        if (isTyping) return;
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      // Ctrl+Y / Cmd+Shift+Z → 다시 실행
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key === "y" || (e.key === "z" && e.shiftKey))
+      ) {
+        if (isTyping) return;
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      // Backspace / Delete → 선택 요소 삭제
+      if ((e.key === "Backspace" || e.key === "Delete") && !isTyping) {
+        e.preventDefault();
+        deleteSelected();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo, deleteSelected]);
 
   // 저장되지 않은 변경사항 있을 때 브라우저 이탈 경고
   useBeforeUnload(isDirty);
@@ -105,7 +146,8 @@ export default function EditorLayout() {
   );
 
   const handleExportPreview = useCallback(async () => {
-    // 인쇄용 300 DPI PNG — FastAPI 서버 경유
+    if (isExporting) return;
+    setIsExporting(true);
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`,
@@ -120,29 +162,13 @@ export default function EditorLayout() {
         }
       );
       if (!res.ok) throw new Error("Export 실패");
-      const data = await res.json() as { png_base64: string; cutting_line_svg: string | null };
-      const ts = Date.now();
-
-      // PNG 다운로드
-      const pngBytes = Uint8Array.from(atob(data.png_base64), (c) => c.charCodeAt(0));
-      const pngBlob = new Blob([pngBytes], { type: "image/png" });
-      const pngUrl = URL.createObjectURL(pngBlob);
-      const pngLink = document.createElement("a");
-      pngLink.href = pngUrl;
-      pngLink.download = `pocketgoods-print-${productType}-${ts}.png`;
-      pngLink.click();
-      URL.revokeObjectURL(pngUrl);
-
-      // 칼선 SVG 다운로드
-      if (data.cutting_line_svg) {
-        const svgBlob = new Blob([data.cutting_line_svg], { type: "image/svg+xml" });
-        const svgUrl = URL.createObjectURL(svgBlob);
-        const svgLink = document.createElement("a");
-        svgLink.href = svgUrl;
-        svgLink.download = `pocketgoods-cutting-line-${productType}-${ts}.svg`;
-        svgLink.click();
-        URL.revokeObjectURL(svgUrl);
-      }
+      const zipBlob = await res.blob();
+      const zipUrl = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = zipUrl;
+      link.download = `pocketgoods-${productType}-${Date.now()}.zip`;
+      link.click();
+      URL.revokeObjectURL(zipUrl);
     } catch {
       // 서버 미실행 시 클라이언트 PNG로 fallback
       const dataURL = toDataURL();
@@ -150,8 +176,10 @@ export default function EditorLayout() {
       link.href = dataURL;
       link.download = `pocketgoods-preview-${Date.now()}.png`;
       link.click();
+    } finally {
+      setIsExporting(false);
     }
-  }, [toJSON, toDataURL, productType]);
+  }, [toJSON, toDataURL, productType, isExporting]);
 
   const handleOrder = useCallback(() => {
     alert("주문 기능은 준비 중입니다 🛒");
@@ -177,9 +205,7 @@ export default function EditorLayout() {
           onSave={save}
           onExportPreview={handleExportPreview}
           onOrder={handleOrder}
-          zoom={zoom}
-          onZoomIn={zoomIn}
-          onZoomOut={zoomOut}
+          isExporting={isExporting}
         />
       </div>
       <div className="block md:hidden">
@@ -203,8 +229,34 @@ export default function EditorLayout() {
           />
         </div>
 
-        <main className="flex-1 overflow-auto p-2 md:p-8">
-          <DesignCanvas canvasRef={canvasRef} productType={productType} />
+        <main className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-auto p-2 md:p-8">
+            <DesignCanvas canvasRef={canvasRef} productType={productType} />
+          </div>
+          {/* 줌 컨트롤 — 캔버스 바로 아래 (데스크탑 전용) */}
+          <div className="hidden md:flex items-center justify-center gap-2 py-2 border-t bg-white shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={zoomOut}
+              disabled={zoom <= 0.5}
+              title="줌 아웃"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+            <span className="text-xs text-zinc-500 w-12 text-center tabular-nums select-none">
+              {Math.round(zoom * 100)}%
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={zoomIn}
+              disabled={zoom >= 2.0}
+              title="줌 인"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+          </div>
         </main>
 
         <div className="hidden md:flex">
@@ -230,6 +282,7 @@ export default function EditorLayout() {
           onOpenAssets={() => setMobilePanel("assets")}
           onOpenProperties={() => setMobilePanel("properties")}
           onExportPreview={handleExportPreview}
+          isExporting={isExporting}
           zoom={zoom}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}

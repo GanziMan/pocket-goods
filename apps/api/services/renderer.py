@@ -344,16 +344,17 @@ def render_canvas(
     product_type: str,
     transparent_bg: bool = False,
     with_cutting_line: bool = True,
+    dpi: int = DPI,
 ) -> Image.Image:
     """
-    Fabric.js JSON → PIL Image (300 DPI + 3mm 재단선 포함)
+    Fabric.js JSON → PIL Image (지정 DPI + 3mm 재단선 포함)
     """
     w_mm, h_mm = PRINT_SIZES_MM.get(product_type, (60.0, 60.0))
     canvas_w, canvas_h = CANVAS_DISPLAY_PX.get(product_type, (480, 480))
 
-    bleed_px = mm_to_px(BLEED_MM)
-    print_w = mm_to_px(w_mm)
-    print_h = mm_to_px(h_mm)
+    bleed_px = mm_to_px(BLEED_MM, dpi)
+    print_w = mm_to_px(w_mm, dpi)
+    print_h = mm_to_px(h_mm, dpi)
 
     # 표시 px → 인쇄 px 스케일 비율
     sx = print_w / canvas_w
@@ -405,7 +406,7 @@ def render_canvas(
     return result
 
 
-def to_png_bytes(img: Image.Image) -> bytes:
+def to_png_bytes(img: Image.Image, dpi: int = DPI) -> bytes:
     buf = io.BytesIO()
-    img.convert("RGB").save(buf, format="PNG", dpi=(DPI, DPI))
+    img.convert("RGB").save(buf, format="PNG", dpi=(dpi, dpi))
     return buf.getvalue()

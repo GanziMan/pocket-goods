@@ -25,13 +25,13 @@ interface AIPanelProps {
 }
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
-type Style = "ghibli" | "sd" | "steampunk" | "akatsuki";
+type Style = "ghibli" | "sd" | "steampunk" | "akatsuki" | "custom";
 
 const STYLES: { value: Style; label: string; emoji: string }[] = [
   { value: "ghibli", label: "지브리", emoji: "🌿" },
   { value: "sd", label: "SD", emoji: "🎀" },
   { value: "steampunk", label: "스팀펑크", emoji: "⚙️" },
-  // { value: "akatsuki", label: "아카츠키", emoji: "🔴" },
+  { value: "custom", label: "커스텀", emoji: "✏️" },
 ];
 
 const EXAMPLE_PROMPTS = [
@@ -52,9 +52,6 @@ export default function AIPanel({
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<"generating" | "removing-bg">(
-    "generating",
-  );
   const [error, setError] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +67,6 @@ export default function AIPanel({
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
-    setLoadingStep("generating");
     setError(null);
     setResult(null);
 
@@ -117,15 +113,7 @@ export default function AIPanel({
       }
 
       const data = await response.json();
-      let finalImage: string = data.image;
-
-      // 자동 누끼 처리 (항상 적용)
-      setLoadingStep("removing-bg");
-      const { removeBackground } = await import("@imgly/background-removal");
-      const blob = await removeBackground(finalImage);
-      finalImage = URL.createObjectURL(blob);
-
-      setResult(finalImage);
+      setResult(data.image);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "알 수 없는 오류가 발생했습니다.",
@@ -216,28 +204,41 @@ export default function AIPanel({
 
       {/* 프롬프트 입력 */}
       <div className="space-y-2">
-        <Label className="text-xs">어떤 캐릭터를 만들까요?</Label>
+        <Label className="text-xs">
+          {style === "custom" ? "프롬프트를 자유롭게 입력하세요" : "어떤 캐릭터를 만들까요?"}
+        </Label>
         <Textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="졸린 표정으로 하품하는 캐릭터"
-          className="text-sm resize-none max-h-20"
-          rows={2}
+          placeholder={
+            style === "custom"
+              ? "스타일, 색감, 구도, 분위기 등을 자유롭게 묘사해주세요\n예) 수채화 느낌의 귀여운 고양이, 파스텔 톤"
+              : "졸린 표정으로 하품하는 캐릭터"
+          }
+          className="text-sm resize-none"
+          rows={style === "custom" ? 4 : 2}
         />
+        {style === "custom" && (
+          <p className="text-[10px] text-muted-foreground">
+            스타일 제약 없이 입력한 프롬프트 그대로 생성됩니다.
+          </p>
+        )}
       </div>
 
-      {/* 예시 프롬프트 */}
-      <div className="flex flex-wrap gap-1">
-        {EXAMPLE_PROMPTS.map((ex) => (
-          <button
-            key={ex}
-            onClick={() => setPrompt(ex)}
-            className="text-[10px] px-2 py-0.5 rounded-full border border-zinc-200 hover:border-primary hover:bg-zinc-50 transition-colors"
-          >
-            {ex}
-          </button>
-        ))}
-      </div>
+      {/* 예시 프롬프트 (커스텀 모드에선 숨김) */}
+      {style !== "custom" && (
+        <div className="flex flex-wrap gap-1">
+          {EXAMPLE_PROMPTS.map((ex) => (
+            <button
+              key={ex}
+              onClick={() => setPrompt(ex)}
+              className="text-[10px] px-2 py-0.5 rounded-full border border-zinc-200 hover:border-primary hover:bg-zinc-50 transition-colors"
+            >
+              {ex}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 생성 버튼 */}
       <Button
@@ -248,7 +249,7 @@ export default function AIPanel({
         {loading ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            {loadingStep === "generating" ? "이미지 생성 중…" : "누끼 따는 중…"}
+            이미지 생성 중…
           </>
         ) : (
           <>

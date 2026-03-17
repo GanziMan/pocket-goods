@@ -6,9 +6,11 @@ import base64
 import io
 import logging
 import uuid
+import zipfile
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from services.cutting_line import generate_cutting_line_svg
@@ -33,9 +35,6 @@ class ExportResponse(BaseModel):
     cutting_line_svg: str | None = None  # 칼선 SVG path (save_to_storage=True)
 
 
-class PreviewExportResponse(BaseModel):
-    png_base64: str
-    cutting_line_svg: str | None = None  # objects 있을 때만 포함
 
 
 @router.post("/export")
@@ -51,32 +50,42 @@ async def export_design(req: ExportRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"렌더링 실패: {e}")
 
-    # 미리보기 다운로드 — JSON 반환 (PNG base64 + 칼선 SVG)
+    # 미리보기 다운로드 — PNG + SVG를 ZIP으로 묶어서 반환
     if not req.save_to_storage:
-        png_b64 = base64.b64encode(png_bytes).decode()
-        cutting_svg: str | None = None
-        if req.canvas_json.get("objects"):
-            try:
-                img_transparent = render_canvas(
-                    req.canvas_json, req.product_type,
-                    transparent_bg=True, with_cutting_line=False,
-                )
-                path = generate_cutting_line_svg(img_transparent)
-                if path:
-                    pw, ph = img_transparent.size  # bleed 포함 실제 렌더 크기
-                    buf = io.BytesIO()
-                    img_transparent.save(buf, format="PNG")
-                    img_b64 = base64.b64encode(buf.getvalue()).decode()
-                    cutting_svg = (
-                        f'<svg xmlns="http://www.w3.org/2000/svg" '
-                        f'viewBox="0 0 {pw} {ph}" width="{pw}" height="{ph}">'
-                        f'<image href="data:image/png;base64,{img_b64}" width="{pw}" height="{ph}"/>'
-                        f'<path d="{path}" fill="none" stroke="#ff00ff" stroke-width="2"/>'
-                        f'</svg>'
+        zip_buf = io.BytesIO()
+        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(f"pocketgoods-{req.product_type}.png", png_bytes)
+
+            if req.canvas_json.get("objects"):
+                try:
+                    img_transparent = render_canvas(
+                        req.canvas_json, req.product_type,
+                        transparent_bg=True, with_cutting_line=False,
                     )
-            except Exception as e:
-                logger.warning("[export] 칼선 미리보기 생성 실패 (무시): %s", e)
-        return PreviewExportResponse(png_base64=png_b64, cutting_line_svg=cutting_svg)
+                    path = generate_cutting_line_svg(img_transparent)
+                    if path:
+                        pw, ph = img_transparent.size
+                        buf = io.BytesIO()
+                        img_transparent.save(buf, format="PNG")
+                        img_b64 = base64.b64encode(buf.getvalue()).decode()
+                        cutting_svg = (
+                            f'<svg xmlns="http://www.w3.org/2000/svg" '
+                            f'viewBox="0 0 {pw} {ph}" width="{pw}" height="{ph}">'
+                            f'<image href="data:image/png;base64,{img_b64}" width="{pw}" height="{ph}"/>'
+                            f'<path d="{path}" fill="none" stroke="#ff00ff" stroke-width="2"/>'
+                            f'</svg>'
+                        )
+                        zf.writestr(f"pocketgoods-cutting-line-{req.product_type}.svg", cutting_svg)
+                except Exception as e:
+                    logger.warning("[export] 칼선 생성 실패 (무시): %s", e)
+
+        zip_buf.seek(0)
+        filename = f"pocketgoods-{req.product_type}.zip"
+        return StreamingResponse(
+            zip_buf,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
 
     # 칼선 생성 — 투명 배경으로 재렌더링 (오브젝트가 있을 때만)
     cutting_line_svg: str | None = None
