@@ -145,11 +145,22 @@ async def generate_image(
     _usage[rate_key]["count"] += 1
     logger.info("[generate] key=%s 오늘 %d/%d회 사용", rate_key, _usage[rate_key]["count"], daily_limit)
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY가 설정되지 않았습니다.")
+    # Vertex AI 우선, 없으면 Gemini API 키 fallback
+    gcp_project = os.getenv("GCP_PROJECT_ID")
+    gcp_location = os.getenv("GCP_LOCATION", "us-central1")
+    gemini_key = os.getenv("GEMINI_API_KEY")
 
-    client = genai.Client(api_key=api_key)
+    if gcp_project:
+        client = genai.Client(
+            vertexai=True,
+            project=gcp_project,
+            location=gcp_location,
+            api_key=os.getenv("GCP_API_KEY"),
+        )
+    elif gemini_key:
+        client = genai.Client(api_key=gemini_key)
+    else:
+        raise HTTPException(status_code=500, detail="GCP_PROJECT_ID 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
     style_prompt = STYLE_PROMPTS.get(style, STYLE_PROMPTS["ghibli"])
 
     # 프롬프트 + 이미지 파트 조합
