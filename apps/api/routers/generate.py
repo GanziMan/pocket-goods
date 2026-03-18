@@ -157,8 +157,10 @@ async def generate_image(
             location=gcp_location,
             api_key=os.getenv("GCP_API_KEY"),
         )
+        logger.info("[generate] Vertex AI 사용 (project=%s, location=%s)", gcp_project, gcp_location)
     elif gemini_key:
         client = genai.Client(api_key=gemini_key)
+        logger.info("[generate] Gemini API 키 사용")
     else:
         raise HTTPException(status_code=500, detail="GCP_PROJECT_ID 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
     style_prompt = STYLE_PROMPTS.get(style, STYLE_PROMPTS["ghibli"])
