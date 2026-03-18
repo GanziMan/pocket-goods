@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://pocketgoods.kr";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://pocket-goods.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -118,6 +118,27 @@ export default function RootLayout({
             gtag('config', 'G-YYTZZJ7PVD');
           `}
         </Script>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "포켓굿즈",
+              url: BASE_URL,
+              applicationCategory: "DesignApplication",
+              operatingSystem: "Web",
+              description:
+                "나만의 캐릭터, 반려동물, 아기 사진으로 키링·스티커를 1분 만에 만드는 무료 디자인 도구",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "KRW",
+                description: "AI 이미지 생성 하루 2회 무료, 로그인 시 10회",
+              },
+            }),
+          }}
+        />
         {children}
         {/* 채널톡 */}
         <Script id="channel-talk" strategy="afterInteractive">
