@@ -2,7 +2,7 @@
 
 # Railway: GOOGLE_CREDENTIALS 환경변수(JSON 문자열) → 파일로 변환
 if [ -n "$GOOGLE_CREDENTIALS" ]; then
-  echo "$GOOGLE_CREDENTIALS" > /app/gcp-sa-key.json
+  printf '%s' "$GOOGLE_CREDENTIALS" > /app/gcp-sa-key.json
   export GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-sa-key.json
 fi
 
