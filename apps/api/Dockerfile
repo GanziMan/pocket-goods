@@ -23,4 +23,7 @@ RUN mkdir -p fonts
 
 EXPOSE 8000
 
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Railway: GOOGLE_CREDENTIALS 환경변수(JSON 문자열) → 파일로 변환
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]

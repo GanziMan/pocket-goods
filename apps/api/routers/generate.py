@@ -155,7 +155,6 @@ async def generate_image(
             vertexai=True,
             project=gcp_project,
             location=gcp_location,
-            api_key=os.getenv("GCP_API_KEY"),
         )
         logger.info("[generate] Vertex AI 사용 (project=%s, location=%s)", gcp_project, gcp_location)
     elif gemini_key:

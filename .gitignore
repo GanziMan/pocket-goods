@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 
+# GCP service account key
+gcp-sa-key.json
+
 # Python
 __pycache__/
 *.py[cod]
