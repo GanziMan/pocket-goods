@@ -1,0 +1,20 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Free AI Profile Photo Generator | Pocket Goods",
+  description:
+    "Transform your photo into ID photo, Instagram aesthetic, or Ghibli anime style with AI. Free, no sign-up required.",
+  openGraph: {
+    title: "Free AI Profile Photo Generator | Pocket Goods",
+    description:
+      "Transform your photo into ID photo, Instagram aesthetic, or Ghibli anime style with AI. Free, no sign-up required.",
+  },
+};
+
+export default function EnAiProfileLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
+}
