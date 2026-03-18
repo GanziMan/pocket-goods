@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CHARACTER_ASSETS } from "@/lib/assets";
 import { ArrowRight } from "lucide-react";
 
@@ -52,16 +52,23 @@ export function HeroSection() {
           키링과 스티커를 1분 만에 디자인하세요.
         </p>
 
-        <div className="mt-8 flex justify-center gap-3 sm:mt-10">
+        <div className="mt-8 flex flex-col items-center gap-3 sm:mt-10 sm:flex-row sm:justify-center">
           <Link
             href="/design"
-            className={buttonVariants({
-              size: "lg",
-              className: "h-12 gap-2 px-6 text-base",
-            })}
+            
           >
-            지금 만들어보기
+            <Button className="h-12 gap-2 px-6 text-base">
+            굿즈 디자인하기
             <ArrowRight className="size-4" />
+            </Button>
+          </Link>
+          <Link
+            href="/ai-profile"
+           
+          >  <Button className="h-12 gap-2 px-6 text-base border-[1.5px]" variant={"outline"}>
+            AI 프로필 만들기
+            <ArrowRight className="size-4" />
+            </Button>
           </Link>
         </div>
 
@@ -73,7 +80,7 @@ export function HeroSection() {
             href="/login"
             className="font-semibold text-primary underline underline-offset-2"
           >
-            카카오 로그인하면 하루 10회
+            로그인하면 하루 10회
           </Link>
         </p>
       </div>

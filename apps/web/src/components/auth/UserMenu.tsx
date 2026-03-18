@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import Link from "next/link";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -82,7 +81,7 @@ export default function UserMenu({ compact = false }: UserMenuProps) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       {avatarUrl ? (
         <img
           src={avatarUrl}
@@ -94,11 +93,13 @@ export default function UserMenu({ compact = false }: UserMenuProps) {
           <User className="size-3.5 text-zinc-600" />
         </div>
       )}
-      <span className="text-sm font-medium">{nickname}</span>
-      <Button variant="ghost" size="sm" onClick={handleSignOut} className="h-7 px-2 text-xs">
-        <LogOut className="mr-1 size-3" />
-        로그아웃
-      </Button>
+      <button
+        onClick={handleSignOut}
+        className="text-muted-foreground hover:text-foreground"
+        title="로그아웃"
+      >
+        <LogOut className="size-3.5" />
+      </button>
     </div>
   );
 }

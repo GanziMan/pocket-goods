@@ -18,6 +18,12 @@ export function LandingNav() {
         >
           에디터 열기
         </Link>
+        <Link
+          href="/ai-profile"
+          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          AI 프로필
+        </Link>
         <UserMenu />
       </div>
     </nav>

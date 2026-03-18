@@ -3,8 +3,6 @@ import io
 import logging
 import os
 import time
-from collections import defaultdict
-from datetime import date
 from typing import Optional
 
 from google import genai
@@ -12,7 +10,15 @@ from google.genai import types
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
-from supabase import create_client as create_supabase_client
+
+from services.rate_limit import (
+    DAILY_LIMIT_ANONYMOUS,
+    DAILY_LIMIT_USER,
+    check_rate_limit,
+    get_usage_count,
+    get_user_id_from_token,
+    increment_usage,
+)
 
 # rembg 모델 lazy-load (첫 요청 시 로드 — 서버 기동 시간 단축)
 _rembg_session = None
@@ -23,12 +29,6 @@ def _get_rembg_session():
         from rembg import new_session as rembg_new_session
         _rembg_session = rembg_new_session("u2net")
     return _rembg_session
-
-# IP별 일일 요청 제한 (비로그인)
-DAILY_LIMIT_ANONYMOUS = 2
-# 유저별 일일 요청 제한 (로그인)
-DAILY_LIMIT_USER = 10
-_usage: dict[str, dict[str, int]] = defaultdict(lambda: {"date": "", "count": 0})
 
 logger = logging.getLogger(__name__)
 
@@ -78,39 +78,6 @@ def _pil_to_part(image: Image.Image, mime: str = "image/png") -> types.Part:
     return types.Part.from_bytes(data=buffer.getvalue(), mime_type=mime)
 
 
-def _check_rate_limit(key: str, limit: int) -> int:
-    """남은 횟수를 반환. 0이면 제한 초과."""
-    today = date.today().isoformat()
-    entry = _usage[key]
-    if entry["date"] != today:
-        entry["date"] = today
-        entry["count"] = 0
-    remaining = limit - entry["count"]
-    return remaining
-
-
-def _get_user_id_from_token(request: Request) -> Optional[str]:
-    """Authorization 헤더에서 Supabase JWT를 검증하고 user_id를 반환."""
-    auth_header = request.headers.get("authorization", "")
-    if not auth_header.startswith("Bearer "):
-        return None
-
-    token = auth_header[7:]
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    if not supabase_url or not supabase_key:
-        logger.warning("[auth] SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY 미설정")
-        return None
-
-    try:
-        supabase = create_supabase_client(supabase_url, supabase_key)
-        user_response = supabase.auth.get_user(token)
-        if user_response and user_response.user:
-            return user_response.user.id
-    except Exception as e:
-        logger.warning("[auth] 토큰 검증 실패: %s", e)
-
-    return None
 
 
 @router.post("/generate-image")
@@ -126,7 +93,7 @@ async def generate_image(
     Nano Banana 2로 이미지를 생성합니다.
     """
     # 인증 확인: 토큰이 있으면 user_id 기반, 없으면 IP 기반
-    user_id = _get_user_id_from_token(request)
+    user_id = get_user_id_from_token(request)
     client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown").split(",")[0].strip()
 
     if user_id:
@@ -136,14 +103,14 @@ async def generate_image(
         rate_key = f"ip:{client_ip}"
         daily_limit = DAILY_LIMIT_ANONYMOUS
 
-    remaining = _check_rate_limit(rate_key, daily_limit)
+    remaining = check_rate_limit(rate_key, daily_limit)
     if remaining <= 0:
         logger.warning("[generate] rate limit 초과 key=%s", rate_key)
         detail = f"일일 생성 횟수({daily_limit}회)를 초과했습니다. 내일 다시 이용해주세요."
         error_body = {"detail": detail, "login_required": user_id is None}
         return JSONResponse(status_code=429, content=error_body)
-    _usage[rate_key]["count"] += 1
-    logger.info("[generate] key=%s 오늘 %d/%d회 사용", rate_key, _usage[rate_key]["count"], daily_limit)
+    increment_usage(rate_key)
+    logger.info("[generate] key=%s 오늘 %d/%d회 사용", rate_key, get_usage_count(rate_key), daily_limit)
 
     # Vertex AI 우선, 없으면 Gemini API 키 fallback
     gcp_project = os.getenv("GCP_PROJECT_ID")

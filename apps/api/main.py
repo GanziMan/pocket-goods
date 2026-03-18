@@ -10,7 +10,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
-from routers import generate, export
+from routers import generate, export, profile
 from services.fonts import ensure_fonts
 
 load_dotenv()
@@ -26,6 +26,7 @@ app.add_middleware(
 
 app.include_router(generate.router)
 app.include_router(export.router)
+app.include_router(profile.router)
 
 
 @app.on_event("startup")

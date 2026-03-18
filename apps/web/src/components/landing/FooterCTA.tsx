@@ -14,18 +14,18 @@ export function FooterCTA() {
           1분이면 완성
         </p>
         <p className="mt-3 text-muted-foreground">
-          지금 바로 에디터에서 디자인해보세요.
+          굿즈 디자인부터 AI 프로필 사진까지, 지금 바로 시작하세요.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
           <Link
             href="/login"
             className="font-semibold text-primary underline underline-offset-2"
           >
-            카카오 로그인
+            로그인
           </Link>
           하면 AI 이미지 생성 하루 10회 무료
         </p>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/design"
             className={buttonVariants({
@@ -33,7 +33,18 @@ export function FooterCTA() {
               className: "h-12 gap-2 px-6 text-base",
             })}
           >
-            디자인 시작하기
+            굿즈 디자인하기
+            <ArrowRight className="size-4" />
+          </Link>
+          <Link
+            href="/ai-profile"
+            className={buttonVariants({
+              size: "lg",
+              variant: "outline",
+              className: "h-12 gap-2 px-6 text-base",
+            })}
+          >
+            AI 프로필 만들기
             <ArrowRight className="size-4" />
           </Link>
         </div>

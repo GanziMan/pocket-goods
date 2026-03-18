@@ -49,7 +49,7 @@ function LoginContent() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">로그인하고 더 많이 만들기</h1>
           <p className="text-sm text-muted-foreground">
-            카카오 로그인하면 AI 이미지 생성을
+            로그인하면 AI 이미지 생성을
             <br />
             <span className="font-semibold text-primary">하루 10회 무료</span>로
             이용할 수 있어요

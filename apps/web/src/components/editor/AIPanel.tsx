@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import {
   Sparkles,
   Upload,
-  LayoutTemplate,
   Loader2,
   ImagePlus,
   LogIn,
@@ -54,6 +52,7 @@ export default function AIPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,6 +68,8 @@ export default function AIPanel({
     setLoading(true);
     setError(null);
     setResult(null);
+    setShowLoginPrompt(false);
+    setShowDailyLimitReached(false);
 
     try {
       const formData = new FormData();
@@ -106,7 +107,9 @@ export default function AIPanel({
             setShowLoginPrompt(true);
             return;
           }
-          throw new Error(err.detail ?? "일일 생성 횟수를 초과했습니다.");
+          // 로그인 유저가 일일 한도 초과
+          setShowDailyLimitReached(true);
+          return;
         }
         const err = await response.json();
         throw new Error(err.detail ?? "생성 실패");
@@ -259,7 +262,28 @@ export default function AIPanel({
         )}
       </Button>
 
-      {/* 로그인 유도 */}
+      {/* 로그인 유저 일일 한도 초과 */}
+      {showDailyLimitReached && (
+        <div className="relative rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+          <button
+            onClick={() => setShowDailyLimitReached(false)}
+            className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-amber-500" />
+            <span className="text-sm font-semibold text-amber-800">오늘 생성 횟수를 모두 사용했어요</span>
+          </div>
+          <p className="text-xs text-amber-700 leading-relaxed">
+            일일 무료 생성 횟수(10회)를 모두 사용했습니다.
+            <br />
+            내일 다시 이용해주세요!
+          </p>
+        </div>
+      )}
+
+      {/* 비로그인 유저 로그인 유도 */}
       {showLoginPrompt && (
         <div className="relative rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
           <button
@@ -275,17 +299,16 @@ export default function AIPanel({
           <p className="text-xs text-muted-foreground leading-relaxed">
             오늘 무료 생성 횟수(2회)를 모두 사용했어요.
             <br />
-            카카오 로그인하면{" "}
+            로그인하면{" "}
             <span className="font-semibold text-primary">하루 10회 무료</span>로
             이용할 수 있어요!
           </p>
           <Link
             href="/login?next=/design"
-            className="flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-colors w-full"
-            style={{ backgroundColor: "#FEE500", color: "#191919" }}
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors w-full"
           >
             <LogIn className="size-4" />
-            카카오로 시작하기
+            로그인하고 더 만들기
           </Link>
         </div>
       )}
