@@ -28,7 +28,7 @@ export default function AssetPanel({
   return (
     <aside className={cn("flex flex-col shrink-0 bg-white", className ?? "w-64 border-r")}>
       <Tabs defaultValue="ai" className="flex flex-col h-full">
-        <TabsList className="w-full rounded-none border-b h-10 shrink-0">
+        <TabsList className="w-full rounded h-10 shrink-0 px-2">
           <TabsTrigger value="ai" className="flex-1 gap-1 text-xs text-yellow-600">
             <Sparkles className="w-3.5 h-3.5" />
             AI

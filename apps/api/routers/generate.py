@@ -103,6 +103,7 @@ async def generate_image(
     Nano Banana 2로 이미지를 생성합니다.
     """
     # 인증 확인: 토큰이 있으면 user_id 기반, 없으면 IP 기반
+    has_token = request.headers.get("authorization", "").startswith("Bearer ")
     user_id = get_user_id_from_token(request)
     client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown").split(",")[0].strip()
 
@@ -117,7 +118,8 @@ async def generate_image(
     if remaining <= 0:
         logger.warning("[generate] rate limit 초과 key=%s", rate_key)
         detail = f"일일 생성 횟수({daily_limit}회)를 초과했습니다. 내일 다시 이용해주세요."
-        error_body = {"detail": detail, "login_required": user_id is None}
+        # 토큰을 보냈지만 검증 실패한 경우는 login_required=False
+        error_body = {"detail": detail, "login_required": not has_token and user_id is None}
         return JSONResponse(status_code=429, content=error_body)
     increment_usage(rate_key)
     logger.info("[generate] key=%s 오늘 %d/%d회 사용", rate_key, get_usage_count(rate_key), daily_limit)

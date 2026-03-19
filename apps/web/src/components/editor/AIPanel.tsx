@@ -117,12 +117,18 @@ export default function AIPanel({
         formData.append("upload_image", uploadedFile);
       }
 
-      // 로그인 유저는 토큰을 헤더에 포함
+      // 로그인 유저는 토큰을 헤더에 포함 (만료 시 자동 갱신)
       const headers: HeadersInit = {};
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.access_token) {
-        headers["Authorization"] = `Bearer ${session.access_token}`;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: { session: freshSession } } = await supabase.auth.getSession();
+          if (freshSession?.access_token) {
+            headers["Authorization"] = `Bearer ${freshSession.access_token}`;
+          }
+        }
       }
 
       const response = await fetch(
