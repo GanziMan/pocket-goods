@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
-NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
-# NANO_BANANA_MODEL = "gemini-2.5-flash-image"
+NANO_BANANA_MODEL_PRIMARY = "gemini-3.1-flash-image-preview"
+NANO_BANANA_MODEL_FALLBACK = "gemini-2.5-flash-image"
 STYLE_PROMPTS: dict[str, str] = {
     "ghibli": """
 [주체] 첨부된 이미지 또는 사용자 요청의 캐릭터를 중심으로 그린다.
@@ -166,43 +166,63 @@ async def generate_image(
         parts.append(f"{style_prompt}\n\n사용자 요청: {prompt}")
         logger.info("[generate] mode=text_only style=%s prompt=%r", style, prompt)
 
-    try:
-        logger.info("[generate] Gemini API 호출 시작 model=%s", NANO_BANANA_MODEL)
-        t0 = time.monotonic()
+    models_to_try = [NANO_BANANA_MODEL_PRIMARY, NANO_BANANA_MODEL_FALLBACK]
+    last_error: Exception | None = None
 
-        response = await client.aio.models.generate_content(
-            model=NANO_BANANA_MODEL,
-            contents=parts,
-            config=types.GenerateContentConfig(
-                response_modalities=["TEXT", "IMAGE"],
-            ),
-        )
+    for model_id in models_to_try:
+        try:
+            logger.info("[generate] Gemini API 호출 시작 model=%s", model_id)
+            t0 = time.monotonic()
 
-        elapsed = time.monotonic() - t0
-        logger.info("[generate] Gemini 응답 수신 (%.1fs)", elapsed)
+            response = await client.aio.models.generate_content(
+                model=model_id,
+                contents=parts,
+                config=types.GenerateContentConfig(
+                    response_modalities=["TEXT", "IMAGE"],
+                ),
+            )
 
-        # 응답에서 이미지 추출 + rembg 누끼 처리
-        for part in response.candidates[0].content.parts:
-            if part.inline_data and part.inline_data.mime_type.startswith("image/"):
-                raw_bytes = part.inline_data.data
-                logger.info("[generate] 이미지 추출 성공 size=%dB — rembg 누끼 시작", len(raw_bytes))
+            elapsed = time.monotonic() - t0
+            logger.info("[generate] Gemini 응답 수신 model=%s (%.1fs)", model_id, elapsed)
 
-                t1 = time.monotonic()
-                from rembg import remove as rembg_remove
-                removed = rembg_remove(raw_bytes, session=_get_rembg_session())
-                logger.info("[generate] rembg 완료 (%.1fs)", time.monotonic() - t1)
+            # 응답에서 이미지 추출 + rembg 누끼 처리
+            for part in response.candidates[0].content.parts:
+                if part.inline_data and part.inline_data.mime_type.startswith("image/"):
+                    raw_bytes = part.inline_data.data
+                    logger.info("[generate] 이미지 추출 성공 size=%dB — rembg 누끼 시작", len(raw_bytes))
 
-                image_b64 = base64.b64encode(removed).decode("utf-8")
-                return JSONResponse({
-                    "success": True,
-                    "image": f"data:image/png;base64,{image_b64}",
-                })
+                    t1 = time.monotonic()
+                    from rembg import remove as rembg_remove
+                    removed = rembg_remove(raw_bytes, session=_get_rembg_session())
+                    logger.info("[generate] rembg 완료 (%.1fs)", time.monotonic() - t1)
 
-        logger.warning("[generate] 응답에 이미지 없음 candidates=%s", response.candidates)
-        raise HTTPException(status_code=500, detail="이미지가 생성되지 않았습니다.")
+                    image_b64 = base64.b64encode(removed).decode("utf-8")
+                    used_fallback = model_id == NANO_BANANA_MODEL_FALLBACK
+                    return JSONResponse({
+                        "success": True,
+                        "image": f"data:image/png;base64,{image_b64}",
+                        **({"fallback": True, "fallback_message": "서버 과부하로 경량 모델로 생성되었어요. 품질이 다소 낮을 수 있습니다."} if used_fallback else {}),
+                    })
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception("[generate] 오류 발생: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+            logger.warning("[generate] 응답에 이미지 없음 model=%s", model_id)
+            raise HTTPException(status_code=500, detail="이미지가 생성되지 않았습니다.")
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            is_quota = "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e)
+            if is_quota and model_id == NANO_BANANA_MODEL_PRIMARY:
+                logger.warning("[generate] %s 429 발생 → fallback %s", model_id, NANO_BANANA_MODEL_FALLBACK)
+                last_error = e
+                continue
+            logger.exception("[generate] 오류 발생: %s", e)
+            if is_quota:
+                raise HTTPException(
+                    status_code=429,
+                    detail="AI 서버가 일시적으로 바빠요. 잠시 후 다시 시도해주세요.",
+                )
+            raise HTTPException(status_code=500, detail=str(e))
+
+    # 모든 모델 실패
+    logger.exception("[generate] 모든 모델 실패: %s", last_error)
+    raise HTTPException(status_code=429, detail="AI 서버가 일시적으로 바빠요. 잠시 후 다시 시도해주세요.")

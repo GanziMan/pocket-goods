@@ -260,6 +260,13 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
             profileEvents.rateLimitHit("anonymous");
             return;
           }
+          const detail = err.detail ?? "";
+          if (detail.includes("일시적") || detail.includes("바빠요")) {
+            setError(locale === "ko"
+              ? "AI 서버가 일시적으로 바빠요. 잠시 후 다시 시도해주세요."
+              : "AI server is temporarily busy. Please try again shortly.");
+            return;
+          }
           setShowDailyLimitReached(true);
           profileEvents.rateLimitHit("authenticated");
           return;

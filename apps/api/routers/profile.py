@@ -179,4 +179,9 @@ async def generate_profile(
         raise
     except Exception as e:
         logger.exception("[profile] 오류 발생: %s", e)
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            raise HTTPException(
+                status_code=429,
+                detail="AI 서버가 일시적으로 바빠요. 잠시 후 다시 시도해주세요.",
+            )
         raise HTTPException(status_code=500, detail=str(e))

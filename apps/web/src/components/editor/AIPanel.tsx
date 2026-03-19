@@ -81,6 +81,7 @@ export default function AIPanel({
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,6 +97,7 @@ export default function AIPanel({
     setLoading(true);
     setError(null);
     setResult(null);
+    setFallbackMessage(null);
     setShowLoginPrompt(false);
     setShowDailyLimitReached(false);
 
@@ -135,7 +137,12 @@ export default function AIPanel({
             setShowLoginPrompt(true);
             return;
           }
-          // 로그인 유저가 일일 한도 초과
+          // Vertex AI 서버 과부하 vs 일일 한도 초과 구분
+          const detail = err.detail ?? "";
+          if (detail.includes("일시적") || detail.includes("바빠요")) {
+            setError("AI 서버가 일시적으로 바빠요. 잠시 후 다시 시도해주세요.");
+            return;
+          }
           setShowDailyLimitReached(true);
           return;
         }
@@ -145,6 +152,9 @@ export default function AIPanel({
 
       const data = await response.json();
       setResult(data.image);
+      if (data.fallback) {
+        setFallbackMessage(data.fallback_message ?? "서버 과부하로 경량 모델로 생성되었어요.");
+      }
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "알 수 없는 오류가 발생했습니다.",
@@ -387,6 +397,11 @@ export default function AIPanel({
           <Separator />
           <div className="space-y-2">
             <Label className="text-xs">생성된 이미지</Label>
+            {fallbackMessage && (
+              <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                {fallbackMessage}
+              </p>
+            )}
             <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-zinc-200 bg-[url('/checkerboard.svg')]">
               <Image
                 src={result}
