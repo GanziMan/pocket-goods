@@ -11,11 +11,15 @@ import {
   LogIn,
   X,
   Camera,
+  Share2,
+  Link2,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { createClient } from "@/lib/supabase/client";
+import { profileEvents } from "@/lib/gtag";
 
 type Style = "id-photo" | "instagram" | "ghibli";
 type Locale = "ko" | "en";
@@ -44,6 +48,13 @@ const TEXT = {
     placeholder: "사진을 업로드하고 스타일을 선택해주세요",
     download: "다운로드",
     regenerate: "다시 생성",
+    share: "공유하기",
+    shareKakao: "카카오톡",
+    shareX: "X",
+    shareCopy: "링크 복사",
+    shareCopied: "복사됨!",
+    shareTitle: "AI 프로필 사진을 만들어봤어요!",
+    shareText: "포켓굿즈에서 AI로 나만의 프로필 사진을 만들어보세요",
     loginTitle: "더 많이 만들어보세요!",
     loginDesc: "오늘 무료 생성 횟수(2회)를 모두 사용했어요.",
     loginBenefit: "하루 10회 무료",
@@ -79,6 +90,13 @@ const TEXT = {
     placeholder: "Upload a photo and choose a style",
     download: "Download",
     regenerate: "Regenerate",
+    share: "Share",
+    shareKakao: "KakaoTalk",
+    shareX: "X",
+    shareCopy: "Copy Link",
+    shareCopied: "Copied!",
+    shareTitle: "Check out my AI profile photo!",
+    shareText: "Create your own AI profile photo at Pocket Goods",
     loginTitle: "Want to create more?",
     loginDesc: "You've used all free generations (2) for today.",
     loginBenefit: "10 free per day",
@@ -94,12 +112,60 @@ const TEXT = {
 } as const;
 
 const STYLE_EMOJIS: Record<Style, string> = {
-  "id-photo": "📷",
-  instagram: "✨",
-  ghibli: "🌿",
+  "id-photo": "\u{1F4F7}",
+  instagram: "\u2728",
+  ghibli: "\u{1F33F}",
 };
 
 const STYLE_KEYS: Style[] = ["id-photo", "instagram", "ghibli"];
+
+const SHARE_URL = "https://pocket-goods.com/ai-profile";
+
+function addWatermark(base64Img: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(base64Img); return; }
+
+      ctx.drawImage(img, 0, 0);
+
+      const fontSize = Math.max(14, Math.floor(img.width * 0.025));
+      ctx.font = `${fontSize}px sans-serif`;
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+
+      const text = "pocket-goods.com";
+      const padding = fontSize * 0.6;
+
+      const textMetrics = ctx.measureText(text);
+      const bgX = img.width - padding - textMetrics.width - 8;
+      const bgY = img.height - padding - fontSize - 4;
+      const bgW = textMetrics.width + 16;
+      const bgH = fontSize + 8;
+
+      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.beginPath();
+      ctx.roundRect(bgX, bgY, bgW, bgH, 4);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.fillText(text, img.width - padding, img.height - padding);
+
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.src = base64Img;
+  });
+}
+
+async function resultToBlob(base64Img: string): Promise<Blob> {
+  const res = await fetch(base64Img);
+  return res.blob();
+}
 
 interface ProfileGeneratorProps {
   locale?: Locale;
@@ -115,6 +181,8 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
   const [error, setError] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loginRedirect = locale === "en" ? "/login?next=/en/ai-profile" : "/login?next=/ai-profile";
@@ -131,6 +199,7 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
     const file = e.target.files?.[0];
     if (!file) return;
     setPreview(file);
+    profileEvents.uploadPhoto();
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -138,8 +207,14 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
     const file = e.dataTransfer.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
     setPreview(file);
+    profileEvents.uploadPhoto();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadedPreview]);
+
+  const handleStyleSelect = (key: Style) => {
+    setStyle(key);
+    profileEvents.selectStyle(key);
+  };
 
   const handleGenerate = async () => {
     if (!uploadedFile) return;
@@ -148,6 +223,9 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
     setResult(null);
     setShowLoginPrompt(false);
     setShowDailyLimitReached(false);
+    setShowShareMenu(false);
+
+    profileEvents.generate(style);
 
     try {
       const formData = new FormData();
@@ -173,9 +251,11 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
           const err = await response.json();
           if (err.login_required) {
             setShowLoginPrompt(true);
+            profileEvents.rateLimitHit("anonymous");
             return;
           }
           setShowDailyLimitReached(true);
+          profileEvents.rateLimitHit("authenticated");
           return;
         }
         const err = await response.json();
@@ -183,7 +263,8 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
       }
 
       const data = await response.json();
-      setResult(data.image);
+      const watermarked = await addWatermark(data.image);
+      setResult(watermarked);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : t.errorFallback
@@ -199,7 +280,87 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
     link.href = result;
     link.download = `profile-${style}.png`;
     link.click();
+    profileEvents.download(style);
   };
+
+  const handleShareKakao = () => {
+    if (!window.Kakao?.isInitialized()) return;
+    window.Kakao.Share.sendDefault({
+      objectType: "feed",
+      content: {
+        title: t.shareTitle,
+        description: t.shareText,
+        imageUrl: "https://pocket-goods.com/og-image.png",
+        link: { mobileWebUrl: SHARE_URL, webUrl: SHARE_URL },
+      },
+      buttons: [
+        {
+          title: locale === "ko" ? "나도 만들어보기" : "Try it now",
+          link: { mobileWebUrl: SHARE_URL, webUrl: SHARE_URL },
+        },
+      ],
+    });
+    profileEvents.share("kakao", style);
+    setShowShareMenu(false);
+  };
+
+  const handleShareX = () => {
+    const text = encodeURIComponent(`${t.shareTitle}\n${t.shareText}`);
+    const url = encodeURIComponent(SHARE_URL);
+    window.open(`https://x.com/intent/tweet?text=${text}&url=${url}`, "_blank", "noopener");
+    profileEvents.share("x", style);
+    setShowShareMenu(false);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(SHARE_URL);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+      profileEvents.share("copy_link", style);
+    } catch {
+      // fallback
+      const input = document.createElement("input");
+      input.value = SHARE_URL;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+      profileEvents.share("copy_link", style);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!navigator.share || !result) return;
+    try {
+      const blob = await resultToBlob(result);
+      const file = new File([blob], `profile-${style}.png`, { type: "image/png" });
+      await navigator.share({
+        title: t.shareTitle,
+        text: t.shareText,
+        url: SHARE_URL,
+        files: [file],
+      });
+      profileEvents.share("native", style);
+    } catch {
+      // user cancelled or not supported with files, try without files
+      try {
+        await navigator.share({
+          title: t.shareTitle,
+          text: t.shareText,
+          url: SHARE_URL,
+        });
+        profileEvents.share("native", style);
+      } catch {
+        // user cancelled
+      }
+    }
+    setShowShareMenu(false);
+  };
+
+  const canNativeShare = typeof navigator !== "undefined" && !!navigator.share;
 
   return (
     <div className="min-h-screen bg-background">
@@ -279,7 +440,7 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
                 {STYLE_KEYS.map((key) => (
                   <button
                     key={key}
-                    onClick={() => setStyle(key)}
+                    onClick={() => handleStyleSelect(key)}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-4 transition-all ${
                       style === key
                         ? "border-primary bg-primary/5 shadow-sm"
@@ -349,20 +510,86 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
 
             {/* Action buttons */}
             {result && (
-              <div className="flex gap-3">
-                <Button className="flex-1" onClick={handleDownload}>
-                  <Download className="mr-2 h-4 w-4" />
-                  {t.download}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={handleGenerate}
-                  disabled={loading}
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  {t.regenerate}
-                </Button>
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <Button className="flex-1" onClick={handleDownload}>
+                    <Download className="mr-2 h-4 w-4" />
+                    {t.download}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleGenerate}
+                    disabled={loading}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {t.regenerate}
+                  </Button>
+                </div>
+
+                {/* Share section */}
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      if (canNativeShare) {
+                        handleNativeShare();
+                      } else {
+                        setShowShareMenu((v) => !v);
+                      }
+                    }}
+                  >
+                    <Share2 className="mr-2 h-4 w-4" />
+                    {t.share}
+                  </Button>
+
+                  {/* Share dropdown (desktop) */}
+                  {showShareMenu && (
+                    <div className="absolute top-full left-0 right-0 z-10 mt-2 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg">
+                      {/* 카카오톡 */}
+                      <button
+                        onClick={handleShareKakao}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-zinc-50 transition-colors"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FEE500]">
+                          <svg width="18" height="18" viewBox="0 0 256 256" fill="none">
+                            <path d="M128 36C70.6 36 24 72.8 24 118c0 29.2 19.4 54.8 48.6 69.4l-10 37.2c-.8 3 2.6 5.4 5.2 3.6l43.4-29.2c5.6.8 11.2 1.2 16.8 1.2 57.4 0 104-36.8 104-82S185.4 36 128 36z" fill="#3C1E1E"/>
+                          </svg>
+                        </span>
+                        <span>{t.shareKakao}</span>
+                      </button>
+
+                      {/* X (Twitter) */}
+                      <button
+                        onClick={handleShareX}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-zinc-50 transition-colors"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                          </svg>
+                        </span>
+                        <span>{t.shareX}</span>
+                      </button>
+
+                      {/* Link copy */}
+                      <button
+                        onClick={handleCopyLink}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm hover:bg-zinc-50 transition-colors"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100">
+                          {linkCopied ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Link2 className="h-4 w-4 text-zinc-600" />
+                          )}
+                        </span>
+                        <span>{linkCopied ? t.shareCopied : t.shareCopy}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

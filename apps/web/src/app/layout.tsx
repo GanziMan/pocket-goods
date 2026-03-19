@@ -140,6 +140,22 @@ export default function RootLayout({
           }}
         />
         {children}
+        {/* 카카오 SDK */}
+        <Script
+          src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"
+          strategy="afterInteractive"
+        />
+        {process.env.NEXT_PUBLIC_KAKAO_JS_KEY && (
+          <Script id="kakao-init" strategy="afterInteractive">
+            {`
+              (function wait() {
+                if (window.Kakao) {
+                  if (!window.Kakao.isInitialized()) window.Kakao.init("${process.env.NEXT_PUBLIC_KAKAO_JS_KEY}");
+                } else { setTimeout(wait, 100); }
+              })();
+            `}
+          </Script>
+        )}
         {/* 채널톡 */}
         <Script id="channel-talk" strategy="afterInteractive">
           {`
