@@ -34,7 +34,6 @@ interface ToolbarProps {
   onSendBackward: () => void;
   onSave: () => void;
   onExportPreview: () => void;
-  onOrder: () => void;
   isExporting?: boolean;
 }
 
@@ -65,7 +64,6 @@ export default function Toolbar({
   onSendBackward,
   onSave,
   onExportPreview,
-  onOrder,
   isExporting,
 }: ToolbarProps) {
   return (
@@ -184,7 +182,7 @@ export default function Toolbar({
             </>
           )}
         </Button>
-        <Button size="sm" onClick={onOrder}>
+        <Button size="sm" disabled title="주문 기능은 준비 중입니다">
           <ShoppingCart className="w-4 h-4 mr-1" />
           주문하기
         </Button>

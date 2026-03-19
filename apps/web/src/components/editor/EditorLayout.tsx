@@ -33,6 +33,7 @@ export default function EditorLayout() {
   const {
     canvasRef,
     isCanvasReady,
+    hasObjects,
     canUndo,
     canRedo,
     selectedInfo,
@@ -202,10 +203,6 @@ export default function EditorLayout() {
     }
   }, [toJSON, toDataURL, productType, outputSize, isExporting]);
 
-  const handleOrder = useCallback(() => {
-    alert("주문 기능은 준비 중입니다 🛒");
-  }, []);
-
   return (
     <div className="flex flex-col h-dvh overflow-hidden bg-zinc-50">
       {/* 상단: 데스크탑=Toolbar, 모바일=MobileHeader */}
@@ -225,7 +222,6 @@ export default function EditorLayout() {
           onSendBackward={sendBackward}
           onSave={save}
           onExportPreview={handleExportPreview}
-          onOrder={handleOrder}
           isExporting={isExporting}
         />
       </div>
@@ -255,6 +251,7 @@ export default function EditorLayout() {
             <DesignCanvas
               canvasRef={canvasRef}
               outputSizeMm={OUTPUT_SIZE_MM[outputSize]}
+              showGuide={isCanvasReady && !hasObjects}
             />
           </div>
 

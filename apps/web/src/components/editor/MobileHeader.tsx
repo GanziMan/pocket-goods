@@ -44,11 +44,17 @@ export default function MobileHeader({
         ))}
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5">
         {isDirty ? (
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+          <span className="flex items-center gap-1 text-[10px] text-amber-600 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0" />
+            미저장
+          </span>
         ) : savedAt ? (
-          <CheckCheck className="w-3.5 h-3.5 text-green-500" />
+          <span className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
+            <CheckCheck className="w-3 h-3 shrink-0" />
+            저장됨
+          </span>
         ) : null}
 
         <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8">

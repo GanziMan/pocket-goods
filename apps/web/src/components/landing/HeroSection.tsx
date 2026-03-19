@@ -20,7 +20,7 @@ export function HeroSection() {
   return (
     <section className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden px-4">
       {/* Floating character background */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true" role="presentation">
         {floatingItems.map((item, i) => (
           <div
             key={item.id}

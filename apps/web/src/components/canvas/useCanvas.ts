@@ -21,6 +21,7 @@ export interface SelectedObjectInfo {
 export interface UseCanvasReturn {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   isCanvasReady: boolean;
+  hasObjects: boolean;
   canUndo: boolean;
   canRedo: boolean;
   selectedInfo: SelectedObjectInfo | null;
@@ -90,6 +91,7 @@ export function useCanvas(
   const [zoom, setZoomState] = useState(1.0);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [hasObjects, setHasObjects] = useState(false);
   const [selectedInfo, setSelectedInfo] = useState<SelectedObjectInfo | null>(
     null
   );
@@ -164,9 +166,10 @@ export function useCanvas(
       historyPointerRef.current = 0;
       updateHistoryState();
 
-      canvas.on("object:added", saveHistory);
+      const trackObjects = () => setHasObjects((canvas.getObjects?.() ?? []).length > 0);
+      canvas.on("object:added", () => { saveHistory(); trackObjects(); });
       canvas.on("object:modified", saveHistory);
-      canvas.on("object:removed", saveHistory);
+      canvas.on("object:removed", () => { saveHistory(); trackObjects(); });
 
       canvas.on("mouse:wheel", (opt) => {
         const delta = opt.e.deltaY;
@@ -487,6 +490,7 @@ export function useCanvas(
   return {
     canvasRef,
     isCanvasReady,
+    hasObjects,
     canUndo,
     canRedo,
     selectedInfo,

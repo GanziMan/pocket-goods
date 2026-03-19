@@ -92,12 +92,12 @@ function ActionButton({
       size="sm"
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-center gap-0 h-11 w-11 px-0 ${
+      className={`flex flex-col items-center gap-0.5 h-12 w-12 px-0 ${
         destructive ? "text-red-500 hover:text-red-600 hover:bg-red-50" : ""
       }`}
     >
       {icon}
-      <span className="text-[9px] leading-tight">{label}</span>
+      <span className="text-[10px] leading-tight">{label}</span>
     </Button>
   );
 }
