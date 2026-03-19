@@ -26,7 +26,7 @@ const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
 
 export default function EditorLayout() {
   const [productType, setProductTypeState] = useState<ProductType>("keyring");
-  const [mobilePanel, setMobilePanel] = useState<"assets" | "properties" | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<"assets" | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [outputSize, setOutputSize] = useState<OutputSize>("A5");
 
@@ -56,6 +56,7 @@ export default function EditorLayout() {
     zoom,
     zoomIn,
     zoomOut,
+    setZoom,
   } = useCanvas(productType);
 
   const { save, loadDraft, markDirty, savedAt, isDirty } = useSaveDesign(
@@ -109,6 +110,15 @@ export default function EditorLayout() {
 
   // 저장되지 않은 변경사항 있을 때 브라우저 이탈 경고
   useBeforeUnload(isDirty);
+
+  // 모바일: 80% 줌 고정
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (mq.matches) {
+      setZoom(0.8);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCanvasReady]);
 
   // 모바일에서 채널톡 숨기기
   useEffect(() => {
@@ -247,6 +257,21 @@ export default function EditorLayout() {
               outputSizeMm={OUTPUT_SIZE_MM[outputSize]}
             />
           </div>
+
+          {/* 모바일 용지 크기 선택 */}
+          <div className="flex md:hidden items-center justify-center gap-2 py-2 border-t bg-white shrink-0">
+            {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
+              <Badge
+                key={size}
+                variant={outputSize === size ? "default" : "outline"}
+                className="cursor-pointer select-none"
+                onClick={() => setOutputSize(size)}
+              >
+                {size}
+              </Badge>
+            ))}
+          </div>
+
           {/* 줌 컨트롤 — 캔버스 바로 아래 (데스크탑 전용) */}
           <div className="hidden md:flex items-center justify-center gap-2 py-2 border-t bg-white shrink-0">
             <Button
@@ -308,12 +333,8 @@ export default function EditorLayout() {
           hasSelection={!!selectedInfo}
           onDelete={deleteSelected}
           onOpenAssets={() => setMobilePanel("assets")}
-          onOpenProperties={() => setMobilePanel("properties")}
           onExportPreview={handleExportPreview}
           isExporting={isExporting}
-          zoom={zoom}
-          onZoomIn={zoomIn}
-          onZoomOut={zoomOut}
         />
       </div>
 
@@ -322,25 +343,12 @@ export default function EditorLayout() {
         open={mobilePanel === "assets"}
         onClose={() => setMobilePanel(null)}
         title="에셋"
+        noPadding
       >
         <AssetPanel
           onAddCharacter={addCharacter}
           onAddText={addText}
           onGetCanvasImage={toDataURL}
-          className="w-full border-0"
-        />
-      </MobileDrawer>
-      <MobileDrawer
-        open={mobilePanel === "properties"}
-        onClose={() => setMobilePanel(null)}
-        title="속성"
-      >
-        <PropertiesPanel
-          selectedInfo={selectedInfo}
-          onUpdateText={updateSelectedText}
-          onUpdateOpacity={updateSelectedOpacity}
-          onGetSelectedImageDataURL={getSelectedImageDataURL}
-          onReplaceSelectedImage={replaceSelectedImage}
           className="w-full border-0"
         />
       </MobileDrawer>

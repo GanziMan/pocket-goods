@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 interface AIPanelProps {
   onGetCanvasImage: () => string; // toDataURL()
   onAddGeneratedImage: (src: string) => void; // addCharacter()
+  compact?: boolean; // 모바일 드로어에서 사용 시 패딩/스크롤 조정
 }
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
@@ -69,6 +70,7 @@ const EXAMPLE_PROMPTS: Record<Style, string[]> = {
 export default function AIPanel({
   onGetCanvasImage,
   onAddGeneratedImage,
+  compact = false,
 }: AIPanelProps) {
   const [mode, setMode] = useState<Mode>("prompt-only");
   const [style, setStyle] = useState<Style>("ghibli");
@@ -175,7 +177,7 @@ export default function AIPanel({
   };
 
   return (
-    <div className="flex flex-col h-full p-4 gap-4 overflow-y-auto">
+    <div className={`flex flex-col gap-3 ${compact ? "p-3" : "h-full p-4 gap-4 overflow-y-auto"}`}>
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -194,12 +196,14 @@ export default function AIPanel({
       </div>
 
       {/* 스타일 토글 */}
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className={`grid gap-1.5 ${compact ? "grid-cols-4" : "grid-cols-2"}`}>
         {STYLES.map((s) => (
           <button
             key={s.value}
             onClick={() => setStyle(s.value)}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg border p-1 text-xs font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg border text-xs font-medium transition-all ${
+              compact ? "p-2" : "p-1"
+            } ${
               style === s.value
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-zinc-200 hover:border-zinc-300 text-zinc-500"
@@ -219,7 +223,7 @@ export default function AIPanel({
           label="프롬프트"
           onClick={() => setMode("prompt-only")}
         />
-       
+
         <ModeButton
           active={mode === "from-upload"}
           icon={<Upload className="w-3.5 h-3.5" />}
@@ -234,7 +238,9 @@ export default function AIPanel({
       {/* 업로드 미리보기 */}
       {mode === "from-upload" && uploadedPreview && (
         <div
-          className="relative w-full aspect-square rounded-lg overflow-hidden border border-zinc-200 cursor-pointer"
+          className={`relative rounded-lg overflow-hidden border border-zinc-200 cursor-pointer ${
+            compact ? "w-32 h-32 mx-auto" : "w-full aspect-square"
+          }`}
           onClick={() => fileInputRef.current?.click()}
         >
           <Image
@@ -324,12 +330,17 @@ export default function AIPanel({
       {/* 예시 프롬프트 */}
       <div className="space-y-1.5">
         <p className="text-[10px] text-muted-foreground">클릭하면 바로 입력돼요</p>
-        <div className="flex flex-wrap gap-1">
+        <div className={compact
+          ? "flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-hide"
+          : "flex flex-wrap gap-1"
+        }>
           {EXAMPLE_PROMPTS[style].map((ex) => (
             <button
               key={ex}
               onClick={() => setPrompt(ex)}
-              className="text-[10px] px-2 py-0.5 rounded-full border border-zinc-200 hover:border-primary hover:bg-zinc-50 transition-colors"
+              className={`text-[10px] px-2 py-0.5 rounded-full border border-zinc-200 hover:border-primary hover:bg-zinc-50 transition-colors ${
+                compact ? "whitespace-nowrap shrink-0" : ""
+              }`}
             >
               {ex}
             </button>
@@ -423,7 +434,9 @@ export default function AIPanel({
                 {fallbackMessage}
               </p>
             )}
-            <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-zinc-200 bg-[url('/checkerboard.svg')]">
+            <div className={`relative rounded-lg overflow-hidden border border-zinc-200 bg-[url('/checkerboard.svg')] ${
+              compact ? "w-40 h-40 mx-auto" : "w-full aspect-square"
+            }`}>
               <Image
                 src={result}
                 alt="AI 생성 결과"

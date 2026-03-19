@@ -5,11 +5,8 @@ import {
   Undo2,
   Redo2,
   Plus,
-  SlidersHorizontal,
   Trash2,
   Download,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 
 interface MobileActionBarProps {
@@ -20,12 +17,8 @@ interface MobileActionBarProps {
   hasSelection: boolean;
   onDelete: () => void;
   onOpenAssets: () => void;
-  onOpenProperties: () => void;
   onExportPreview: () => void;
   isExporting?: boolean;
-  zoom: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
 }
 
 export default function MobileActionBar({
@@ -36,16 +29,12 @@ export default function MobileActionBar({
   hasSelection,
   onDelete,
   onOpenAssets,
-  onOpenProperties,
   onExportPreview,
   isExporting,
-  zoom,
-  onZoomIn,
-  onZoomOut,
 }: MobileActionBarProps) {
   return (
-    <div className="flex items-center justify-around px-1 h-14 border-t bg-white shrink-0 safe-area-bottom">
-      <div className="flex items-center gap-0.5">
+    <div className="flex items-center justify-around px-2 h-14 border-t bg-white shrink-0 safe-area-bottom">
+      <div className="flex items-center gap-1">
         <ActionButton
           icon={<Undo2 className="w-4 h-4" />}
           label="실행취소"
@@ -60,49 +49,26 @@ export default function MobileActionBar({
         />
       </div>
 
-      <div className="flex items-center gap-0.5">
-        <ActionButton
-          icon={<Plus className="w-4 h-4" />}
-          label="에셋"
-          onClick={onOpenAssets}
-        />
-        <ActionButton
-          icon={<SlidersHorizontal className="w-4 h-4" />}
-          label="속성"
-          onClick={onOpenProperties}
-        />
-      </div>
+      <ActionButton
+        icon={<Plus className="w-4 h-4" />}
+        label="에셋"
+        onClick={onOpenAssets}
+      />
 
-      <div className="flex items-center gap-0.5">
-        <ActionButton
-          icon={<ZoomOut className="w-3.5 h-3.5" />}
-          label={`${Math.round(zoom * 100)}%`}
-          onClick={onZoomOut}
-          disabled={zoom <= 0.5}
-        />
-        <ActionButton
-          icon={<ZoomIn className="w-3.5 h-3.5" />}
-          label="확대"
-          onClick={onZoomIn}
-          disabled={zoom >= 2.0}
-        />
-      </div>
+      <ActionButton
+        icon={<Trash2 className="w-4 h-4" />}
+        label="삭제"
+        onClick={onDelete}
+        disabled={!hasSelection}
+        destructive
+      />
 
-      <div className="flex items-center gap-0.5">
-        <ActionButton
-          icon={<Trash2 className="w-4 h-4" />}
-          label="삭제"
-          onClick={onDelete}
-          disabled={!hasSelection}
-          destructive
-        />
-        <ActionButton
-          icon={<Download className="w-4 h-4" />}
-          label={isExporting ? "다운로드 중" : "내보내기"}
-          onClick={onExportPreview}
-          disabled={isExporting}
-        />
-      </div>
+      <ActionButton
+        icon={<Download className="w-4 h-4" />}
+        label={isExporting ? "다운로드 중" : "내보내기"}
+        onClick={onExportPreview}
+        disabled={isExporting}
+      />
     </div>
   );
 }

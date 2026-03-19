@@ -25,31 +25,52 @@ export default function AssetPanel({
 }: AssetPanelProps) {
   const [inputText, setInputText] = useState("나만의 문구");
 
+  const isMobile = className?.includes("border-0");
+
   return (
     <aside className={cn("flex flex-col shrink-0 bg-white", className ?? "w-64 border-r")}>
       <Tabs defaultValue="ai" className="flex flex-col h-full">
-        <TabsList className="w-full rounded h-10 shrink-0 px-2">
-          <TabsTrigger value="ai" className="flex-1 gap-1 text-xs text-yellow-600">
-            <Sparkles className="w-3.5 h-3.5" />
+        <TabsList
+          variant={isMobile ? "line" : "default"}
+          className={cn(
+            "w-full shrink-0",
+            isMobile ? "h-11 px-4 border-b border-zinc-200" : "rounded h-10 px-2"
+          )}
+        >
+          <TabsTrigger value="ai" className={cn(
+            "flex-1 gap-1.5 font-semibold",
+            isMobile ? "text-sm" : "text-xs"
+          )}>
+            <Sparkles className={cn("w-3.5 h-3.5", isMobile && "w-4 h-4 text-yellow-500")} />
             AI
           </TabsTrigger>
-          <TabsTrigger value="text" className="flex-1 gap-1 text-xs">
-            <Type className="w-3.5 h-3.5" />
+          <TabsTrigger value="text" className={cn(
+            "flex-1 gap-1.5 font-semibold",
+            isMobile ? "text-sm" : "text-xs"
+          )}>
+            <Type className={cn("w-3.5 h-3.5", isMobile && "w-4 h-4")} />
             텍스트
           </TabsTrigger>
         </TabsList>
 
         {/* ── AI 탭 ── */}
-        <TabsContent value="ai" className="flex-1 m-0 overflow-hidden">
+        <TabsContent value="ai" className={cn(
+          "flex-1 m-0",
+          isMobile ? "overflow-visible" : "overflow-hidden"
+        )}>
           <AIPanel
             onGetCanvasImage={onGetCanvasImage}
             onAddGeneratedImage={onAddCharacter}
+            compact={isMobile}
           />
         </TabsContent>
 
         {/* ── 텍스트 탭 ── */}
         <TabsContent value="text" className="flex-1 m-0">
-          <div className="p-4 flex flex-col gap-4">
+          <div className={cn(
+            "flex flex-col gap-4",
+            isMobile ? "p-3" : "p-4"
+          )}>
             <div className="space-y-2">
               <Label htmlFor="text-input">문구 입력</Label>
               <Input

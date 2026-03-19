@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Save, CheckCheck } from "lucide-react";
@@ -28,7 +29,7 @@ export default function MobileHeader({
 }: MobileHeaderProps) {
   return (
     <header className="flex items-center gap-2 px-3 h-12 border-b bg-white shrink-0">
-      <span className="font-bold text-sm tracking-tight">포켓굿즈</span>
+      <Link href="/" className="font-bold text-sm tracking-tight select-none">포켓굿즈</Link>
 
       <div className="flex gap-1">
         {(["keyring", "sticker"] as ProductType[]).map((type) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +71,7 @@ export default function Toolbar({
   return (
     <header className="flex items-center gap-2 px-4 h-14 border-b bg-white shrink-0">
       {/* 브랜드 */}
-      <span className="font-bold text-lg tracking-tight mr-2">포켓굿즈</span>
+      <Link href="/" className="font-bold text-lg tracking-tight mr-2 select-none">포켓굿즈</Link>
 
       {/* 상품 타입 선택 */}
       <div className="flex gap-1">
