@@ -183,6 +183,7 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [remaining, setRemaining] = useState<{ count: number; limit: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loginRedirect = locale === "en" ? "/login?next=/en/ai-profile" : "/login?next=/ai-profile";
@@ -278,6 +279,9 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
       const data = await response.json();
       const watermarked = await addWatermark(data.image);
       setResult(watermarked);
+      if (data.remaining !== undefined) {
+        setRemaining({ count: data.remaining, limit: data.daily_limit });
+      }
     } catch (e) {
       setError(
         e instanceof Error ? e.message : t.errorFallback
@@ -388,6 +392,17 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
           <p className="mt-2 text-sm text-muted-foreground">
             {t.heroDesc}
           </p>
+          {remaining && (
+            <p className={`mt-3 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full ${
+              remaining.count <= 2
+                ? "bg-red-50 text-red-600"
+                : "bg-zinc-100 text-zinc-500"
+            }`}>
+              {locale === "ko"
+                ? `오늘 ${remaining.count}/${remaining.limit}회 남음`
+                : `${remaining.count}/${remaining.limit} remaining today`}
+            </p>
+          )}
         </div>
 
         {/* 2-column grid */}

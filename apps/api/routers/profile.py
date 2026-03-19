@@ -165,10 +165,13 @@ async def generate_profile(
                 )
 
                 image_b64 = base64.b64encode(raw_bytes).decode("utf-8")
+                used_count = get_usage_count(rate_key)
                 return JSONResponse(
                     {
                         "success": True,
                         "image": f"data:image/png;base64,{image_b64}",
+                        "remaining": daily_limit - used_count,
+                        "daily_limit": daily_limit,
                     }
                 )
 

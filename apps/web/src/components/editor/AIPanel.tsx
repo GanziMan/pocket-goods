@@ -82,6 +82,7 @@ export default function AIPanel({
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState<{ count: number; limit: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,6 +159,9 @@ export default function AIPanel({
 
       const data = await response.json();
       setResult(data.image);
+      if (data.remaining !== undefined) {
+        setRemaining({ count: data.remaining, limit: data.daily_limit });
+      }
       if (data.fallback) {
         setFallbackMessage(data.fallback_message ?? "서버 과부하로 경량 모델로 생성되었어요.");
       }
@@ -173,9 +177,20 @@ export default function AIPanel({
   return (
     <div className="flex flex-col h-full p-4 gap-4 overflow-y-auto">
       {/* 헤더 */}
-      <div className="flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-yellow-500" />
-        <span className="text-sm font-semibold">AI 이미지 생성</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-yellow-500" />
+          <span className="text-sm font-semibold">AI 이미지 생성</span>
+        </div>
+        {remaining && (
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+            remaining.count <= 2
+              ? "bg-red-50 text-red-600"
+              : "bg-zinc-100 text-zinc-500"
+          }`}>
+            {remaining.count}/{remaining.limit}회 남음
+          </span>
+        )}
       </div>
 
       {/* 스타일 토글 */}

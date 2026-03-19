@@ -200,9 +200,12 @@ async def generate_image(
 
                     image_b64 = base64.b64encode(removed).decode("utf-8")
                     used_fallback = model_id == NANO_BANANA_MODEL_FALLBACK
+                    used_count = get_usage_count(rate_key)
                     return JSONResponse({
                         "success": True,
                         "image": f"data:image/png;base64,{image_b64}",
+                        "remaining": daily_limit - used_count,
+                        "daily_limit": daily_limit,
                         **({"fallback": True, "fallback_message": "서버 과부하로 경량 모델로 생성되었어요. 품질이 다소 낮을 수 있습니다."} if used_fallback else {}),
                     })
 
