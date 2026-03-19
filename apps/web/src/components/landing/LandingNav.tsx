@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+
 import Link from "next/link";
 import UserMenu from "@/components/auth/UserMenu";
 
@@ -14,7 +14,7 @@ export function LandingNav({ locale = "ko" }: LandingNavProps) {
   return (
     <nav className="fixed top-0 z-50 flex w-full items-center justify-between bg-background/80 px-4 py-3 backdrop-blur-md md:px-8">
       <Link href={isEn ? "/en/ai-profile" : "/"} className="flex items-center gap-2">
-        <Image src="/logo.png" alt="Pocket Goods" width={28} height={28} />
+        
         <span className="text-sm font-semibold">
           {isEn ? "Pocket Goods" : "포켓굿즈"}
         </span>
