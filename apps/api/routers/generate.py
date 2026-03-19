@@ -34,8 +34,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["generate"])
 
-# NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
-NANO_BANANA_MODEL = "gemini-2.5-flash-image"
+NANO_BANANA_MODEL = "gemini-3.1-flash-image-preview"
+# NANO_BANANA_MODEL = "gemini-2.5-flash-image"
 STYLE_PROMPTS: dict[str, str] = {
     "ghibli": """
 [주체] 첨부된 이미지 또는 사용자 요청의 캐릭터를 중심으로 그린다.
