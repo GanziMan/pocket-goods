@@ -12,6 +12,7 @@ import {
   ImagePlus,
   LogIn,
   X,
+  HelpCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -32,12 +33,38 @@ const STYLES: { value: Style; label: string; emoji: string }[] = [
   { value: "custom", label: "커스텀", emoji: "✏️" },
 ];
 
-const EXAMPLE_PROMPTS = [
-  "졸린 표정으로 하품하는",
-  "왕관 쓰고 의기양양한",
-  "하트 들고 수줍어하는",
-  "선글라스 끼고 쿨한",
-];
+const EXAMPLE_PROMPTS: Record<Style, string[]> = {
+  ghibli: [
+    "숲속에서 꽃을 들고 미소짓는 소녀",
+    "빗속에서 빨간 우산을 쓰고 서 있는 고양이",
+    "구름 위에 앉아 별을 바라보는 아이",
+    "바람에 머리카락 날리며 들판을 뛰어가는 강아지",
+  ],
+  sd: [
+    "왕관 쓰고 의기양양하게 포즈 취하는 기사",
+    "하트 쿠션을 안고 수줍게 웃는 토끼",
+    "마법 지팡이 들고 주문 외우는 마녀",
+    "선글라스 끼고 쿨하게 서 있는 고양이",
+  ],
+  steampunk: [
+    "황동 고글 쓰고 기계 팔을 가진 발명가",
+    "증기 기관 비행선 위에 서 있는 모험가",
+    "톱니바퀴 장식 드레스 입은 귀족 고양이",
+    "시계탑 앞에서 나침반을 들여다보는 탐험가",
+  ],
+  akatsuki: [
+    "붉은 구름 망토 입고 절벽 위에 서 있는 닌자",
+    "샤링안 눈으로 정면을 응시하는 인물",
+    "검은 망토 휘날리며 달빛 아래 서 있는 그림자",
+    "폭풍 속에서 인술을 펼치는 전사",
+  ],
+  custom: [
+    "수채화 느낌의 귀여운 고양이, 파스텔 톤 배경",
+    "픽셀아트 스타일의 용사 캐릭터, 검을 들고 서 있는",
+    "미니멀한 라인아트 강아지, 흰색 배경",
+    "팝아트 스타일 초상화, 앤디워홀 느낌의 강렬한 색감",
+  ],
+};
 
 export default function AIPanel({
   onGetCanvasImage,
@@ -53,6 +80,7 @@ export default function AIPanel({
   const [error, setError] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,19 +235,53 @@ export default function AIPanel({
 
       {/* 프롬프트 입력 */}
       <div className="space-y-2">
-        <Label className="text-xs">
-          {style === "custom" ? "프롬프트를 자유롭게 입력하세요" : "어떤 캐릭터를 만들까요?"}
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">
+            {style === "custom" ? "프롬프트를 자유롭게 입력하세요" : "어떤 캐릭터를 만들까요?"}
+          </Label>
+          <button
+            onClick={() => setShowGuide((v) => !v)}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+          >
+            <HelpCircle className="w-3 h-3" />
+            작성 팁
+          </button>
+        </div>
+
+        {/* 프롬프트 작성 가이드 */}
+        {showGuide && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-blue-800">
+              이렇게 쓰면 더 좋은 결과가 나와요
+            </p>
+            <div className="space-y-1.5 text-[10px] text-blue-700 leading-relaxed">
+              <p><span className="font-semibold">1. 누구를</span> — 캐릭터/대상을 구체적으로</p>
+              <p className="pl-3 text-blue-600">예) 갈색 푸들, 턱시도 입은 고양이</p>
+              <p><span className="font-semibold">2. 뭘 하는지</span> — 동작이나 표정</p>
+              <p className="pl-3 text-blue-600">예) 하품하는, 꽃을 들고 미소짓는</p>
+              <p><span className="font-semibold">3. 어디서</span> — 장소나 배경 분위기</p>
+              <p className="pl-3 text-blue-600">예) 벚꽃 아래, 별이 빛나는 밤하늘</p>
+            </div>
+            <div className="border-t border-blue-200 pt-1.5 mt-1.5">
+              <p className="text-[10px] text-blue-600">
+                <span className="font-semibold">Tip:</span> &quot;없는&quot; 대신 &quot;있는&quot;으로 표현하세요.
+                <br />
+                &quot;안경 안 쓴&quot; → &quot;맨눈의&quot;
+              </p>
+            </div>
+          </div>
+        )}
+
         <Textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={
             style === "custom"
-              ? "스타일, 색감, 구도, 분위기 등을 자유롭게 묘사해주세요\n예) 수채화 느낌의 귀여운 고양이, 파스텔 톤"
-              : "졸린 표정으로 하품하는 캐릭터"
+              ? "스타일, 대상, 동작, 분위기를 구체적으로 묘사해주세요\n예) 수채화 느낌의 귀여운 고양이가 창가에 앉아 비를 바라보는"
+              : "누가 + 뭘 하는지 + 어디서\n예) 빗속에서 빨간 우산을 쓰고 서 있는 고양이"
           }
           className="text-sm resize-none"
-          rows={style === "custom" ? 4 : 2}
+          rows={3}
         />
         {style === "custom" && (
           <p className="text-[10px] text-muted-foreground">
@@ -228,10 +290,11 @@ export default function AIPanel({
         )}
       </div>
 
-      {/* 예시 프롬프트 (커스텀 모드에선 숨김) */}
-      {style !== "custom" && (
+      {/* 예시 프롬프트 */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] text-muted-foreground">클릭하면 바로 입력돼요</p>
         <div className="flex flex-wrap gap-1">
-          {EXAMPLE_PROMPTS.map((ex) => (
+          {EXAMPLE_PROMPTS[style].map((ex) => (
             <button
               key={ex}
               onClick={() => setPrompt(ex)}
@@ -241,7 +304,7 @@ export default function AIPanel({
             </button>
           ))}
         </div>
-      )}
+      </div>
 
       {/* 생성 버튼 */}
       <Button

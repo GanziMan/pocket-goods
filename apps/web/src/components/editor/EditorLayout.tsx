@@ -235,7 +235,7 @@ export default function EditorLayout() {
           <AssetPanel
             onAddCharacter={addCharacter}
             onAddText={addText}
-            onAddSticker={addSticker}
+
             onGetCanvasImage={toDataURL}
           />
         </div>
@@ -326,7 +326,6 @@ export default function EditorLayout() {
         <AssetPanel
           onAddCharacter={addCharacter}
           onAddText={addText}
-          onAddSticker={addSticker}
           onGetCanvasImage={toDataURL}
           className="w-full border-0"
         />
