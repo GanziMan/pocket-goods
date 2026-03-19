@@ -234,11 +234,17 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
 
       const headers: HeadersInit = {};
       const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.access_token) {
-        headers["Authorization"] = `Bearer ${session.access_token}`;
+        // getUser로 토큰 유효성 확인 + 자동 갱신
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // 갱신된 세션에서 최신 토큰 가져오기
+          const { data: { session: freshSession } } = await supabase.auth.getSession();
+          if (freshSession?.access_token) {
+            headers["Authorization"] = `Bearer ${freshSession.access_token}`;
+          }
+        }
       }
 
       const response = await fetch(

@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
-from PIL import Image
+from PIL import Image, ImageOps
 
 from services.rate_limit import (
     DAILY_LIMIT_ANONYMOUS,
@@ -68,6 +68,7 @@ async def generate_profile(
         raise HTTPException(status_code=400, detail=f"지원하지 않는 스타일: {style}")
 
     # Rate limit
+    has_token = request.headers.get("authorization", "").startswith("Bearer ")
     user_id = get_user_id_from_token(request)
     forwarded = request.headers.get("x-forwarded-for", "")
     client_ip = forwarded.split(",")[0].strip() if forwarded else (
@@ -87,7 +88,8 @@ async def generate_profile(
     if remaining <= 0:
         logger.warning("[profile] rate limit 초과 key=%s", rate_key)
         detail = f"일일 생성 횟수({daily_limit}회)를 초과했습니다. 내일 다시 이용해주세요."
-        error_body = {"detail": detail, "login_required": user_id is None}
+        # 토큰을 보냈지만 검증 실패한 경우는 login_required=False
+        error_body = {"detail": detail, "login_required": not has_token and user_id is None}
         return JSONResponse(status_code=429, content=error_body)
 
     # Gemini client
@@ -116,7 +118,7 @@ async def generate_profile(
         raise HTTPException(status_code=400, detail="파일 크기는 10MB 이하만 가능합니다.")
 
     try:
-        pil_img = Image.open(io.BytesIO(upload_bytes)).convert("RGB")
+        pil_img = ImageOps.exif_transpose(Image.open(io.BytesIO(upload_bytes))).convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="올바른 이미지 파일이 아닙니다.")
     style_prompt = PROFILE_STYLE_PROMPTS[style]
