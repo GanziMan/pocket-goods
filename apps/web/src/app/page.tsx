@@ -19,9 +19,11 @@ export default function Home() {
 
       <HeroSection />
       <HowItWorks />
-      <AiProfileSection />
-      {/* <ProductShowcase /> */}
       <FooterCTA />
+      <AiProfileSection />
+      
+      {/* <ProductShowcase /> */}
+      
 
       {/* Footer */}
       <footer className="border-t px-4 py-6 text-center text-xs text-muted-foreground">

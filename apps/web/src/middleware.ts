@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const LOCALE_ROUTES = ["/ai-profile"];
+const LOCALE_ROUTES = ["/ai-profile", "/pet-profile"];
 
 function getPreferredLocale(request: NextRequest): "ko" | "en" {
   const acceptLang = request.headers.get("accept-language") ?? "";

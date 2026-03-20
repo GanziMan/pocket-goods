@@ -8,6 +8,8 @@ export const metadata: Metadata = {
     title: "Free AI Profile Photo Generator | Pocket Goods",
     description:
       "Transform your photo into ID photo, Instagram aesthetic, or Ghibli anime style with AI. Free, no sign-up required.",
+    url: "https://pocket-goods.com/en/ai-profile",
+    images: [{ url: "https://pocket-goods.com/og-image-ai-profile.jpg" }],
   },
 };
 

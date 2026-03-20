@@ -31,3 +31,17 @@ export const profileEvents = {
   rateLimitHit: (type: "anonymous" | "authenticated") =>
     trackEvent({ action: "profile_rate_limit", category: "ai_profile", label: type }),
 };
+
+// Pet Profile events
+export const petProfileEvents = {
+  generate: () =>
+    trackEvent({ action: "pet_profile_generate", category: "pet_profile" }),
+  download: () =>
+    trackEvent({ action: "pet_profile_download", category: "pet_profile" }),
+  share: (platform: string) =>
+    trackEvent({ action: "pet_profile_share", category: "pet_profile", label: platform }),
+  uploadPhoto: (index: number) =>
+    trackEvent({ action: "pet_profile_upload_photo", category: "pet_profile", label: `photo_${index}` }),
+  rateLimitHit: (type: "anonymous" | "authenticated") =>
+    trackEvent({ action: "pet_profile_rate_limit", category: "pet_profile", label: type }),
+};

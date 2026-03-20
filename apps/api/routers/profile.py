@@ -3,6 +3,7 @@ import io
 import logging
 import os
 import time
+from dataclasses import dataclass
 
 from google import genai
 from google.genai import types
@@ -24,6 +25,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["profile"])
 
 PROFILE_MODEL = "gemini-2.5-flash-image"
+
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 PROFILE_STYLE_PROMPTS: dict[str, str] = {
     "id-photo": """
@@ -53,6 +56,25 @@ PROFILE_STYLE_PROMPTS: dict[str, str] = {
 """,
 }
 
+PET_PROFILE_PROMPT = """
+[주체] 첨부된 여러 장의 반려동물 사진을 참고하여, 이 동물의 귀여운 프로필 사진을 생성.
+[참고] 여러 각도의 사진이 제공된 경우, 동물의 전체적인 외형(털 색상, 패턴, 귀 모양, 체형 등)을 종합적으로 파악하여 가장 정확하게 표현.
+[스타일] 밝고 사랑스러운 반려동물 프로필 사진. 동물이 살짝 미소 짓는 듯한 행복하고 친근한 표정으로 표현. 눈은 반짝이고 생기 있게, 입꼬리가 자연스럽게 올라간 웃는 얼굴. 털은 부드럽고 윤기 있게 표현하되 과도한 보정 없이 자연스럽게.
+[조명] 밝고 부드러운 스튜디오 조명. 정면에서 균일하게 비추는 소프트박스 키라이트, 부드러운 필라이트로 그림자 최소화. 눈에 크고 선명한 캐치라이트로 생기 있는 눈빛 강조.
+[구도] 동물의 정면 얼굴 중심 클로즈업. 얼굴이 정중앙에 위치. 원형 프로필 사진에 어울리도록 얼굴이 프레임의 대부분을 차지. 정사각형(1:1) 비율.
+[배경] 파스텔톤 단색 배경 — 부드러운 분홍색(soft pink, #FFD6E0) 또는 연한 하늘색(baby blue, #D6EEFF) 중 동물의 털 색상과 가장 잘 어울리는 색상을 자동으로 선택. 배경은 깨끗한 단색으로, 그라디언트 없음.
+[출력] 정사각형 비율로 얼굴이 중앙에 오도록 크롭. 고해상도, 선명한 포커스. 원형으로 잘랐을 때 예쁘게 보이는 구도.
+"""
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+
+@dataclass
+class RateLimitContext:
+    rate_key: str
+    daily_limit: int
+    has_token: bool
+
 
 def _pil_to_part(image: Image.Image, mime: str = "image/jpeg") -> types.Part:
     buffer = io.BytesIO()
@@ -61,20 +83,7 @@ def _pil_to_part(image: Image.Image, mime: str = "image/jpeg") -> types.Part:
     return types.Part.from_bytes(data=buffer.getvalue(), mime_type=mime)
 
 
-@router.post("/generate-profile")
-async def generate_profile(
-    request: Request,
-    style: str = Form(...),
-    upload_image: UploadFile = File(...),
-):
-    """
-    사진 업로드 + 스타일 선택 → AI 프로필 사진 생성.
-    rembg 누끼 처리 없이 배경 유지.
-    """
-    if style not in PROFILE_STYLE_PROMPTS:
-        raise HTTPException(status_code=400, detail=f"지원하지 않는 스타일: {style}")
-
-    # Rate limit
+def _get_rate_limit_context(request: Request, key_prefix: str = "") -> RateLimitContext:
     has_token = request.headers.get("authorization", "").startswith("Bearer ")
     user_id = get_user_id_from_token(request)
     forwarded = request.headers.get("x-forwarded-for", "")
@@ -84,22 +93,31 @@ async def generate_profile(
     if not client_ip:
         client_ip = "unknown"
 
+    prefix = f"{key_prefix}:" if key_prefix else ""
     if user_id:
-        rate_key = f"user:{user_id}"
+        rate_key = f"{prefix}user:{user_id}"
         daily_limit = DAILY_LIMIT_USER
     else:
-        rate_key = f"ip:{client_ip}"
+        rate_key = f"{prefix}ip:{client_ip}"
         daily_limit = DAILY_LIMIT_ANONYMOUS
 
-    remaining = check_rate_limit(rate_key, daily_limit)
-    if remaining <= 0:
-        logger.warning("[profile] rate limit 초과 key=%s", rate_key)
-        detail = f"일일 생성 횟수({daily_limit}회)를 초과했습니다. 내일 다시 이용해주세요."
-        # 토큰을 보냈지만 검증 실패한 경우는 login_required=False
-        error_body = {"detail": detail, "login_required": not has_token and user_id is None}
-        return JSONResponse(status_code=429, content=error_body)
+    return RateLimitContext(rate_key=rate_key, daily_limit=daily_limit, has_token=has_token)
 
-    # Gemini client
+
+def _check_rate_limit_or_respond(ctx: RateLimitContext, log_tag: str) -> JSONResponse | None:
+    remaining = check_rate_limit(ctx.rate_key, ctx.daily_limit)
+    if remaining <= 0:
+        logger.warning("[%s] rate limit 초과 key=%s", log_tag, ctx.rate_key)
+        detail = f"일일 생성 횟수({ctx.daily_limit}회)를 초과했습니다. 내일 다시 이용해주세요."
+        error_body = {
+            "detail": detail,
+            "login_required": not ctx.has_token and "ip:" in ctx.rate_key,
+        }
+        return JSONResponse(status_code=429, content=error_body)
+    return None
+
+
+def _get_gemini_client(log_tag: str) -> genai.Client:
     gcp_project = os.getenv("GCP_PROJECT_ID")
     gcp_location = os.getenv("GCP_LOCATION", "us-central1")
     gemini_key = os.getenv("GEMINI_API_KEY")
@@ -108,36 +126,49 @@ async def generate_profile(
         client = genai.Client(
             vertexai=True, project=gcp_project, location=gcp_location
         )
-        logger.info("[profile] Vertex AI 사용 (project=%s)", gcp_project)
+        logger.info("[%s] Vertex AI 사용 (project=%s)", log_tag, gcp_project)
     elif gemini_key:
         client = genai.Client(api_key=gemini_key)
-        logger.info("[profile] Gemini API 키 사용")
+        logger.info("[%s] Gemini API 키 사용", log_tag)
     else:
         raise HTTPException(
             status_code=500,
             detail="GCP_PROJECT_ID 또는 GEMINI_API_KEY가 설정되지 않았습니다.",
         )
+    return client
 
-    # 이미지 검증 + 프롬프트
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-    upload_bytes = await upload_image.read()
+
+async def _validate_and_convert_image(
+    upload: UploadFile, *, label: str = "",
+) -> types.Part:
+    upload_bytes = await upload.read()
     if len(upload_bytes) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="파일 크기는 10MB 이하만 가능합니다.")
-
+        suffix = f" ({label})" if label else ""
+        raise HTTPException(
+            status_code=400,
+            detail=f"파일 크기는 10MB 이하만 가능합니다.{suffix}",
+        )
     try:
-        pil_img = ImageOps.exif_transpose(Image.open(io.BytesIO(upload_bytes))).convert("RGB")
+        pil_img = ImageOps.exif_transpose(
+            Image.open(io.BytesIO(upload_bytes))
+        ).convert("RGB")
     except Exception:
-        raise HTTPException(status_code=400, detail="올바른 이미지 파일이 아닙니다.")
-    style_prompt = PROFILE_STYLE_PROMPTS[style]
+        suffix = f" ({label})" if label else ""
+        raise HTTPException(
+            status_code=400,
+            detail=f"올바른 이미지 파일이 아닙니다.{suffix}",
+        )
+    return _pil_to_part(pil_img, "image/jpeg")
 
-    parts: list = [
-        _pil_to_part(pil_img, "image/jpeg"),
-        style_prompt,
-    ]
-    logger.info("[profile] style=%s image_size=%s", style, pil_img.size)
 
+async def _call_gemini_and_extract(
+    client: genai.Client,
+    parts: list,
+    ctx: RateLimitContext,
+    log_tag: str,
+) -> JSONResponse:
     try:
-        logger.info("[profile] Gemini API 호출 시작 model=%s", PROFILE_MODEL)
+        logger.info("[%s] Gemini API 호출 시작 model=%s", log_tag, PROFILE_MODEL)
         t0 = time.monotonic()
 
         response = await client.aio.models.generate_content(
@@ -149,42 +180,95 @@ async def generate_profile(
         )
 
         elapsed = time.monotonic() - t0
-        logger.info("[profile] Gemini 응답 수신 (%.1fs)", elapsed)
+        logger.info("[%s] Gemini 응답 수신 (%.1fs)", log_tag, elapsed)
 
         for part in response.candidates[0].content.parts:
             if part.inline_data and part.inline_data.mime_type.startswith("image/"):
                 raw_bytes = part.inline_data.data
-                logger.info("[profile] 이미지 추출 성공 size=%dB", len(raw_bytes))
+                logger.info("[%s] 이미지 추출 성공 size=%dB", log_tag, len(raw_bytes))
 
-                increment_usage(rate_key)
+                increment_usage(ctx.rate_key)
+                used_count = get_usage_count(ctx.rate_key)
                 logger.info(
-                    "[profile] key=%s 오늘 %d/%d회 사용",
-                    rate_key,
-                    get_usage_count(rate_key),
-                    daily_limit,
+                    "[%s] key=%s 오늘 %d/%d회 사용",
+                    log_tag, ctx.rate_key, used_count, ctx.daily_limit,
                 )
 
                 image_b64 = base64.b64encode(raw_bytes).decode("utf-8")
-                used_count = get_usage_count(rate_key)
                 return JSONResponse(
                     {
                         "success": True,
                         "image": f"data:image/png;base64,{image_b64}",
-                        "remaining": daily_limit - used_count,
-                        "daily_limit": daily_limit,
+                        "remaining": ctx.daily_limit - used_count,
+                        "daily_limit": ctx.daily_limit,
                     }
                 )
 
-        logger.warning("[profile] 응답에 이미지 없음")
+        logger.warning("[%s] 응답에 이미지 없음", log_tag)
         raise HTTPException(status_code=500, detail="이미지가 생성되지 않았습니다.")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("[profile] 오류 발생: %s", e)
+        logger.exception("[%s] 오류 발생: %s", log_tag, e)
         if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
             raise HTTPException(
                 status_code=429,
                 detail="AI 서버가 일시적으로 바빠요. 잠시 후 다시 시도해주세요.",
             )
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Endpoints ────────────────────────────────────────────────────────────────
+
+@router.post("/generate-profile")
+async def generate_profile(
+    request: Request,
+    style: str = Form(...),
+    upload_image: UploadFile = File(...),
+):
+    """사진 업로드 + 스타일 선택 → AI 프로필 사진 생성."""
+    if style not in PROFILE_STYLE_PROMPTS:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 스타일: {style}")
+
+    ctx = _get_rate_limit_context(request)
+    if limit_resp := _check_rate_limit_or_respond(ctx, "profile"):
+        return limit_resp
+
+    client = _get_gemini_client("profile")
+    image_part = await _validate_and_convert_image(upload_image)
+
+    parts: list = [image_part, PROFILE_STYLE_PROMPTS[style]]
+    logger.info("[profile] style=%s", style)
+
+    return await _call_gemini_and_extract(client, parts, ctx, "profile")
+
+
+@router.post("/generate-pet-profile")
+async def generate_pet_profile(
+    request: Request,
+    upload_image1: UploadFile = File(...),
+    upload_image2: UploadFile | None = File(None),
+    upload_image3: UploadFile | None = File(None),
+):
+    """반려동물 사진 1~3장 업로드 → AI 증명사진 스타일 프로필 생성."""
+    ctx = _get_rate_limit_context(request, key_prefix="pet-profile")
+    if limit_resp := _check_rate_limit_or_respond(ctx, "pet-profile"):
+        return limit_resp
+
+    client = _get_gemini_client("pet-profile")
+
+    uploads = [upload_image1]
+    if upload_image2:
+        uploads.append(upload_image2)
+    if upload_image3:
+        uploads.append(upload_image3)
+
+    parts: list = []
+    for i, upload in enumerate(uploads):
+        parts.append(await _validate_and_convert_image(upload, label=f"사진 {i + 1}"))
+
+    parts.append(PET_PROFILE_PROMPT)
+    logger.info("[pet-profile] images=%d", len(uploads))
+
+    return await _call_gemini_and_extract(client, parts, ctx, "pet-profile")

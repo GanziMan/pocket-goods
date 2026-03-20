@@ -32,6 +32,12 @@ export function LandingNav({ locale = "ko" }: LandingNavProps) {
         >
           {isEn ? "AI Profile" : "AI 프로필"}
         </Link>
+        <Link
+          href={isEn ? "/en/pet-profile" : "/pet-profile"}
+          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {isEn ? "Pet Profile" : "반려동물 프로필"}
+        </Link>
         <UserMenu />
       </div>
     </nav>

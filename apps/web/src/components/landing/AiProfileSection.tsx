@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { ArrowRight, Camera, Sparkles, Palette } from "lucide-react";
@@ -94,8 +95,40 @@ export function AiProfileSection() {
           ))}
         </div>
 
+        {/* 결과 예시 */}
+        <div
+          className={`mt-12 transition-all duration-700 ${
+            inView ? "animate-fade-in-up opacity-100" : "opacity-0 translate-y-6"
+          }`}
+          style={{ animationDelay: "500ms" }}
+        >
+          <p className="mb-4 text-center text-sm font-medium text-muted-foreground">
+            AI가 만든 프로필 예시
+          </p>
+          <div className="flex justify-center">
+            <div className="relative">
+              {/* 배경 글로우 */}
+              <div className="absolute -inset-3 rounded-3xl bg-gradient-to-br from-primary/10 via-transparent to-primary/5 blur-xl" />
+              {/* 이미지 카드 */}
+              <div className="relative overflow-hidden rounded-2xl ring-1 ring-foreground/10 shadow-lg">
+                <Image
+                  src="/og-image-ai-profile.jpg"
+                  alt="AI 프로필 생성 결과 예시 - 지브리 스타일"
+                  width={280}
+                  height={280}
+                  className="object-cover"
+                />
+              </div>
+              {/* 스타일 뱃지 */}
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-xs font-medium shadow-md ring-1 ring-foreground/5">
+                지브리 스타일
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* CTA */}
-        <div className="mt-10 text-center">
+        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/ai-profile"
             className={buttonVariants({
@@ -104,6 +137,17 @@ export function AiProfileSection() {
             })}
           >
             AI 프로필 만들어보기
+            <ArrowRight className="size-4" />
+          </Link>
+          <Link
+            href="/pet-profile"
+            className={buttonVariants({
+              size: "lg",
+              variant: "outline",
+              className: "h-12 gap-2 px-6 text-base",
+            })}
+          >
+            반려동물 프로필 만들기
             <ArrowRight className="size-4" />
           </Link>
         </div>
