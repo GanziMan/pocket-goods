@@ -43,7 +43,7 @@ export default function UserMenu({ compact = false }: UserMenuProps) {
     return (
       <Link
         href="/login"
-        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="shrink-0 break-keep text-xs font-medium text-muted-foreground transition-colors hover:text-foreground md:text-sm"
       >
         로그인
       </Link>
