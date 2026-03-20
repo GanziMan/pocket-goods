@@ -22,7 +22,7 @@ import { createClient } from "@/lib/supabase/client";
 import { profileEvents } from "@/lib/gtag";
 import { addWatermark, resultToBlob } from "@/lib/image-utils";
 
-type Style = "id-photo" | "instagram" | "ghibli";
+type Style = "id-photo" | "instagram" | "ghibli" | "fairly-odd" | "powerpuff";
 type Locale = "ko" | "en";
 
 const TEXT = {
@@ -39,6 +39,8 @@ const TEXT = {
       "id-photo": { label: "증명사진", desc: "깔끔한 증명사진 스타일" },
       instagram: { label: "화보/인스타", desc: "감성 화보 프로필" },
       ghibli: { label: "지브리/애니", desc: "지브리 애니메이션 스타일" },
+      "fairly-odd": { label: "티미의 수호천사", desc: "티미의 못말리는 수호천사" },
+      powerpuff: { label: "파워퍼프걸", desc: "파워퍼프걸 스타일" },
     },
     generating: "프로필 생성 중...",
     generate: "프로필 생성하기",
@@ -81,6 +83,8 @@ const TEXT = {
       "id-photo": { label: "ID Photo", desc: "Clean, professional headshot" },
       instagram: { label: "Instagram", desc: "Aesthetic profile photo" },
       ghibli: { label: "Ghibli/Anime", desc: "Studio Ghibli animation style" },
+      "fairly-odd": { label: "Fairly Odd", desc: "The Fairly OddParents style" },
+      powerpuff: { label: "Powerpuff", desc: "Powerpuff Girls style" },
     },
     generating: "Generating...",
     generate: "Generate Profile",
@@ -116,9 +120,11 @@ const STYLE_EMOJIS: Record<Style, string> = {
   "id-photo": "\u{1F4F7}",
   instagram: "\u2728",
   ghibli: "\u{1F33F}",
+  "fairly-odd": "\u{1FA84}",
+  powerpuff: "\u{1F4A5}",
 };
 
-const STYLE_KEYS: Style[] = ["id-photo", "instagram", "ghibli"];
+const STYLE_KEYS: Style[] = ["id-photo", "instagram", "ghibli", "fairly-odd", "powerpuff"];
 
 interface ProfileGeneratorProps {
   locale?: Locale;
@@ -420,20 +426,20 @@ export default function ProfileGenerator({ locale = "ko" }: ProfileGeneratorProp
               <label className="mb-2 block text-sm font-medium">
                 {t.styleLabel}
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
                 {STYLE_KEYS.map((key) => (
                   <button
                     key={key}
                     onClick={() => handleStyleSelect(key)}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-4 transition-all ${
+                    className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2.5 transition-all sm:gap-1.5 sm:p-3 ${
                       style === key
                         ? "border-primary bg-primary/5 shadow-sm"
                         : "border-zinc-200 hover:border-zinc-300"
                     }`}
                   >
-                    <span className="text-2xl">{STYLE_EMOJIS[key]}</span>
-                    <span className="text-sm font-medium">{t.styles[key].label}</span>
-                    <span className="text-[10px] text-muted-foreground leading-tight text-center">
+                    <span className="text-xl sm:text-2xl">{STYLE_EMOJIS[key]}</span>
+                    <span className="break-keep text-xs font-medium sm:text-sm">{t.styles[key].label}</span>
+                    <span className="hidden text-[10px] text-muted-foreground leading-tight text-center sm:block">
                       {t.styles[key].desc}
                     </span>
                   </button>

@@ -25,12 +25,13 @@ interface AIPanelProps {
 }
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
-type Style = "ghibli" | "sd" | "steampunk" | "akatsuki" | "custom";
+type Style = "ghibli" | "sd" | "fairly-odd" | "powerpuff" | "akatsuki" | "custom";
 
 const STYLES: { value: Style; label: string; emoji: string }[] = [
   { value: "ghibli", label: "지브리", emoji: "🌿" },
   { value: "sd", label: "SD", emoji: "🎀" },
-  { value: "steampunk", label: "스팀펑크", emoji: "⚙️" },
+  { value: "fairly-odd", label: "수호천사", emoji: "🧚" },
+  { value: "powerpuff", label: "파워퍼프걸", emoji: "💥" },
   { value: "custom", label: "커스텀", emoji: "✏️" },
 ];
 
@@ -47,11 +48,17 @@ const EXAMPLE_PROMPTS: Record<Style, string[]> = {
     "마법 지팡이 들고 주문 외우는 마녀",
     "선글라스 끼고 쿨하게 서 있는 고양이",
   ],
-  steampunk: [
-    "황동 고글 쓰고 기계 팔을 가진 발명가",
-    "증기 기관 비행선 위에 서 있는 모험가",
-    "톱니바퀴 장식 드레스 입은 귀족 고양이",
-    "시계탑 앞에서 나침반을 들여다보는 탐험가",
+  "fairly-odd": [
+    "마법 왕관 쓰고 요술봉 흔드는 요정 소년",
+    "분홍 날개 달고 구름 위를 날아다니는 소녀",
+    "초록 지팡이 들고 소원을 들어주는 요정 고양이",
+    "별이 가득한 방에서 마법 주문 외우는 아이",
+  ],
+  powerpuff: [
+    "하늘을 날며 도시를 구하는 분홍 슈퍼히어로",
+    "레이저 눈빛 쏘며 화난 표정 짓는 초록 히어로",
+    "사탕과 꽃을 좋아하는 파란 눈의 귀여운 히어로",
+    "세 명이 나란히 하늘을 가르며 날아가는 장면",
   ],
   akatsuki: [
     "붉은 구름 망토 입고 절벽 위에 서 있는 닌자",
@@ -196,7 +203,7 @@ export default function AIPanel({
       </div>
 
       {/* 스타일 토글 */}
-      <div className={`grid gap-1.5 ${compact ? "grid-cols-4" : "grid-cols-2"}`}>
+      <div className={`grid gap-1.5 ${compact ? "grid-cols-3" : "grid-cols-2"}`}>
         {STYLES.map((s) => (
           <button
             key={s.value}
