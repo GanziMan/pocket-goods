@@ -11,6 +11,13 @@ export const metadata: Metadata = {
     url: "https://pocket-goods.com/ai-profile",
     images: [{ url: "https://pocket-goods.com/og-image-ai-profile.jpg" }],
   },
+  alternates: {
+    canonical: "https://pocket-goods.com/ai-profile",
+    languages: {
+      ko: "https://pocket-goods.com/ai-profile",
+      en: "https://pocket-goods.com/en/ai-profile",
+    },
+  },
 };
 
 export default function AiProfileLayout({

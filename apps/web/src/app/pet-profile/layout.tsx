@@ -11,6 +11,13 @@ export const metadata: Metadata = {
     url: "https://pocket-goods.com/pet-profile",
     images: [{ url: "https://pocket-goods.com/og-image-ai-profile.jpg" }],
   },
+  alternates: {
+    canonical: "https://pocket-goods.com/pet-profile",
+    languages: {
+      ko: "https://pocket-goods.com/pet-profile",
+      en: "https://pocket-goods.com/en/pet-profile",
+    },
+  },
 };
 
 export default function PetProfileLayout({
