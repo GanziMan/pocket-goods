@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { AiProfileSection } from "@/components/landing/AiProfileSection";
-import { ProductShowcase } from "@/components/landing/ProductShowcase";
-import { FooterCTA } from "@/components/landing/FooterCTA";
+// import { ProductShowcase } from "@/components/landing/ProductShowcase";
+// import { FooterCTA } from "@/components/landing/FooterCTA";
 import { LandingNav } from "@/components/landing/LandingNav";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default function Home() {
 
       <HeroSection />
       <HowItWorks />
-      <FooterCTA />
+      {/* <FooterCTA /> */}
       <AiProfileSection />
       
       {/* <ProductShowcase /> */}
