@@ -59,16 +59,16 @@ PROFILE_STYLE_PROMPTS: dict[str, str] = {
 [스타일] Butch Hartman 특유의 Nickelodeon 카툰 스타일. 굵고 깔끔한 검은 외곽선(bold black outline), 심플하고 과장된 형태, 밝고 채도 높은 플랫 컬러(flat color). 큰 눈, 과장된 머리 비율, 뾰족한 턱, 단순화된 코와 귀. 표정은 활기차고 유쾌하게.
 [조명] 플랫 조명(flat lighting). 그림자 최소화, 균일하고 밝은 색면 위주. 카툰 특유의 하이라이트 포인트(눈, 머리카락)만 간결하게.
 [구도] 얼굴 중심 클로즈업 또는 바스트 샷. 얼굴이 중앙에 위치. 정사각형(1:1) 비율.
-[배경] 밝고 단순한 단색 또는 2톤 배경. 원작의 분위기에 맞는 밝은 파란색/초록색/분홍색 계열. 심플하고 깔끔하게.
-[출력] 정사각형 비율로 얼굴이 중앙에 오도록 크롭. 고해상도, 선명한 포커스. Nickelodeon 카툰 느낌에 충실.
+[배경] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 배경 요소 일체 없음.
+[출력] 정사각형 비율, 투명 배경(PNG), 선명한 외곽선. Nickelodeon 카툰 느낌에 충실.
 """,
     "powerpuff": """
 [주체] 첨부된 사진의 인물(또는 동물)을 "The Powerpuff Girls(파워퍼프걸)" 애니메이션 캐릭터로 변환.
 [스타일] Craig McCracken 특유의 Cartoon Network 스타일. 극단적으로 큰 동그란 눈(홍채가 얼굴의 절반 차지), 눈동자 안에 큰 하이라이트. 코 없음(또는 아주 작은 점), 작은 입. 뭉툭하고 둥근 몸체, 손가락 없는 둥근 손. 머리 형태와 색상으로 개성 표현. 굵고 깨끗한 검은 외곽선, 밝고 채도 높은 파스텔~비비드 플랫 컬러.
 [조명] 완전 플랫 조명. 그림자 없음. 밝고 균일한 색면으로만 구성. 눈에 큰 원형 하이라이트.
 [구도] 얼굴 중심 또는 전신이 보이는 구도. 캐릭터가 중앙에 위치. 정사각형(1:1) 비율.
-[배경] 밝고 깨끗한 단색 배경. 원작의 파스텔/네온 색감에 맞는 분홍, 하늘색, 연초록 중 캐릭터와 어울리는 색상. 또는 원작 특유의 도시(Townsville) 실루엣 배경.
-[출력] 정사각형 비율로 얼굴이 중앙에 오도록 크롭. 고해상도, 선명한 포커스. Powerpuff Girls 원작 느낌에 충실.
+[배경] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 배경 요소 일체 없음.
+[출력] 정사각형 비율, 투명 배경(PNG), 선명한 외곽선. Powerpuff Girls 원작 느낌에 충실.
 """,
 }
 
@@ -78,7 +78,7 @@ PET_PROFILE_PROMPT = """
 [스타일] 밝고 사랑스러운 반려동물 프로필 사진. 동물이 살짝 미소 짓는 듯한 행복하고 친근한 표정으로 표현. 눈은 반짝이고 생기 있게, 입꼬리가 자연스럽게 올라간 웃는 얼굴. 털은 부드럽고 윤기 있게 표현하되 과도한 보정 없이 자연스럽게.
 [조명] 밝고 부드러운 스튜디오 조명. 정면에서 균일하게 비추는 소프트박스 키라이트, 부드러운 필라이트로 그림자 최소화. 눈에 크고 선명한 캐치라이트로 생기 있는 눈빛 강조.
 [구도] 동물의 정면 얼굴 중심 클로즈업. 얼굴이 정중앙에 위치. 원형 프로필 사진에 어울리도록 얼굴이 프레임의 대부분을 차지. 정사각형(1:1) 비율.
-[배경] 파스텔톤 단색 배경 — 부드러운 분홍색(soft pink, #FFD6E0) 또는 연한 하늘색(baby blue, #D6EEFF) 중 동물의 털 색상과 가장 잘 어울리는 색상을 자동으로 선택. 배경은 깨끗한 단색으로, 그라디언트 없음.
+[배경] 깨끗한 흰색(#FFFFFF) 단색 배경. 그라디언트 없음, 파스텔 색상 없음, 오직 순수한 흰색 배경만.
 [출력] 정사각형 비율로 얼굴이 중앙에 오도록 크롭. 고해상도, 선명한 포커스. 원형으로 잘랐을 때 예쁘게 보이는 구도.
 """
 
@@ -182,6 +182,7 @@ async def _call_gemini_and_extract(
     parts: list,
     ctx: RateLimitContext,
     log_tag: str,
+    remove_bg: bool = False,
 ) -> JSONResponse:
     try:
         logger.info("[%s] Gemini API 호출 시작 model=%s", log_tag, PROFILE_MODEL)
@@ -202,6 +203,14 @@ async def _call_gemini_and_extract(
             if part.inline_data and part.inline_data.mime_type.startswith("image/"):
                 raw_bytes = part.inline_data.data
                 logger.info("[%s] 이미지 추출 성공 size=%dB", log_tag, len(raw_bytes))
+
+                if remove_bg:
+                    from rembg import remove as rembg_remove, new_session as rembg_new_session
+                    logger.info("[%s] rembg 누끼 처리 시작", log_tag)
+                    t1 = time.monotonic()
+                    session = rembg_new_session("u2net")
+                    raw_bytes = rembg_remove(raw_bytes, session=session)
+                    logger.info("[%s] rembg 완료 (%.1fs)", log_tag, time.monotonic() - t1)
 
                 increment_usage(ctx.rate_key)
                 used_count = get_usage_count(ctx.rate_key)
@@ -257,7 +266,8 @@ async def generate_profile(
     parts: list = [image_part, PROFILE_STYLE_PROMPTS[style]]
     logger.info("[profile] style=%s", style)
 
-    return await _call_gemini_and_extract(client, parts, ctx, "profile")
+    needs_rembg = style in ("fairly-odd", "powerpuff")
+    return await _call_gemini_and_extract(client, parts, ctx, "profile", remove_bg=needs_rembg)
 
 
 @router.post("/generate-pet-profile")
