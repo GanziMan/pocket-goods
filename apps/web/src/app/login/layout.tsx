@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "로그인",
-  description:
-    "로그인하고 AI 이미지 생성 하루 10회 무료로 이용하세요.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = getDictionary(locale);
+  return {
+    title: t.metadata.loginTitle,
+    description: t.metadata.loginDescription,
+  };
+}
 
 export default function LoginLayout({
   children,

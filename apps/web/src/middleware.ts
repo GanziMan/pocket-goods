@@ -1,29 +1,51 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const LOCALE_ROUTES = ["/ai-profile", "/pet-profile"];
+const COOKIE_NAME = "NEXT_LOCALE";
+const DEFAULT_LOCALE = "ko";
+const LOCALES = ["ko", "en", "ja", "pt-BR", "zh-CN"];
 
-function getPreferredLocale(request: NextRequest): "ko" | "en" {
+function detectLocale(request: NextRequest): string {
   const acceptLang = request.headers.get("accept-language") ?? "";
-  // ko, ko-KR 등이 포함되면 한국어
-  if (/\bko\b/i.test(acceptLang)) return "ko";
-  return "en";
+  // Parse Accept-Language header and match against supported locales
+  const segments = acceptLang.split(",").map((s) => s.trim().split(";")[0].trim());
+  for (const seg of segments) {
+    // Exact match
+    if (LOCALES.includes(seg)) return seg;
+    // pt-BR from pt
+    if (seg.startsWith("pt")) return "pt-BR";
+    // zh-CN from zh
+    if (seg.startsWith("zh")) return "zh-CN";
+    // Simple prefix match (ko, en, ja)
+    const prefix = seg.split("-")[0];
+    if (LOCALES.includes(prefix)) return prefix;
+  }
+  return DEFAULT_LOCALE;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // /ai-profile 접속 시 브라우저 언어가 한국어가 아니면 /en/ai-profile로 리다이렉트
-  if (LOCALE_ROUTES.includes(pathname)) {
-    const locale = getPreferredLocale(request);
-    if (locale === "en") {
-      const url = request.nextUrl.clone();
-      url.pathname = `/en${pathname}`;
-      return NextResponse.redirect(url);
-    }
+  // /en/* 경로 301 리다이렉트 (기존 URL 호환)
+  if (pathname.startsWith("/en/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/en/, "");
+    return NextResponse.redirect(url, 301);
   }
 
-  return await updateSession(request);
+  // 쿠키에 NEXT_LOCALE이 없으면 Accept-Language에서 감지하여 설정
+  const response = await updateSession(request);
+  const existing = request.cookies.get(COOKIE_NAME)?.value;
+  if (!existing || !LOCALES.includes(existing)) {
+    const detected = detectLocale(request);
+    response.cookies.set(COOKIE_NAME, detected, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      sameSite: "lax",
+    });
+  }
+
+  return response;
 }
 
 export const config = {

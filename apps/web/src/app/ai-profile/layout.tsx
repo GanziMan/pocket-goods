@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "AI 프로필 사진 만들기 | 포켓굿즈",
-  description:
-    "사진 한 장으로 증명사진, 인스타 감성, 지브리 스타일 프로필 사진을 AI가 만들어드려요.",
-  openGraph: {
-    title: "AI 프로필 사진 만들기 | 포켓굿즈",
-    description:
-      "사진 한 장으로 증명사진, 인스타 감성, 지브리 스타일 프로필 사진을 AI가 만들어드려요.",
-    url: "https://pocket-goods.com/ai-profile",
-    images: [{ url: "https://pocket-goods.com/og-image-ai-profile.jpg" }],
-  },
-  alternates: {
-    canonical: "https://pocket-goods.com/ai-profile",
-    languages: {
-      ko: "https://pocket-goods.com/ai-profile",
-      en: "https://pocket-goods.com/en/ai-profile",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = getDictionary(locale);
+  return {
+    title: t.metadata.aiProfileTitle,
+    description: t.metadata.aiProfileDescription,
+    openGraph: {
+      title: t.metadata.aiProfileTitle,
+      description: t.metadata.aiProfileDescription,
+      url: "https://pocket-goods.com/ai-profile",
+      images: [{ url: "https://pocket-goods.com/og-image-ai-profile.jpg" }],
     },
-  },
-};
+    alternates: {
+      canonical: "https://pocket-goods.com/ai-profile",
+    },
+  };
+}
 
 export default function AiProfileLayout({
   children,

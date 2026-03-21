@@ -1,6 +1,7 @@
 "use client";
 
 import { MousePointerClick } from "lucide-react";
+import { useLocale } from "@/lib/i18n/client";
 
 interface DesignCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -9,13 +10,12 @@ interface DesignCanvasProps {
 }
 
 export default function DesignCanvas({
-  canvasRef,
-  outputSizeMm,
-  showGuide = false,
+  canvasRef, outputSizeMm, showGuide = false,
 }: DesignCanvasProps) {
+  const { t } = useLocale();
+
   return (
     <div className="w-full h-full bg-zinc-100 overflow-auto">
-      {/* min-w-full: 캔버스가 작을 땐 뷰포트 기준 중앙 정렬, 클 땐 left edge부터 스크롤 (인위적 left padding 없음) */}
       <div className="flex items-center justify-center min-w-full min-h-full py-4">
         <div className="relative my-4 mx-auto md:my-16 md:mx-20 shrink-0">
           <div className="relative shadow-2xl rounded-sm overflow-hidden ring-1 ring-zinc-200 bg-white">
@@ -23,16 +23,15 @@ export default function DesignCanvas({
             {showGuide && (
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <MousePointerClick className="w-8 h-8 text-zinc-300 mb-2" />
-                <p className="text-sm font-medium text-zinc-400">캔버스가 비어있어요</p>
+                <p className="text-sm font-medium text-zinc-400">{t.canvas.emptyTitle}</p>
                 <p className="text-xs text-zinc-300 mt-1">
-                  <span className="hidden md:inline">왼쪽 AI 탭에서 이미지를 생성하거나 텍스트를 추가하세요</span>
-                  <span className="md:hidden">하단 에셋 버튼으로 이미지나 텍스트를 추가하세요</span>
+                  <span className="hidden md:inline">{t.canvas.emptyDesktop}</span>
+                  <span className="md:hidden">{t.canvas.emptyMobile}</span>
                 </p>
               </div>
             )}
           </div>
 
-          {/* 모바일: 캔버스 아래 치수 표시 */}
           <div className="md:hidden flex justify-center mt-2 pointer-events-none">
             <span className="rounded-full border border-zinc-200/80 bg-white/90 backdrop-blur px-3 py-1 text-[11px] font-semibold text-zinc-500 shadow-sm tabular-nums">
               {outputSizeMm.width} × {outputSizeMm.height} mm

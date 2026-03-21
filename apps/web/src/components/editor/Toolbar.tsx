@@ -5,19 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import {
-  Undo2,
-  Redo2,
-  Trash2,
-  BringToFront,
-  SendToBack,
-  Download,
-  ShoppingCart,
-  Save,
-  CheckCheck,
-  Loader2,
+  Undo2, Redo2, Trash2, BringToFront, SendToBack, Download, ShoppingCart, Save, CheckCheck, Loader2,
 } from "lucide-react";
 import type { ProductType } from "@/lib/assets";
 import UserMenu from "@/components/auth/UserMenu";
+import { useLocale } from "@/lib/i18n/client";
 
 interface ToolbarProps {
   productType: ProductType;
@@ -37,111 +29,42 @@ interface ToolbarProps {
   isExporting?: boolean;
 }
 
-const PRODUCT_LABELS: Record<ProductType, string> = {
-  keyring: "아크릴 키링",
-  sticker: "투명 스티커",
-};
-
-function formatSavedAt(date: Date): string {
-  return date.toLocaleTimeString("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default function Toolbar({
-  productType,
-  onProductTypeChange,
-  canUndo,
-  canRedo,
-  hasSelection,
-  isDirty,
-  savedAt,
-  onUndo,
-  onRedo,
-  onDelete,
-  onBringForward,
-  onSendBackward,
-  onSave,
-  onExportPreview,
-  isExporting,
+  productType, onProductTypeChange, canUndo, canRedo, hasSelection, isDirty, savedAt,
+  onUndo, onRedo, onDelete, onBringForward, onSendBackward, onSave, onExportPreview, isExporting,
 }: ToolbarProps) {
+  const { locale, t } = useLocale();
+  const tb = t.toolbar;
+
+  const PRODUCT_LABELS: Record<ProductType, string> = {
+    keyring: tb.keyring,
+    sticker: tb.sticker,
+  };
+
   return (
     <header className="flex items-center gap-2 px-4 h-14 border-b bg-white shrink-0">
-      {/* 브랜드 */}
-      <Link href="/" className="font-bold text-lg tracking-tight mr-2 select-none">포켓굿즈</Link>
+      <Link href="/" className="font-bold text-lg tracking-tight mr-2 select-none">{t.common.brandName}</Link>
 
-      {/* 상품 타입 선택 */}
       <div className="flex gap-1">
         {(["keyring", "sticker"] as ProductType[]).map((type) => (
-          <Badge
-            key={type}
-            variant={productType === type ? "default" : "outline"}
-            className="cursor-pointer select-none py-3"
-            onClick={() => onProductTypeChange(type)}
-          >
+          <Badge key={type} variant={productType === type ? "default" : "outline"} className="cursor-pointer select-none py-3" onClick={() => onProductTypeChange(type)}>
             {PRODUCT_LABELS[type]}
           </Badge>
         ))}
       </div>
 
-      {/* 편집 액션 */}
       <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!canUndo}
-          onClick={onUndo}
-          title="실행 취소 (Ctrl+Z)"
-        >
-          <Undo2 className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!canRedo}
-          onClick={onRedo}
-          title="다시 실행 (Ctrl+Y)"
-        >
-          <Redo2 className="w-4 h-4" />
-        </Button>
+        <Button variant="ghost" size="icon" disabled={!canUndo} onClick={onUndo} title={`${tb.undo} (${tb.undoShortcut})`}><Undo2 className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="icon" disabled={!canRedo} onClick={onRedo} title={`${tb.redo} (${tb.redoShortcut})`}><Redo2 className="w-4 h-4" /></Button>
       </div>
 
-      {/* 레이어 & 삭제 */}
       <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!hasSelection}
-          onClick={onBringForward}
-          title="앞으로 보내기"
-        >
-          <BringToFront className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!hasSelection}
-          onClick={onSendBackward}
-          title="뒤로 보내기"
-        >
-          <SendToBack className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!hasSelection}
-          onClick={onDelete}
-          title="선택 삭제"
-          className="text-red-500 hover:text-red-600 hover:bg-red-50"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        <Button variant="ghost" size="icon" disabled={!hasSelection} onClick={onBringForward} title={tb.bringForward}><BringToFront className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="icon" disabled={!hasSelection} onClick={onSendBackward} title={tb.sendBackward}><SendToBack className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="icon" disabled={!hasSelection} onClick={onDelete} title={tb.deleteSelected} className="text-red-500 hover:text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
       </div>
 
-      {/* 오른쪽 정렬 */}
       <div className="ml-auto flex items-center gap-3">
-        {/* 저장 상태 표시 */}
         <div className="flex items-center gap-1.5 text-xs text-zinc-400">
           {isDirty ? (
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
@@ -149,42 +72,21 @@ export default function Toolbar({
             <CheckCheck className="w-3.5 h-3.5 text-green-500" />
           ) : null}
           <span>
-            {isDirty
-              ? "저장되지 않은 변경사항"
-              : savedAt
-                ? `${formatSavedAt(savedAt)} 저장됨`
-                : ""}
+            {isDirty ? tb.unsavedChanges : savedAt ? tb.savedAt(savedAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })) : ""}
           </span>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onSave}
-          title="저장 (Ctrl+S)"
-        >
-          <Save className="w-4 h-4 mr-1" />
-          저장
+        <Button variant="outline" size="sm" onClick={onSave} title={`${tb.save} (${tb.saveShortcut})`}>
+          <Save className="w-4 h-4 mr-1" />{tb.save}
         </Button>
 
         <Separator orientation="vertical" className="h-6" />
 
         <Button variant="outline" size="sm" onClick={onExportPreview} disabled={isExporting}>
-          {isExporting ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-              다운로드 중…
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4 mr-1" />
-              다운로드
-            </>
-          )}
+          {isExporting ? (<><Loader2 className="w-4 h-4 mr-1 animate-spin" />{tb.downloading}</>) : (<><Download className="w-4 h-4 mr-1" />{t.common.download}</>)}
         </Button>
-        <Button size="sm" disabled title="주문 기능은 준비 중입니다">
-          <ShoppingCart className="w-4 h-4 mr-1" />
-          주문하기
+        <Button size="sm" disabled title={tb.orderDisabledTitle}>
+          <ShoppingCart className="w-4 h-4 mr-1" />{tb.order}
         </Button>
 
         <Separator orientation="vertical" className="h-6" />

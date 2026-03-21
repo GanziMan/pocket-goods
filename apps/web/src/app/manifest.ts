@@ -1,11 +1,14 @@
 import type { MetadataRoute } from "next";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   return {
-    name: "포켓굿즈 — 나만의 굿즈 디자인",
-    short_name: "포켓굿즈",
-    description:
-      "나만의 캐릭터, 반려동물, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요.",
+    name: t.manifest.name,
+    short_name: t.manifest.shortName,
+    description: t.manifest.description,
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

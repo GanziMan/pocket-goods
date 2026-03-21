@@ -2,35 +2,33 @@
 
 import { useInView } from "@/hooks/useInView";
 import { Badge } from "@/components/ui/badge";
-
-const products = [
-  {
-    name: "아크릴 키링",
-    badge: "인기",
-    specs: ["투명 아크릴 소재", "양면 인쇄", "약 5 × 7 cm", "볼체인 포함"],
-    emoji: "🔑",
-    gradient: "from-amber-100 to-orange-100",
-  },
-  {
-    name: "투명 스티커",
-    badge: "NEW",
-    specs: ["투명 PET 소재", "방수 코팅", "약 5 × 7 cm", "다꾸·폰꾸에 딱"],
-    emoji: "✨",
-    gradient: "from-sky-100 to-indigo-100",
-  },
-];
+import { useLocale } from "@/lib/i18n/client";
 
 export function ProductShowcase() {
   const { ref, inView } = useInView<HTMLDivElement>();
+  const { t } = useLocale();
+
+  const products = [
+    {
+      ...t.products.keyring,
+      emoji: "🔑",
+      gradient: "from-amber-100 to-orange-100",
+    },
+    {
+      ...t.products.sticker,
+      emoji: "✨",
+      gradient: "from-sky-100 to-indigo-100",
+    },
+  ];
 
   return (
     <section className="px-4 py-20 md:py-28">
       <div ref={ref} className="mx-auto max-w-4xl">
         <h2 className="text-center text-2xl font-bold md:text-3xl">
-          어떤 굿즈를 만들 수 있나요?
+          {t.products.title}
         </h2>
         <p className="mt-2 text-center text-muted-foreground">
-          고퀄리티 제품으로 제작해드려요
+          {t.products.subtitle}
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 md:gap-8">

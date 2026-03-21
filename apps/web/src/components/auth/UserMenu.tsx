@@ -5,14 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import { LogOut, User } from "lucide-react";
 import Link from "next/link";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { useLocale } from "@/lib/i18n/client";
 
 interface UserMenuProps {
-  compact?: boolean; // 모바일/에디터에서 아이콘만 표시
+  compact?: boolean;
 }
 
 export default function UserMenu({ compact = false }: UserMenuProps) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useLocale();
 
   useEffect(() => {
     const supabase = createClient();
@@ -45,7 +47,7 @@ export default function UserMenu({ compact = false }: UserMenuProps) {
         href="/login"
         className="shrink-0 break-keep text-xs font-medium text-muted-foreground transition-colors hover:text-foreground md:text-sm"
       >
-        로그인
+        {t.common.login}
       </Link>
     );
   }
@@ -54,7 +56,7 @@ export default function UserMenu({ compact = false }: UserMenuProps) {
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
     user.email?.split("@")[0] ||
-    "사용자";
+    t.common.user;
   const avatarUrl = user.user_metadata?.avatar_url;
 
   if (compact) {
@@ -72,7 +74,7 @@ export default function UserMenu({ compact = false }: UserMenuProps) {
         <button
           onClick={handleSignOut}
           className="text-xs text-muted-foreground hover:text-foreground"
-          title="로그아웃"
+          title={t.common.logout}
         >
           <LogOut className="size-3.5" />
         </button>
@@ -96,7 +98,7 @@ export default function UserMenu({ compact = false }: UserMenuProps) {
       <button
         onClick={handleSignOut}
         className="text-muted-foreground hover:text-foreground"
-        title="로그아웃"
+        title={t.common.logout}
       >
         <LogOut className="size-3.5" />
       </button>

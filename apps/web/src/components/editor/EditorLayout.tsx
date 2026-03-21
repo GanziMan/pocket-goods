@@ -15,6 +15,7 @@ import type { ProductType } from "@/lib/assets";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLocale } from "@/lib/i18n/client";
 
 type OutputSize = "A4" | "A5" | "A6";
 
@@ -25,6 +26,7 @@ const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
 };
 
 export default function EditorLayout() {
+  const { locale, t } = useLocale();
   const [productType, setProductTypeState] = useState<ProductType>("keyring");
   const [mobilePanel, setMobilePanel] = useState<"assets" | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -145,10 +147,8 @@ export default function EditorLayout() {
     const draft = loadDraft();
     if (!draft) return;
     const savedDate = new Date(draft.savedAt);
-    const timeStr = savedDate.toLocaleString("ko-KR");
-    const restore = window.confirm(
-      `저장된 디자인이 있습니다 (${timeStr})\n\n이어서 작업하시겠습니까?`
-    );
+    const timeStr = savedDate.toLocaleString(locale);
+    const restore = window.confirm(t.toolbar.restorePrompt(timeStr));
     if (restore) {
       loadDesign(draft.canvasJSON);
       if (draft.productType === "keyring" || draft.productType === "sticker") {
@@ -183,7 +183,7 @@ export default function EditorLayout() {
           }),
         }
       );
-      if (!res.ok) throw new Error("Export 실패");
+      if (!res.ok) throw new Error(t.toolbar.exportFailed);
       const pngBlob = await res.blob();
       const pngUrl = URL.createObjectURL(pngBlob);
       const link = document.createElement("a");
@@ -276,7 +276,7 @@ export default function EditorLayout() {
               size="icon"
               onClick={zoomOut}
               disabled={zoom <= 0.5}
-              title="줌 아웃"
+              title={t.toolbar.zoomOut}
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
@@ -288,7 +288,7 @@ export default function EditorLayout() {
               size="icon"
               onClick={zoomIn}
               disabled={zoom >= 2.0}
-              title="줌 인"
+              title={t.toolbar.zoomIn}
             >
               <ZoomIn className="w-4 h-4" />
             </Button>
@@ -339,7 +339,7 @@ export default function EditorLayout() {
       <MobileDrawer
         open={mobilePanel === "assets"}
         onClose={() => setMobilePanel(null)}
-        title="에셋"
+        title={t.assetPanel.mobileAssetTitle}
         noPadding
       >
         <AssetPanel

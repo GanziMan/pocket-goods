@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { getLocale } from "@/lib/i18n/server";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { LocaleProvider } from "@/lib/i18n/client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,95 +18,77 @@ const geistMono = Geist_Mono({
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://pocket-goods.com";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
-  title: {
-    default: "포켓굿즈 — 무료 키링·스티커 디자인 | 나만의 굿즈 제작",
-    template: "%s | 포켓굿즈",
-  },
-  description:
-    "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
-  keywords: [
-    "포켓굿즈",
-    "PocketGoods",
-    "강아지 키링",
-    "고양이 키링",
-    "반려동물 굿즈",
-    "아기 키링",
-    "아기 스티커",
-    "취미 굿즈",
-    "덕질 굿즈",
-    "나만의 캐릭터 굿즈",
-    "커스텀 캐릭터 키링",
-    "커스텀 키링",
-    "나만의 키링",
-    "키링 만들기",
-    "스티커 만들기",
-    "아크릴 키링",
-    "투명 스티커",
-    "POD 굿즈",
-    "굿즈 제작",
-    "다꾸",
-    "폰꾸",
-    "선물 굿즈",
-  ],
-  authors: [{ name: "포켓굿즈" }],
-  creator: "포켓굿즈",
-  openGraph: {
-    type: "website",
-    locale: "ko_KR",
-    url: BASE_URL,
-    siteName: "포켓굿즈",
-    title: "포켓굿즈 — 무료 키링·스티커 디자인 | 나만의 굿즈 제작",
-    description:
-      "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요. 취미·덕질·선물용 POD 굿즈 제작 서비스.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "포켓굿즈 — 무료 키링·스티커 디자인",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "포켓굿즈 — 무료 키링·스티커 디자인 | 나만의 굿즈 제작",
-    description:
-      "나만의 캐릭터, 강아지, 고양이, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요.",
-    images: ["/og-image.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = getDictionary(locale);
+
+  return {
+    metadataBase: new URL(BASE_URL),
+    title: {
+      default: t.metadata.rootTitle,
+      template: `%s | ${t.common.brandName}`,
+    },
+    description: t.metadata.rootDescription,
+    keywords: [...t.metadata.keywords],
+    authors: [{ name: t.common.brandName }],
+    creator: t.common.brandName,
+    openGraph: {
+      type: "website",
+      locale: locale === "ko" ? "ko_KR" : locale === "ja" ? "ja_JP" : locale === "zh-CN" ? "zh_CN" : locale === "pt-BR" ? "pt_BR" : "en_US",
+      url: BASE_URL,
+      siteName: t.common.brandName,
+      title: t.metadata.rootTitle,
+      description: t.metadata.rootDescription,
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: t.metadata.rootTitle,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t.metadata.rootTitle,
+      description: t.metadata.rootDescription,
+      images: ["/og-image.png"],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+      },
     },
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: "/apple-touch-icon.png",
-  },
-  verification: {
-    other: {
-      "naver-site-verification": "554aa601f00482f1cc4666b09ce4775b46accf91",
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "48x48" },
+        { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: "/apple-touch-icon.png",
     },
-  },
-};
+    verification: {
+      other: {
+        "naver-site-verification": "554aa601f00482f1cc4666b09ce4775b46accf91",
+      },
+    },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const dictionary = getDictionary(locale);
+
   return (
-    <html lang="ko">
+    <html lang={locale}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
@@ -128,22 +113,23 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebApplication",
-              name: "포켓굿즈",
+              name: dictionary.metadata.jsonLdName,
               url: BASE_URL,
               applicationCategory: "DesignApplication",
               operatingSystem: "Web",
-              description:
-                "나만의 캐릭터, 반려동물, 아기 사진으로 키링·스티커를 1분 만에 만드는 무료 디자인 도구",
+              description: dictionary.metadata.jsonLdDescription,
               offers: {
                 "@type": "Offer",
                 price: "0",
                 priceCurrency: "KRW",
-                description: "AI 이미지 생성 하루 2회 무료, 로그인 시 10회",
+                description: dictionary.metadata.jsonLdOffer,
               },
             }),
           }}
         />
-        {children}
+        <LocaleProvider locale={locale} dictionary={dictionary}>
+          {children}
+        </LocaleProvider>
         {/* 카카오 SDK */}
         <Script
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"

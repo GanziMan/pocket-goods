@@ -5,11 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { useLocale } from "@/lib/i18n/client";
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const next = searchParams.get("next") ?? "/design";
+  const { t } = useLocale();
 
   const handleKakaoLogin = async () => {
     const supabase = createClient();
@@ -39,18 +41,18 @@ function LoginContent() {
       <div className="w-full max-w-sm space-y-8 text-center">
         {/* 로고 */}
         <Link href="/" className="inline-flex items-center gap-2">
-          <Image src="/logo.png" alt="포켓굿즈" width={40} height={40} />
-          <span className="text-xl font-bold">포켓굿즈</span>
+          <Image src="/logo.png" alt={t.common.brandName} width={40} height={40} />
+          <span className="text-xl font-bold">{t.common.brandName}</span>
         </Link>
 
         {/* 혜택 안내 */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">로그인하고 더 많이 만들기</h1>
+          <h1 className="text-2xl font-bold">{t.login.title}</h1>
           <p className="text-sm text-muted-foreground">
-            로그인하면 AI 이미지 생성을
+            {t.login.description}
             <br />
-            <span className="font-semibold text-primary">하루 10회 무료</span>로
-            이용할 수 있어요
+            <span className="font-semibold text-primary">{t.login.benefit}</span>
+            {t.login.benefitSuffix}
           </p>
         </div>
 
@@ -74,9 +76,9 @@ function LoginContent() {
               fill="#191919"
             />
           </svg>
-          카카오로 시작하기
+          {t.login.kakaoButton}
         </button>
-        {/* 구글 로그인 버튼 (추가) */}
+        {/* 구글 로그인 버튼 */}
         <button
           onClick={handleGoogleLogin}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3.5 text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-50"
@@ -99,21 +101,21 @@ function LoginContent() {
               fill="#EA4335"
             />
           </svg>
-          Google로 시작하기
+          {t.login.googleButton}
         </button>
         {error && (
           <p className="text-xs text-red-500">
-            로그인 중 문제가 발생했습니다. 다시 시도해주세요.
+            {t.login.errorMessage}
           </p>
         )}
 
         {/* 비로그인 안내 */}
         <p className="text-xs text-muted-foreground">
-          로그인 없이도{" "}
+          {t.login.guestInfo}{" "}
           <Link href="/design" className="underline underline-offset-2">
-            하루 2회 무료
+            {t.login.guestBenefit}
           </Link>
-          로 이용 가능해요
+          {t.login.guestSuffix}
         </p>
       </div>
     </main>
