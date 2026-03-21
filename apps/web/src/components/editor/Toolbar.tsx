@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { ProductType } from "@/lib/assets";
 import UserMenu from "@/components/auth/UserMenu";
-import { useLocale } from "@/lib/i18n/client";
+import { useLocale, tpl } from "@/lib/i18n/client";
 
 interface ToolbarProps {
   productType: ProductType;
@@ -72,7 +72,7 @@ export default function Toolbar({
             <CheckCheck className="w-3.5 h-3.5 text-green-500" />
           ) : null}
           <span>
-            {isDirty ? tb.unsavedChanges : savedAt ? tb.savedAt(savedAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })) : ""}
+            {isDirty ? tb.unsavedChanges : savedAt ? tpl(tb.savedAt, { time: savedAt.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) }) : ""}
           </span>
         </div>
 

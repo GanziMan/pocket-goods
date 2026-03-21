@@ -11,7 +11,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { useLocale } from "@/lib/i18n/client";
+import { useLocale, tpl } from "@/lib/i18n/client";
+import { useImagePreprocessor } from "@/hooks/useImagePreprocessor";
 
 interface AIPanelProps {
   onGetCanvasImage: () => string;
@@ -35,6 +36,11 @@ export default function AIPanel({
 }: AIPanelProps) {
   const { t } = useLocale();
   const e = t.editor;
+  const ip = t.imageProcessing;
+  const {
+    processFile, processing: preprocessing, currentStep,
+    errors: preprocessErrors, reset: resetPreprocess,
+  } = useImagePreprocessor();
   const [mode, setMode] = useState<Mode>("prompt-only");
   const [style, setStyle] = useState<Style>("ghibli");
   const [prompt, setPrompt] = useState("");
@@ -50,11 +56,15 @@ export default function AIPanel({
   const [remaining, setRemaining] = useState<{ count: number; limit: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = (ev: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (ev: React.ChangeEvent<HTMLInputElement>) => {
     const file = ev.target.files?.[0];
     if (!file) return;
-    setUploadedFile(file);
-    setUploadedPreview(URL.createObjectURL(file));
+    resetPreprocess();
+    const result = await processFile(file);
+    if (!result) return;
+    if (uploadedPreview) URL.revokeObjectURL(uploadedPreview);
+    setUploadedFile(result.file);
+    setUploadedPreview(URL.createObjectURL(result.file));
     setMode("from-upload");
   };
 
@@ -104,7 +114,7 @@ export default function AIPanel({
         </div>
         {remaining && (
           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${remaining.count <= 2 ? "bg-red-50 text-red-600" : "bg-zinc-100 text-zinc-500"}`}>
-            {e.remaining(remaining.count, remaining.limit)}
+            {tpl(e.remaining, { count: remaining.count, limit: remaining.limit })}
           </span>
         )}
       </div>
@@ -123,10 +133,32 @@ export default function AIPanel({
         <ModeButton active={mode === "from-upload"} icon={<Upload className="w-3.5 h-3.5" />} label={e.modeUpload} onClick={() => { setMode("from-upload"); fileInputRef.current?.click(); }} />
       </div>
 
-      {mode === "from-upload" && uploadedPreview && (
+      {mode === "from-upload" && preprocessing && (
+        <div className={`flex flex-col items-center justify-center gap-2 rounded-lg border border-zinc-200 ${compact ? "w-32 h-32 mx-auto" : "w-full aspect-square"}`}>
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <p className="text-[10px] text-muted-foreground">
+            {currentStep === "converting" ? ip.converting : currentStep === "compressing" ? ip.compressing : ip.processing}
+          </p>
+        </div>
+      )}
+
+      {mode === "from-upload" && !preprocessing && uploadedPreview && (
         <div className={`relative rounded-lg overflow-hidden border border-zinc-200 cursor-pointer ${compact ? "w-32 h-32 mx-auto" : "w-full aspect-square"}`} onClick={() => fileInputRef.current?.click()}>
           <Image src={uploadedPreview} alt={e.uploadPreviewAlt} fill className="object-contain" />
           <span className="absolute bottom-1 inset-x-0 text-center text-[10px] text-zinc-500">{e.uploadChangeHint}</span>
+        </div>
+      )}
+
+      {preprocessErrors.length > 0 && (
+        <div className="rounded-lg bg-red-50 p-2 space-y-1">
+          {preprocessErrors.map((err) => (
+            <p key={err.type} className="text-[10px] text-red-500">
+              {err.type === "file-too-large" ? tpl(ip.fileTooLarge, { maxMB: 20 })
+                : err.type === "file-too-small" ? tpl(ip.imageTooSmall, { minPx: 200 })
+                : err.type === "unsupported-type" ? ip.unsupportedFormat
+                : ip.invalidImage}
+            </p>
+          ))}
         </div>
       )}
 
@@ -134,7 +166,7 @@ export default function AIPanel({
         <p className="text-xs text-muted-foreground bg-zinc-50 rounded-lg p-2 border">{e.canvasRefHint}</p>
       )}
 
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="hidden" onChange={handleUpload} />
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">

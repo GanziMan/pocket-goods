@@ -14,6 +14,7 @@ import {
   Share2,
   Link2,
   Check,
+  AlertTriangle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +22,8 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { createClient } from "@/lib/supabase/client";
 import { profileEvents } from "@/lib/gtag";
 import { addWatermark, resultToBlob } from "@/lib/image-utils";
-import { useLocale } from "@/lib/i18n/client";
+import { useLocale, tpl } from "@/lib/i18n/client";
+import { useImagePreprocessor } from "@/hooks/useImagePreprocessor";
 
 type Style = "id-photo" | "instagram" | "ghibli" | "fairly-odd" | "powerpuff";
 
@@ -38,7 +40,13 @@ const STYLE_KEYS: Style[] = ["id-photo", "instagram", "ghibli", "fairly-odd", "p
 export default function ProfileGenerator() {
   const { t, locale } = useLocale();
   const p = t.profile;
+  const ip = t.imageProcessing;
   const shareUrl = "https://pocket-goods.com/ai-profile";
+  const {
+    processFile, processing: preprocessing, currentStep,
+    errors: preprocessErrors, warnings: preprocessWarnings, reset: resetPreprocess,
+  } = useImagePreprocessor({ detectFace: true });
+  const [faceWarningDismissed, setFaceWarningDismissed] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
   const [style, setStyle] = useState<Style>("ghibli");
@@ -62,19 +70,27 @@ export default function ProfileGenerator() {
     setError(null);
   };
 
+  const handleFileSelected = async (file: File) => {
+    resetPreprocess();
+    setFaceWarningDismissed(false);
+    const result = await processFile(file);
+    if (result) {
+      setPreview(result.file);
+    }
+    profileEvents.uploadPhoto();
+  };
+
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPreview(file);
-    profileEvents.uploadPhoto();
+    handleFileSelected(file);
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (!file || !file.type.startsWith("image/")) return;
-    setPreview(file);
-    profileEvents.uploadPhoto();
+    if (!file) return;
+    handleFileSelected(file);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadedPreview]);
 
@@ -258,7 +274,7 @@ export default function ProfileGenerator() {
                 ? "bg-red-50 text-red-600"
                 : "bg-zinc-100 text-zinc-500"
             }`}>
-              {p.remaining(remaining.count, remaining.limit)}
+              {tpl(p.remaining, { count: remaining.count, limit: remaining.limit })}
             </p>
           )}
         </div>
@@ -282,7 +298,17 @@ export default function ProfileGenerator() {
                     : "border-zinc-300 hover:border-primary hover:bg-primary/5"
                 } ${uploadedPreview ? "p-0 overflow-hidden" : "p-8"}`}
               >
-                {uploadedPreview ? (
+                {preprocessing ? (
+                  <div className="flex flex-col items-center justify-center gap-3 p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">
+                      {currentStep === "converting" ? ip.converting
+                        : currentStep === "compressing" ? ip.compressing
+                        : currentStep === "detecting-face" ? ip.detectingFace
+                        : ip.processing}
+                    </p>
+                  </div>
+                ) : uploadedPreview ? (
                   <div className="relative aspect-square w-full">
                     <Image
                       src={uploadedPreview}
@@ -311,11 +337,41 @@ export default function ProfileGenerator() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
                 className="hidden"
                 onChange={handleUpload}
               />
             </div>
+
+            {/* Preprocessing errors */}
+            {preprocessErrors.length > 0 && (
+              <div className="rounded-lg bg-red-50 p-3 space-y-1">
+                {preprocessErrors.map((err) => (
+                  <p key={err.type} className="text-xs text-red-500">
+                    {err.type === "file-too-large" ? tpl(ip.fileTooLarge, { maxMB: 20 })
+                      : err.type === "file-too-small" ? tpl(ip.imageTooSmall, { minPx: 200 })
+                      : err.type === "unsupported-type" ? ip.unsupportedFormat
+                      : ip.invalidImage}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {/* Face warning */}
+            {preprocessWarnings.some((w) => w.type === "no-face-detected") && !faceWarningDismissed && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 leading-relaxed">{ip.faceWarning}</p>
+                </div>
+                <button
+                  onClick={() => setFaceWarningDismissed(true)}
+                  className="text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-900"
+                >
+                  {ip.faceWarningDismiss}
+                </button>
+              </div>
+            )}
 
             {/* Style selection */}
             <div>

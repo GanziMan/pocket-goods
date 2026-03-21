@@ -15,7 +15,7 @@ import type { ProductType } from "@/lib/assets";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useLocale } from "@/lib/i18n/client";
+import { useLocale, tpl } from "@/lib/i18n/client";
 
 type OutputSize = "A4" | "A5" | "A6";
 
@@ -148,7 +148,7 @@ export default function EditorLayout() {
     if (!draft) return;
     const savedDate = new Date(draft.savedAt);
     const timeStr = savedDate.toLocaleString(locale);
-    const restore = window.confirm(t.toolbar.restorePrompt(timeStr));
+    const restore = window.confirm(tpl(t.toolbar.restorePrompt, { timeStr }));
     if (restore) {
       loadDesign(draft.canvasJSON);
       if (draft.productType === "keyring" || draft.productType === "sticker") {

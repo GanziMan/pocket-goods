@@ -34,3 +34,8 @@ export function LocaleProvider({
 export function useLocale() {
   return useContext(LocaleContext);
 }
+
+/** Replace `{{key}}` placeholders in a template string */
+export function tpl(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => String(values[key] ?? ""));
+}

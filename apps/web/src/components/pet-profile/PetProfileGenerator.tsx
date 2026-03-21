@@ -11,12 +11,18 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { createClient } from "@/lib/supabase/client";
 import { petProfileEvents } from "@/lib/gtag";
 import { addWatermark, resultToBlob } from "@/lib/image-utils";
-import { useLocale } from "@/lib/i18n/client";
+import { useLocale, tpl } from "@/lib/i18n/client";
+import { useImagePreprocessor } from "@/hooks/useImagePreprocessor";
 
 export default function PetProfileGenerator() {
   const { t } = useLocale();
   const p = t.petProfile;
+  const ip = t.imageProcessing;
   const shareUrl = "https://pocket-goods.com/pet-profile";
+  const {
+    processFile, processing: preprocessing, currentStep,
+    errors: preprocessErrors, reset: resetPreprocess,
+  } = useImagePreprocessor();
 
   const [files, setFiles] = useState<(File | null)[]>([null, null, null]);
   const [previews, setPreviews] = useState<(string | null)[]>([null, null, null]);
@@ -37,9 +43,13 @@ export default function PetProfileGenerator() {
 
   const loginRedirect = "/login?next=/pet-profile";
 
-  const setFileAt = (index: number, file: File) => {
-    setFiles((prev) => { const next = [...prev]; next[index] = file; return next; });
-    setPreviews((prev) => { const next = [...prev]; if (next[index]) URL.revokeObjectURL(next[index]!); next[index] = URL.createObjectURL(file); return next; });
+  const setFileAt = async (index: number, file: File) => {
+    resetPreprocess();
+    const result = await processFile(file);
+    if (!result) return;
+    const processed = result.file;
+    setFiles((prev) => { const next = [...prev]; next[index] = processed; return next; });
+    setPreviews((prev) => { const next = [...prev]; if (next[index]) URL.revokeObjectURL(next[index]!); next[index] = URL.createObjectURL(processed); return next; });
     setResult(null); setError(null);
     petProfileEvents.uploadPhoto(index + 1);
   };
@@ -161,7 +171,7 @@ export default function PetProfileGenerator() {
           <p className="mt-2 text-sm text-muted-foreground">{p.heroDesc}</p>
           {remaining && (
             <p className={`mt-3 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full ${remaining.count <= 2 ? "bg-red-50 text-red-600" : "bg-zinc-100 text-zinc-500"}`}>
-              {p.remaining(remaining.count, remaining.limit)}
+              {tpl(p.remaining, { count: remaining.count, limit: remaining.limit })}
             </p>
           )}
         </div>
@@ -173,7 +183,14 @@ export default function PetProfileGenerator() {
               <label className="mb-2 block text-sm font-medium">{p.uploadMain}</label>
               <div onClick={() => fileInputRefs[0].current?.click()} onDrop={handleDrop(0)} onDragOver={(e) => e.preventDefault()}
                 className={`relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors ${previews[0] ? "border-zinc-300" : "border-zinc-300 hover:border-primary hover:bg-primary/5"} ${previews[0] ? "p-0 overflow-hidden" : "p-8"}`}>
-                {previews[0] ? (
+                {preprocessing ? (
+                  <div className="flex flex-col items-center justify-center gap-3 p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">
+                      {currentStep === "converting" ? ip.converting : currentStep === "compressing" ? ip.compressing : ip.processing}
+                    </p>
+                  </div>
+                ) : previews[0] ? (
                   <div className="relative aspect-square w-full">
                     <Image src={previews[0]} alt={p.uploadAlt} fill className="object-cover" />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors hover:bg-black/30">
@@ -185,7 +202,7 @@ export default function PetProfileGenerator() {
                   <><Upload className="mb-3 h-8 w-8 text-zinc-400" /><p className="text-sm font-medium text-zinc-600">{p.uploadDrag}</p><p className="mt-1 text-xs text-zinc-400">{p.uploadFormats}</p></>
                 )}
               </div>
-              <input ref={fileInputRefs[0]} type="file" accept="image/*" className="hidden" onChange={handleUpload(0)} />
+              <input ref={fileInputRefs[0]} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="hidden" onChange={handleUpload(0)} />
             </div>
 
             <div>
@@ -204,12 +221,26 @@ export default function PetProfileGenerator() {
                         <><Plus className="mb-1 h-5 w-5 text-zinc-400" /><p className="text-xs text-zinc-400">#{idx + 1}</p></>
                       )}
                     </div>
-                    <input ref={fileInputRefs[idx]} type="file" accept="image/*" className="hidden" onChange={handleUpload(idx)} />
+                    <input ref={fileInputRefs[idx]} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" className="hidden" onChange={handleUpload(idx)} />
                   </div>
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{p.uploadHint}</p>
             </div>
+
+            {/* Preprocessing errors */}
+            {preprocessErrors.length > 0 && (
+              <div className="rounded-lg bg-red-50 p-3 space-y-1">
+                {preprocessErrors.map((err) => (
+                  <p key={err.type} className="text-xs text-red-500">
+                    {err.type === "file-too-large" ? tpl(ip.fileTooLarge, { maxMB: 20 })
+                      : err.type === "file-too-small" ? tpl(ip.imageTooSmall, { minPx: 200 })
+                      : err.type === "unsupported-type" ? ip.unsupportedFormat
+                      : ip.invalidImage}
+                  </p>
+                ))}
+              </div>
+            )}
 
             <Button className="w-full h-12 text-base" onClick={handleGenerate} disabled={loading || !files[0]}>
               {loading ? (<><Loader2 className="mr-2 h-5 w-5 animate-spin" />{p.generating}</>) : (<><Sparkles className="mr-2 h-5 w-5" />{p.generate}</>)}
