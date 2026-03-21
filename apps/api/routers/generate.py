@@ -20,15 +20,7 @@ from services.rate_limit import (
     increment_usage,
 )
 
-# rembg 모델 lazy-load (첫 요청 시 로드 — 서버 기동 시간 단축)
-_rembg_session = None
-
-def _get_rembg_session():
-    global _rembg_session
-    if _rembg_session is None:
-        from rembg import new_session as rembg_new_session
-        _rembg_session = rembg_new_session("u2net")
-    return _rembg_session
+from services.rembg_session import get_rembg_session
 
 logger = logging.getLogger(__name__)
 
@@ -38,46 +30,87 @@ NANO_BANANA_MODEL_PRIMARY = "gemini-3.1-flash-image-preview"
 NANO_BANANA_MODEL_FALLBACK = "gemini-2.5-flash-image"
 STYLE_PROMPTS: dict[str, str] = {
     "ghibli": """
-[주체] 첨부된 이미지 또는 사용자 요청의 캐릭터를 중심으로 그린다.
-[스타일] Studio Ghibli 애니메이션 스타일. 수채화 질감의 부드러운 붓터치, 따뜻한 파스텔 톤 색감, 손으로 그린 듯한 자연스러운 윤곽선.
-[조명] 부드러운 자연광, 살짝 역광(backlighting)으로 캐릭터 윤곽에 따뜻한 림라이트.
-[구도] 센터 프레임, 캐릭터 전신이 보이는 풀바디 샷. 캐릭터가 화면의 중앙에 위치.
-[재질] 수채화 종이 위에 그린 듯한 부드러운 텍스처, 선명하고 깨끗한 선화(line art).
-[출력] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 굿즈(아크릴 키링, 투명 스티커) 인쇄에 적합한 선명한 외곽선.
+[주체] 사용자 요청 또는 첨부 이미지의 캐릭터를 중심으로 한 장면.
+[스타일]
+- Studio Ghibli(스튜디오 지브리) 극장판 애니메이션 수준의 퀄리티.
+- 미야자키 하야오 감독 특유의 손그림 수채화 터치: 부드럽고 따뜻한 파스텔 톤(연한 살구색, 옅은 민트, 연보라), 수채화 종이 위에 물감이 스며든 듯한 자연스러운 그라데이션.
+- 캐릭터 외곽선은 부드럽고 둥근 갈색~진갈색 선으로, 검은색 외곽선은 사용하지 않음.
+- 눈은 크고 반짝이며, 홍채에 수채화 그라데이션 적용. 표정은 따뜻하고 감성적.
+- 머리카락은 뭉탱이 덩어리로 표현, 한 올 한 올이 아닌 부드러운 매스(mass) 형태.
+- 옷과 소품은 소박하고 자연스러운 질감(면, 린넨, 나무 등).
+[조명] 따뜻한 오후 햇살. 캐릭터 뒤에서 부드러운 역광(rim light)으로 윤곽을 은은하게 강조. 전체적으로 골든아워 톤.
+[구도] 캐릭터 전신(full-body)이 화면 중앙에 위치. 캐릭터가 캔버스의 약 75%를 차지. 사방에 약간의 여백. 정면 또는 살짝 3/4 앵글.
+[출력] 배경은 완전히 투명(transparent/누끼). 캐릭터만 단독 존재. 아크릴 키링·투명 스티커 인쇄에 적합한 선명한 외곽.
+[금지] 텍스트, 글자, 말풍선, 워터마크, 프레임 테두리, 뭉개진 디테일, 변형된 손가락 절대 포함 금지.
 """,
     "sd": """
-[주체] 첨부된 이미지 또는 사용자 요청의 캐릭터를 SD(슈퍼 디포르메) 치비(chibi)로 변환.
-[스타일] 머리가 크고 몸이 작은 2~3등신 비율. 크고 둥글게 반짝이는 눈, 작고 귀여운 입, 과장된 표정. 굵고 깨끗한 윤곽선, 밝고 채도 높은 셀 애니메이션 색감.
-[조명] 균일한 플랫 라이팅(flat lighting), 그림자 최소화로 깔끔한 일러스트 느낌.
-[구도] 센터 프레임, 캐릭터 전신 풀바디 샷. 정면 또는 살짝 3/4 앵글.
-[재질] 매끄러운 디지털 일러스트 질감, 선명한 벡터 느낌의 깨끗한 선화.
-[출력] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 굿즈(아크릴 키링, 투명 스티커) 인쇄에 적합한 선명한 외곽선.
+[주체] 사용자 요청 또는 첨부 이미지의 캐릭터를 SD(슈퍼 디포르메)/치비(chibi)로 변환.
+[스타일]
+- 일본 SD 피규어/가챠폰 스타일의 극도로 귀여운 치비 캐릭터.
+- 2~2.5등신 비율: 매우 큰 머리(전체의 40~50%), 짧고 뭉툭한 팔다리, 작은 몸통.
+- 눈: 얼굴의 1/3 차지할 만큼 크고 둥글게. 별 모양 또는 하트 모양 하이라이트. 홍채에 그라데이션.
+- 입: 작고 귀여운 ω형 또는 ▽형.
+- 굵고 균일한 검은 외곽선(2~3px 두께). 선 끊김 없이 완전히 닫힌 외곽.
+- 밝고 채도 높은 셀 애니메이션 색감. 단순하고 깔끔한 색면(flat color) + 최소한의 셀 셰이딩(1단계).
+[조명] 균일한 플랫 라이팅. 그림자는 최소한의 1단 셀 셰이딩만. 깔끔한 일러스트 느낌.
+[구도] 캐릭터 전신(full-body) 중앙 배치. 캔버스의 약 80%를 차지. 위아래 여백 균등.
+[출력] 배경 완전 투명(누끼). 캐릭터만 단독 존재. 아크릴 키링·투명 스티커 인쇄에 적합하도록 외곽선이 완전히 닫혀야 함.
+[금지] 텍스트, 글자, 말풍선, 워터마크, 프레임 테두리, 변형된 손가락, 비대칭 눈 절대 포함 금지.
 """,
     "fairly-odd": """
-[주체] 첨부된 이미지 또는 사용자 요청의 캐릭터를 "The Fairly OddParents(티미의 못말리는 수호천사)" 애니메이션 캐릭터로 변환.
-[스타일] Butch Hartman 특유의 Nickelodeon 카툰 스타일. 굵고 깔끔한 검은 외곽선(bold black outline), 심플하고 과장된 형태, 밝고 채도 높은 플랫 컬러(flat color). 큰 눈, 과장된 머리 비율, 뾰족한 턱, 단순화된 코와 귀. 표정은 활기차고 유쾌하게.
-[조명] 플랫 조명(flat lighting). 그림자 최소화, 균일하고 밝은 색면 위주.
-[구도] 센터 프레임, 캐릭터 전신 풀바디 샷. 캐릭터가 화면 중앙에 위치.
-[출력] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 굿즈(아크릴 키링, 투명 스티커) 인쇄에 적합한 선명한 외곽선. Nickelodeon 카툰 느낌에 충실.
+[주체] 사용자 요청 또는 첨부 이미지의 캐릭터를 "The Fairly OddParents" 스타일로 변환.
+[스타일]
+- Butch Hartman의 Nickelodeon 카툰 스타일을 정확히 재현.
+- 레퍼런스: Timmy Turner, Cosmo, Wanda의 화풍과 동일한 느낌.
+- 극도로 굵고 깔끔한 검은 외곽선(3~4px). 모든 형태가 선으로 확실히 구분.
+- 색상: 밝고 채도 높은 플랫 컬러. 그라데이션 없음. 각 색면이 단일 색상으로 채워짐.
+- 머리: 과장되게 큰 비율(몸의 1/2~1/3). 뾰족하거나 각진 형태의 머리 실루엣.
+- 눈: 매우 크고 동그란 눈, 흰 눈동자에 검은 홍채. 눈이 얼굴의 대부분 차지.
+- 턱: 뾰족하게 각진 턱(V자 형태).
+- 코: 극도로 작은 점 또는 짧은 삼각형.
+- 몸: 심플하게 단순화된 형태, 과장된 비율.
+[조명] 완전 플랫. 그림자 없음. 밝고 균일한 단색 면으로만 구성.
+[구도] 캐릭터 전신(full-body) 중앙 배치. 캔버스의 약 75% 차지.
+[출력] 배경 완전 투명(누끼). 캐릭터만 단독 존재. 외곽선이 명확하고 닫혀 있어 스티커 커팅에 적합.
+[금지] 그라데이션, 리얼리스틱 셰이딩, 텍스트, 말풍선, 워터마크, 프레임 테두리 절대 금지.
 """,
     "powerpuff": """
-[주체] 첨부된 이미지 또는 사용자 요청의 캐릭터를 "The Powerpuff Girls(파워퍼프걸)" 애니메이션 캐릭터로 변환.
-[스타일] Craig McCracken 특유의 Cartoon Network 스타일. 극단적으로 큰 동그란 눈(홍채가 얼굴의 절반 차지), 눈동자 안에 큰 하이라이트. 코 없음(또는 아주 작은 점), 작은 입. 뭉툭하고 둥근 몸체, 손가락 없는 둥근 손. 굵고 깨끗한 검은 외곽선, 밝고 채도 높은 파스텔~비비드 플랫 컬러.
-[조명] 완전 플랫 조명. 그림자 없음. 밝고 균일한 색면으로만 구성.
-[구도] 센터 프레임, 캐릭터 전신 풀바디 샷. 캐릭터가 화면 중앙에 위치.
-[출력] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 굿즈(아크릴 키링, 투명 스티커) 인쇄에 적합한 선명한 외곽선. Powerpuff Girls 원작 느낌에 충실.
+[주체] 사용자 요청 또는 첨부 이미지의 캐릭터를 "The Powerpuff Girls" 스타일로 변환.
+[스타일]
+- Craig McCracken의 Cartoon Network 원작 화풍을 정확히 재현.
+- 레퍼런스: Blossom, Bubbles, Buttercup의 디자인과 동일한 느낌.
+- 눈: 극단적으로 큰 타원형(얼굴의 60% 이상). 홍채가 눈 전체를 채움. 각 눈에 큰 원형 하이라이트 1개.
+- 코: 없음. 코를 그리지 않는다.
+- 입: 매우 작은 선 또는 점. 얼굴 하단에 위치.
+- 몸: 뭉툭하고 둥근 타원형 몸통. 목 없음(머리가 몸에 바로 연결).
+- 팔: 가는 선 형태, 손가락 없는 둥근 원형 손(mitten hands).
+- 다리: 짧고 뭉툭한 원통형, 검은색 메리제인 구두.
+- 외곽선: 굵고 균일한 검은 선(3~4px). 완전히 닫힌 외곽.
+- 색상: 밝은 파스텔~비비드 플랫 컬러. 그라데이션 없음.
+[조명] 완전 플랫. 그림자 완전 없음. 밝고 균일한 단색 면.
+[구도] 캐릭터 전신(full-body) 중앙 배치. 캔버스의 약 80% 차지.
+[출력] 배경 완전 투명(누끼). 캐릭터만 단독 존재.
+[금지] 코, 리얼리스틱 셰이딩, 그라데이션, 텍스트, 워터마크, 프레임 테두리 절대 금지. 손가락을 그리지 않는다.
 """,
     "akatsuki": """
-[주체] 첨부된 이미지 또는 사용자 요청의 캐릭터를 나루토 아카츠키 멤버 스타일로 변환.
-[스타일] 일본 닌자 애니메이션 스타일의 실사 느낌. 검은 망토에 붉은 구름(赤雲) 문양, 날카롭고 강렬한 눈빛, 린네간 또는 샤링안 스타일의 눈동자. 굵고 선명한 윤곽선, 강렬한 채도.
-[조명] 로우키 드라마틱 조명(low-key dramatic lighting), 캐릭터 뒤에서 비치는 붉은 림라이트.
-[구도] 센터 프레임, 상반신 미디엄 클로즈업 또는 전신 풀바디. 살짝 로우앵글(low-angle)로 위압감 연출.
-[재질] 매트한 검은 천(matte black fabric), 붉은 구름 문양의 자수 질감, 금속 인두 히타이아테(forehead protector).
-[출력] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 굿즈(아크릴 키링, 투명 스티커) 인쇄에 적합한 선명한 외곽선.
+[주체] 사용자 요청 또는 첨부 이미지의 캐릭터를 나루토 아카츠키(暁) 멤버 스타일로 변환.
+[스타일]
+- 마사시 키시모토의 NARUTO 원작 화풍을 재현.
+- 레퍼런스: 이타치, 페인(나가토), 데이다라 등 아카츠키 멤버의 디자인.
+- 복장: 검은 바탕에 붉은 구름(赤雲) 문양이 들어간 긴 망토(아카츠키 로브). 높은 칼라로 턱까지 가림. 망토 안은 어두운 의상.
+- 눈: 날카롭고 강렬. 샤링안(3개의 점이 원형 배열) 또는 린네간(동심원 패턴) 중 택 1. 눈빛에 강한 존재감.
+- 이마보호대(히타이아테): 금속 플레이트에 마을 문양 + 가로줄(누케닌 표시).
+- 전체적으로 날카롭고 각진 선화, 극적인 분위기.
+[조명] 드라마틱 로우키. 캐릭터 뒤에서 붉은 림라이트. 얼굴 반쪽에 강한 명암 대비.
+[구도] 캐릭터 전신 또는 상반신. 약간의 로우앵글로 위압감 연출. 캔버스의 75~85% 차지. 중앙 배치.
+[출력] 배경 완전 투명(누끼). 캐릭터만 단독 존재. 선명한 외곽선.
+[금지] 텍스트, 글자, 워터마크, 프레임 테두리, 뭉개진 디테일 절대 금지.
 """,
     "custom": """
-[구도] 센터 프레임, 캐릭터가 화면 중앙에 위치하는 풀바디 샷.
-[출력] 배경은 완전히 투명하게(누끼) 처리. 캐릭터만 단독으로 존재. 굿즈(아크릴 키링, 투명 스티커) 인쇄에 적합한 선명한 외곽선.
+[지시] 사용자의 요청을 최대한 충실하게 따른다.
+[구도] 캐릭터가 화면 중앙에 위치하는 풀바디 샷. 캐릭터가 캔버스의 약 75%를 차지.
+[출력] 배경은 완전히 투명(누끼). 캐릭터만 단독 존재. 아크릴 키링·투명 스티커 인쇄에 적합한 선명한 외곽선.
+[금지] 텍스트, 글자, 워터마크, 프레임 테두리 절대 포함 금지. 별도 지시가 없는 한 배경을 그리지 않는다.
 """,
 }
 
@@ -100,7 +133,7 @@ def _pil_to_part(image: Image.Image, mime: str = "image/png") -> types.Part:
 async def generate_image(
     request: Request,
     prompt: str = Form(...),
-    style: str = Form(default="ghibli"),  # "ghibli" | "sd"
+    style: str = Form(default="ghibli"),
     canvas_image: Optional[UploadFile] = File(default=None),
     upload_image: Optional[UploadFile] = File(default=None),
 ):
@@ -127,8 +160,6 @@ async def generate_image(
         # 토큰을 보냈지만 검증 실패한 경우는 login_required=False
         error_body = {"detail": detail, "login_required": not has_token and user_id is None}
         return JSONResponse(status_code=429, content=error_body)
-    increment_usage(rate_key)
-    logger.info("[generate] key=%s 오늘 %d/%d회 사용", rate_key, get_usage_count(rate_key), daily_limit)
 
     # Vertex AI 우선, 없으면 Gemini API 키 fallback
     gcp_project = os.getenv("GCP_PROJECT_ID")
@@ -158,7 +189,9 @@ async def generate_image(
         parts.append(_pil_to_part(pil_img, "image/png"))
         parts.append(
             f"{style_prompt}\n\n"
-            f"첨부된 현재 디자인을 참고해서, 이 스타일을 유지하면서: {prompt}"
+            f"[참고 이미지] 첨부된 것은 사용자가 현재 작업 중인 디자인이다. "
+            f"이 디자인의 전체적인 분위기와 배치를 참고하면서, 위 스타일로 새로운 캐릭터/요소를 생성해줘.\n"
+            f"사용자 요청: {prompt}"
         )
         logger.info("[generate] mode=canvas_image style=%s prompt=%r", style, prompt)
     elif upload_image:
@@ -167,7 +200,10 @@ async def generate_image(
         parts.append(_pil_to_part(pil_img, "image/jpeg"))
         parts.append(
             f"{style_prompt}\n\n"
-            f"첨부된 사진을 참고해서 변환해줘. 요청: {prompt}"
+            f"[변환 지시] 첨부된 사진의 인물/캐릭터를 위 스타일로 변환해줘. "
+            f"원본의 핵심 특징(외형, 의상, 색상, 포즈)을 최대한 유지하면서 해당 스타일의 화풍으로 다시 그려라. "
+            f"완전히 다른 캐릭터가 되어서는 안 된다.\n"
+            f"사용자 추가 요청: {prompt}"
         )
         logger.info("[generate] mode=upload_image style=%s prompt=%r", style, prompt)
     else:
@@ -201,12 +237,14 @@ async def generate_image(
 
                     t1 = time.monotonic()
                     from rembg import remove as rembg_remove
-                    removed = rembg_remove(raw_bytes, session=_get_rembg_session())
+                    removed = rembg_remove(raw_bytes, session=get_rembg_session())
                     logger.info("[generate] rembg 완료 (%.1fs)", time.monotonic() - t1)
 
                     image_b64 = base64.b64encode(removed).decode("utf-8")
+                    increment_usage(rate_key)
                     used_fallback = model_id == NANO_BANANA_MODEL_FALLBACK
                     used_count = get_usage_count(rate_key)
+                    logger.info("[generate] key=%s 오늘 %d/%d회 사용", rate_key, used_count, daily_limit)
                     return JSONResponse({
                         "success": True,
                         "image": f"data:image/png;base64,{image_b64}",
