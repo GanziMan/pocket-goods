@@ -375,6 +375,7 @@ const ja = {
     name: "ポケットグッズ — オリジナルグッズデザイン",
     shortName: "ポケットグッズ",
     description: "キャラクター、ペット、赤ちゃんの写真からキーホルダーとステッカーを1分で作ろう。",
+    shortcutDesign: "デザインを作成",
   },
 } as const satisfies Dictionary;
 

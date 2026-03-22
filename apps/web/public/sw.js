@@ -1,8 +1,17 @@
-const CACHE_NAME = "pocket-goods-v1";
+const CACHE_NAME = "pocket-goods-v2";
+
+const PRECACHE_ASSETS = [
+  "/",
+  "/icon-192.png",
+  "/icon-512.png",
+];
 
 const STATIC_EXTENSIONS = /\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?)$/;
 
 self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
+  );
   self.skipWaiting();
 });
 

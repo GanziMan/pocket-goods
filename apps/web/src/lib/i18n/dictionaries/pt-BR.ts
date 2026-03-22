@@ -375,6 +375,7 @@ const ptBR = {
     name: "Pocket Goods — Design de Produtos Personalizados",
     shortName: "Pocket Goods",
     description: "Crie chaveiros e adesivos com seus personagens, pets e fotos de bebê em apenas 1 minuto.",
+    shortcutDesign: "Criar Design",
   },
 } as const satisfies Dictionary;
 

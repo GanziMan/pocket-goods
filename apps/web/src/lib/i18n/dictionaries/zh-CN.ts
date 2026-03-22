@@ -374,6 +374,7 @@ const zhCN = {
     name: "Pocket Goods — 定制好物设计",
     shortName: "Pocket Goods",
     description: "用你的角色、宠物和宝宝照片1分钟制作钥匙扣和贴纸。",
+    shortcutDesign: "创建设计",
   },
 } as const satisfies Dictionary;
 

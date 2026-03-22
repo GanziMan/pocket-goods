@@ -373,6 +373,7 @@ const ko = {
     name: "포켓굿즈 — 나만의 굿즈 디자인",
     shortName: "포켓굿즈",
     description: "나만의 캐릭터, 반려동물, 아기 사진으로 키링·스티커를 1분 만에 만들어보세요.",
+    shortcutDesign: "디자인 만들기",
   },
 } as const;
 

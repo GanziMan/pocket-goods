@@ -375,6 +375,7 @@ const en = {
     name: "Pocket Goods — Custom Goods Design",
     shortName: "Pocket Goods",
     description: "Create keyrings and stickers from your characters, pets, and baby photos in just 1 minute.",
+    shortcutDesign: "Create Design",
   },
 } as const satisfies Dictionary;
 
