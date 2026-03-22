@@ -28,8 +28,11 @@ export default function MobileHeader({
   };
 
   return (
-    <header className="flex items-center gap-2 px-3 h-12 border-b bg-white shrink-0">
-      <Link href="/" className="font-bold text-sm tracking-tight select-none">{t.common.brandName}</Link>
+    <header className="flex items-center gap-2 px-3 h-14 border-b bg-white shrink-0">
+      <Link href="/" className="flex items-center gap-1.5 select-none">
+        <img src="/logo.png" alt="Logo" width={24} height={24} className="rounded" />
+        <span className="font-bold text-sm tracking-tight">{t.common.brandName}</span>
+      </Link>
 
       <div className="flex gap-1">
         {(["keyring", "sticker"] as ProductType[]).map((type) => (
