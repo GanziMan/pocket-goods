@@ -17,8 +17,10 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     theme_color: "#ffffff",
     categories: ["lifestyle", "shopping"],
     icons: [
-      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" as "any" },
-      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" as "any" },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
       {
@@ -26,6 +28,20 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         url: "/design",
         icons: [{ src: "/icon-192.png", sizes: "192x192" }],
       },
+    ],
+    screenshots: [
+      {
+        src: "/screenshots/pocket-moible.png",
+        sizes: "754x1338",
+        type: "image/png",
+        form_factor: "narrow",
+      } as any,
+      {
+        src: "/screenshots/pocket-pc.png",
+        sizes: "1888x1708",
+        type: "image/png",
+        form_factor: "wide",
+      } as any,
     ],
     id: "/",
   };
