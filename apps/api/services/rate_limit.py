@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # IP별 일일 요청 제한 (비로그인)
 DAILY_LIMIT_ANONYMOUS = 2
 # 유저별 일일 요청 제한 (로그인)
-DAILY_LIMIT_USER = 10
+DAILY_LIMIT_USER = 5
 
 _usage: dict[str, dict[str, int]] = defaultdict(lambda: {"date": "", "count": 0})
 
