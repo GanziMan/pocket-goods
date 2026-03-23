@@ -154,7 +154,7 @@ export default function PrivacyPage() {
           <h2 className="mb-3 text-lg font-semibold">10. 개인정보 보호책임자</h2>
           <ul className="list-none space-y-1">
             <li><strong>담당자:</strong> 포켓굿즈 운영팀</li>
-            <li><strong>이메일:</strong> privacy@pocket-goods.com</li>
+            <li><strong>이메일:</strong> qjatn50089@gmail.com</li>
           </ul>
         </section>
 
