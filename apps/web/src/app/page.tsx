@@ -34,7 +34,10 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="border-t px-4 py-6 text-center text-xs text-muted-foreground">
-        &copy; {new Date().getFullYear()} {t.footer.copyright}. All rights reserved.
+        <p>&copy; {new Date().getFullYear()} {t.footer.copyright}. All rights reserved.</p>
+        <div className="mt-2 space-x-3">
+          <a href="/privacy" className="underline hover:text-foreground">{t.footer.privacy}</a>
+         </div>
       </footer>
     </main>
   );

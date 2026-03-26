@@ -78,6 +78,8 @@ const ko = {
     ctaDesign: "굿즈 디자인하기",
     ctaProfile: "AI 프로필 만들기",
     copyright: "포켓굿즈",
+    privacy: "개인정보처리방침",
+    deleteAccount: "계정 삭제",
   },
   login: {
     title: "로그인하고 더 많이 만들기",

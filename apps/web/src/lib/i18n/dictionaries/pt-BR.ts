@@ -80,6 +80,8 @@ const ptBR = {
     ctaDesign: "Criar Design",
     ctaProfile: "Perfil IA",
     copyright: "Pocket Goods",
+    privacy: "Política de Privacidade",
+    deleteAccount: "Excluir Conta",
   },
   login: {
     title: "Entre para criar mais",

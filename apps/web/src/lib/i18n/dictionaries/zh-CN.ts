@@ -80,6 +80,8 @@ const zhCN = {
     ctaDesign: "设计好物",
     ctaProfile: "AI头像",
     copyright: "Pocket Goods",
+    privacy: "隐私政策",
+    deleteAccount: "删除账户",
   },
   login: {
     title: "登录解锁更多次数",

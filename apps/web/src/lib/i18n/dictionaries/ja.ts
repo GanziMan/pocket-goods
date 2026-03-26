@@ -80,6 +80,8 @@ const ja = {
     ctaDesign: "グッズをデザイン",
     ctaProfile: "AIプロフィール",
     copyright: "ポケットグッズ",
+    privacy: "プライバシーポリシー",
+    deleteAccount: "アカウント削除",
   },
   login: {
     title: "ログインしてもっと作ろう",

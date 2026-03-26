@@ -80,6 +80,8 @@ const en = {
     ctaDesign: "Design Goods",
     ctaProfile: "AI Profile",
     copyright: "Pocket Goods",
+    privacy: "Privacy Policy",
+    deleteAccount: "Delete Account",
   },
   login: {
     title: "Sign in for more",
