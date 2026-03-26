@@ -198,6 +198,7 @@ const ko = {
     canvasRefHint: "현재 캔버스 디자인을 참고해서 AI가 새 이미지를 생성합니다.",
     promptLabel: "어떤 캐릭터를 만들까요?",
     promptLabelCustom: "프롬프트를 자유롭게 입력하세요",
+    promptLabelExtra: "추가 프롬프트 입력하기",
     writingTips: "작성 팁",
     guideTitle: "이렇게 쓰면 더 좋은 결과가 나와요",
     guideWho: "누구를",
@@ -214,6 +215,7 @@ const ko = {
     guideTipExample: '"안경 안 쓴" → "맨눈의"',
     promptPlaceholder: "누가 + 뭘 하는지 + 어디서\n예) 빗속에서 빨간 우산을 쓰고 서 있는 고양이",
     promptPlaceholderCustom: "스타일, 대상, 동작, 분위기를 구체적으로 묘사해주세요\n예) 수채화 느낌의 귀여운 고양이가 창가에 앉아 비를 바라보는",
+    promptPlaceholderExtra: "원하는 디테일을 추가로 입력하세요 (선택)",
     customHint: "스타일 제약 없이 입력한 프롬프트 그대로 생성됩니다.",
     exampleHint: "클릭하면 바로 입력돼요",
     examplePrompts: {

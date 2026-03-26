@@ -167,23 +167,29 @@
 }
 
 .ai-feed-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--primary) 42%, white) transparent;
+  scrollbar-color: color-mix(in oklab, var(--primary) 55%, white)
+    color-mix(in oklab, var(--primary) 8%, white);
 }
 
 .ai-feed-scroll::-webkit-scrollbar {
-  height: 8px;
+  height: 10px;
 }
 
 .ai-feed-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--primary) 10%, white);
 }
 
 .ai-feed-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid color-mix(in oklab, var(--primary) 10%, white);
   border-radius: 9999px;
   background: linear-gradient(
     90deg,
-    color-mix(in oklab, var(--primary) 65%, white),
-    color-mix(in oklab, var(--primary) 40%, white)
+    color-mix(in oklab, var(--primary) 70%, white),
+    color-mix(in oklab, var(--primary) 45%, white)
   );
 }
