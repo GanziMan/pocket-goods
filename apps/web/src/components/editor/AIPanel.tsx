@@ -12,9 +12,6 @@ import {
   ImagePlus,
   LogIn,
   X,
-  HelpCircle,
-  WandSparkles,
-  Plus,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,41 +44,6 @@ type StyleFeedItem = {
   basePrompt: string;
 };
 
-type DragScrollState = {
-  isDragging: boolean;
-  startX: number;
-  startScrollLeft: number;
-};
-
-const STYLE_EMOJIS: Record<Style, string> = {
-  ghibli: "🌿",
-  sd: "🎀",
-  steampunk: "⚙️",
-  "fairly-odd": "🧚",
-  powerpuff: "💥",
-  akatsuki: "☁️",
-  custom: "✏️",
-};
-
-const STYLE_KEYS: Style[] = [
-  "ghibli",
-  "sd",
-  "steampunk",
-  "fairly-odd",
-  "powerpuff",
-  "custom",
-];
-
-const FALLBACK_STYLE_LABELS: Record<Style, string> = {
-  ghibli: "지브리",
-  sd: "SD",
-  steampunk: "스팀펑크",
-  "fairly-odd": "페어리 오드",
-  powerpuff: "파워퍼프",
-  akatsuki: "아카츠키",
-  custom: "커스텀",
-};
-
 const STYLE_FEED_ITEMS: StyleFeedItem[] = [
   {
     id: "sylvanian",
@@ -92,44 +54,12 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
       "Transform the person in this photo into a Sylvanian Families (Calico Critters) animal figure. Convert them into a cute anthropomorphic animal (choose an animal that best matches their vibe: tiny beige bunny, rabbit, cat, puppy, bear) wearing a detailed miniature outfit matching their original clothing. Use soft flocked fur texture, tiny black dot eyes, small pink nose, and a gentle expression. Keep the figure isolated and centered on plain white background with neutral studio lighting. No furniture, no background elements, no dollhouse decor.",
   },
   {
-    id: "ghibli",
-    title: "지브리 만들기",
-    style: "ghibli",
+    id: "everskies",
+    title: "Everskies 만들기",
+    style: "custom",
     preview: "/logo.png",
     basePrompt:
-      "Transform the person in this photo into a warm, hand-painted Ghibli-style animation character with soft natural lighting, gentle watercolor-like textures, and cozy cinematic mood.",
-  },
-  {
-    id: "sd",
-    title: "SD 만들기",
-    style: "sd",
-    preview: "/logo.png",
-    basePrompt:
-      "Transform the subject into a super-deformed (SD/chibi) character with a big head, tiny body proportions, expressive eyes, clean line art, and playful pastel color palette.",
-  },
-  {
-    id: "steampunk",
-    title: "스팀펑크 만들기",
-    style: "steampunk",
-    preview: "/logo.png",
-    basePrompt:
-      "Create a steampunk version of the subject with brass details, mechanical accessories, leather and vintage outfit accents, dramatic warm lighting, and retro-futuristic atmosphere.",
-  },
-  {
-    id: "fairly-odd",
-    title: "수호천사 만들기",
-    style: "fairly-odd",
-    preview: "/logo.png",
-    basePrompt:
-      "Convert the subject into a bright flat-color cartoon inspired by classic fairy-godparent animation style, with bold outlines, simplified shapes, and cheerful magical vibe.",
-  },
-  {
-    id: "powerpuff",
-    title: "파워퍼프걸 만들기",
-    style: "powerpuff",
-    preview: "/logo.png",
-    basePrompt:
-      "Turn the subject into a Powerpuff-inspired character with oversized round eyes, minimal geometric forms, vivid colors, and a dynamic cartoon pose.",
+      "1. Everskies의 픽셀 아트 스타일로 사진을 바꿔주세요. 2. 인체 비율, 얼굴 표정, 의상, 헤어스타일을 그대로 모방해주세요. 3. 첨부 사진 속 인물의 헤어스타일, 옷, 액세서리를 참고해 인물 일러스트를 그려주세요. 4. 배경은 흰색, 인물은 전신으로 그려주세요.",
   },
 ];
 
@@ -159,12 +89,10 @@ export default function AIPanel({
     reset: resetPreprocess,
   } = useImagePreprocessor();
 
-  const [mode, setMode] = useState<Mode>("prompt-only");
-  const [style, setStyle] = useState<Style>("custom");
+  const [mode, setMode] = useState<Mode>("from-upload");
+  const [style, setStyle] = useState<Style>("ghibli");
   const [prompt, setPrompt] = useState("");
-  const [customPrompt, setCustomPrompt] = useState("");
-  const [activeFeedId, setActiveFeedId] = useState<string | null>("sylvanian");
-  const [showCustomPromptInput, setShowCustomPromptInput] = useState(false);
+  const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
@@ -178,15 +106,8 @@ export default function AIPanel({
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const feedScrollRef = useRef<HTMLDivElement>(null);
-  const dragStateRef = useRef<DragScrollState>({
-    isDragging: false,
-    startX: 0,
-    startScrollLeft: 0,
-  });
 
   const activeFeed = useMemo(
     () => STYLE_FEED_ITEMS.find((item) => item.id === activeFeedId) ?? null,
@@ -195,23 +116,10 @@ export default function AIPanel({
 
   const finalPrompt = useMemo(() => {
     if (activeFeed) {
-      return [activeFeed.basePrompt, customPrompt.trim()]
-        .filter(Boolean)
-        .join("\n\n추가 요청: ");
+      return activeFeed.basePrompt;
     }
     return prompt.trim();
-  }, [activeFeed, customPrompt, prompt]);
-
-  const localizedStyleLabel = (key: Style) => {
-    const localized = e?.styles?.[key as keyof typeof e.styles];
-    return localized || FALLBACK_STYLE_LABELS[key];
-  };
-
-  const styles = STYLE_KEYS.map((key) => ({
-    value: key,
-    label: localizedStyleLabel(key),
-    emoji: STYLE_EMOJIS[key],
-  }));
+  }, [activeFeed, prompt]);
 
   const examplePrompts =
     e?.examplePrompts?.[style as keyof typeof e.examplePrompts] ??
@@ -239,39 +147,7 @@ export default function AIPanel({
     setActiveFeedId(item.id);
     setStyle(item.style);
     setPrompt(item.basePrompt);
-    setCustomPrompt("");
-    setShowCustomPromptInput(false);
     setError(null);
-  };
-
-  const handleFeedMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
-    const container = feedScrollRef.current;
-    if (!container) return;
-    dragStateRef.current = {
-      isDragging: true,
-      startX: event.pageX,
-      startScrollLeft: container.scrollLeft,
-    };
-  };
-
-  const handleFeedMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    const container = feedScrollRef.current;
-    if (!container || !dragStateRef.current.isDragging) return;
-    event.preventDefault();
-    const deltaX = event.pageX - dragStateRef.current.startX;
-    container.scrollLeft = dragStateRef.current.startScrollLeft - deltaX;
-  };
-
-  const stopFeedDragging = () => {
-    dragStateRef.current.isDragging = false;
-  };
-
-  const resetFeedSelection = () => {
-    setActiveFeedId(null);
-    setPrompt("");
-    setCustomPrompt("");
-    setShowCustomPromptInput(false);
-    setStyle("ghibli");
   };
 
   const handleGenerate = async () => {
@@ -399,14 +275,7 @@ export default function AIPanel({
           <span className="text-[10px] text-muted-foreground">좌우로 넘겨 선택</span>
         </div>
 
-        <div
-          ref={feedScrollRef}
-          className="-mx-1 flex cursor-grab snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 active:cursor-grabbing"
-          onMouseDown={handleFeedMouseDown}
-          onMouseMove={handleFeedMouseMove}
-          onMouseUp={stopFeedDragging}
-          onMouseLeave={stopFeedDragging}
-        >
+        <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
           {STYLE_FEED_ITEMS.map((item) => {
             const isActive = activeFeedId === item.id;
 
@@ -437,36 +306,7 @@ export default function AIPanel({
         </div>
       </section>
 
-      <div className={`grid gap-1.5 ${compact ? "grid-cols-3" : "grid-cols-2"}`}>
-        {styles.map((s) => (
-          <button
-            key={s.value}
-            type="button"
-            onClick={() => {
-              setStyle(s.value);
-              if (activeFeed) setActiveFeedId(null);
-            }}
-            className={`flex items-center justify-center gap-1.5 rounded-lg border text-xs font-medium transition-all ${
-              compact ? "p-2" : "p-1"
-            } ${
-              style === s.value
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-zinc-200 text-zinc-500 hover:border-zinc-300"
-            }`}
-          >
-            <span>{s.emoji}</span>
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 gap-1.5">
-        <ModeButton
-          active={mode === "prompt-only"}
-          icon={<WandSparkles className="h-3.5 w-3.5" />}
-          label={e.modePrompt ?? "프롬프트"}
-          onClick={() => setMode("prompt-only")}
-        />
+      <div className="grid grid-cols-1 gap-1.5">
         <ModeButton
           active={mode === "from-upload"}
           icon={<Upload className="h-3.5 w-3.5" />}
@@ -533,51 +373,7 @@ export default function AIPanel({
         onChange={handleUpload}
       />
 
-      {activeFeed ? (
-        <>
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold text-zinc-700">선택된 스타일</p>
-              <button
-                type="button"
-                className="text-[11px] text-zinc-500 underline-offset-2 hover:text-zinc-700 hover:underline"
-                onClick={resetFeedSelection}
-              >
-                선택 해제
-              </button>
-            </div>
-            <p className="text-sm font-medium">{activeFeed.title}</p>
-            <p className="mt-2 line-clamp-3 text-[11px] leading-relaxed text-zinc-500">
-              {activeFeed.basePrompt}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            {!showCustomPromptInput ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 w-full border-zinc-300 bg-white text-sm font-medium"
-                onClick={() => setShowCustomPromptInput(true)}
-              >
-                  <Plus className="mr-2 h-4 w-4" />
-                  추가 프롬프트 입력하기
-                </Button>
-            ) : (
-              <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
-                <Label className="text-xs">추가 프롬프트</Label>
-                <Textarea
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder="원하는 디테일(표정/포즈/소품 등)을 추가로 입력하세요"
-                  className="resize-none bg-white text-sm"
-                  rows={3}
-                />
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
+      {!activeFeed && (
         <>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -587,51 +383,7 @@ export default function AIPanel({
                   : e.promptLabel ?? "어떤 캐릭터를 만들까요?"}
               </Label>
 
-              <button
-                type="button"
-                onClick={() => setShowGuide((v) => !v)}
-                className="flex items-center gap-1 text-[10px] text-muted-foreground transition-colors hover:text-primary"
-              >
-                <HelpCircle className="h-3 w-3" />
-                {e.writingTips ?? "작성 팁"}
-              </button>
             </div>
-
-            {showGuide && (
-              <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <p className="text-[11px] font-semibold text-blue-800">
-                  {e.guideTitle ?? "프롬프트 가이드"}
-                </p>
-                <div className="space-y-1.5 text-[10px] leading-relaxed text-blue-700">
-                  <p>
-                    <span className="font-semibold">1. {e.guideWho ?? "누가"}</span> —{" "}
-                    {e.guideWhoDesc}
-                  </p>
-                  <p className="pl-3 text-blue-600">{e.guideWhoExample}</p>
-
-                  <p>
-                    <span className="font-semibold">2. {e.guideWhat ?? "무엇을"}</span> —{" "}
-                    {e.guideWhatDesc}
-                  </p>
-                  <p className="pl-3 text-blue-600">{e.guideWhatExample}</p>
-
-                  <p>
-                    <span className="font-semibold">3. {e.guideWhere ?? "어디서"}</span> —{" "}
-                    {e.guideWhereDesc}
-                  </p>
-                  <p className="pl-3 text-blue-600">{e.guideWhereExample}</p>
-                </div>
-
-                <div className="mt-1.5 border-t border-blue-200 pt-1.5">
-                  <p className="text-[10px] text-blue-600">
-                    <span className="font-semibold">{e.guideTip ?? "팁"}</span>{" "}
-                    {e.guideTipDesc}
-                    <br />
-                    {e.guideTipExample}
-                  </p>
-                </div>
-              </div>
-            )}
 
             <Textarea
               value={prompt}
