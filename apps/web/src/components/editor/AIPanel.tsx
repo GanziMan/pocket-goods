@@ -34,6 +34,13 @@ type Style =
   | "fairly-odd"
   | "powerpuff"
   | "akatsuki"
+  | "everskies"
+  | "sylvanian"
+  | "animal-crossing"
+  | "ios-emoji"
+  | "maplestory"
+  | "tanning-kitty"
+  | "snoopy"
   | "custom";
 
 type StyleFeedItem = {
@@ -86,12 +93,68 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
       "파워퍼프걸 스타일로 변환해주세요. 매우 큰 눈, 단순한 얼굴 요소, 둥근 실루엣, 또렷한 라인과 플랫 컬러 느낌으로 표현해주세요. 배경은 투명으로 유지해주세요.",
   },
   {
+    id: "everskies",
+    title: "Everskies",
+    style: "everskies",
+    preview: "/logo.png",
+    basePrompt:
+      "Everskies 아바타 감성으로 변환해주세요. 패션 중심의 슬림한 비율, 선명한 라인, 트렌디한 메이크업과 아이템 레이어링, 스타일리시한 포즈를 적용해주세요. 인물의 헤어/의상/액세서리 핵심 특징은 유지하고 배경은 투명으로 유지해주세요.",
+  },
+  {
+    id: "sylvanian",
+    title: "실바니안",
+    style: "sylvanian",
+    preview: "/logo.png",
+    basePrompt:
+      "실바니안 패밀리 인형 감성으로 변환해주세요. 보송한 플록 질감, 둥글고 순한 얼굴, 아기자기한 의상 디테일, 따뜻한 색감을 반영해주세요. 원본의 스타일 요소를 살리되 인형 같은 귀여운 분위기를 유지하고 배경은 투명으로 유지해주세요.",
+  },
+  {
     id: "custom",
     title: "커스텀 만들기",
     style: "custom",
     preview: "/logo.png",
     basePrompt:
       "사용자 요청을 최우선으로 반영해 자유 스타일로 생성해주세요. 캐릭터 중심 구도와 선명한 외곽선을 유지하고, 배경은 투명으로 유지해주세요.",
+  },
+  {
+    id: "animal-crossing",
+    title: "동물의 숲",
+    style: "animal-crossing",
+    preview: "/logo.png",
+    basePrompt:
+      "닌텐도 스위치 게임 동물의 숲 스타일의 3D 캐릭터 일러스트 화풍을 공부하고, 그 스타일의 이목구비, 의상. 헤어스타일을 따라 하는 얼굴 표현방식을 따라해. 첨부한 이미지 속 인물의 헤어스타일과 옷, 액세서리로 인물 일러스트를 그려줘. 배경은 투명하게 해줘. 자연광 아래의 밝은 햇빛과 부드러운 그림자 효과를 사용해 따뜻하고 발랄한 분위기로 만들어 줘. 실제 동물의숲 플레이 화면에 등장하는 캐릭터처럼 보여야 해, 3D인 점을 명확하게 보여줘.",
+  },
+  {
+    id: "ios-emoji",
+    title: "ios 이모지",
+    style: "ios-emoji",
+    preview: "/logo.png",
+    basePrompt:
+      "사진 속 인물을 애플 ios 이모지 스타일의 3D 배경화면 캐릭터로 만들어줘. 이목구비, 피부색, 표정, 표면 질감 등을 모방하고, 헤어 스타일, 머리 장식, 의상, 포즈까지 그대로 반영해줘. 배경은 투명색이며, 최종 이미지가 ios 공식 이모지처럼 보이게 해줘.",
+  },
+  {
+    id: "maplestory",
+    title: "메이플스토리",
+    style: "maplestory",
+    preview: "/logo.png",
+    basePrompt:
+      "메이플스토리 인게임 캐릭터의 픽셀 캐릭터 느낌으로 만들어줘. 이목구비, 의상, 헤어스타일을 반영한 얼굴표현을 해줘. 스타일, 옷 액세서리는 첨부한 사진을 그대로 반영해줘. 배경은 흰색으로 이미지를 만들어줘.",
+  },
+  {
+    id: "tanning-kitty",
+    title: "태닝키티",
+    style: "tanning-kitty",
+    preview: "/logo.png",
+    basePrompt:
+      "첨부 사진을 아래 요청 스타일에 맞춰서 2D 캐릭터화해줘. 헬로키티 스타일로 원작의 얼굴과 몸 비율, 윤곽선은 그대로 유지해줘. 피부색은 밝은 라떼색, 햇볕에 건강하게 그을린 느낌으로 변경해줘 (지나치게 어두운 색은 피함). 원래의 리본, 액세서리, 옷은 사진 스타일에 맞게 조정해줘. 사용자 사진을 참고해서 헤어스타일과 옷 스타일은 그대로 반영해줘. 전체적으로 귀엽고 단순한 산리오 스타일 유지해주고 배경은 투명하게 만들어줘.",
+  },
+  {
+    id: "snoopy",
+    title: "스누피",
+    style: "snoopy",
+    preview: "/logo.png",
+    basePrompt:
+      "업로드한 이미지를 Peanuts-style 3d art로 변경해줘. 배경과 옷은 원본 이미지와 비슷하게 표현해주고 스타일만 바꿔줘. png 파일로 저장해주고 그 옆에 스누피 캐릭터 형태도 그대로 그려줘.",
   },
 ];
 
