@@ -1,18 +1,9 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from "react"
+import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 
-type SliderProps = {
-  className?: string;
-  defaultValue?: number[];
-  value?: number[];
-  min?: number;
-  max?: number;
-  step?: number;
-  disabled?: boolean;
-  onValueChange?: (value: number[]) => void;
-};
+import { cn } from "@/lib/utils"
 
 function Slider({
   className,
@@ -20,40 +11,50 @@ function Slider({
   value,
   min = 0,
   max = 100,
-  step = 1,
-  disabled = false,
-  onValueChange,
-}: SliderProps) {
-  const isControlled = Array.isArray(value);
-  const [internalValue, setInternalValue] = React.useState<number>(defaultValue?.[0] ?? min);
-  const currentValue = isControlled ? (value?.[0] ?? min) : internalValue;
-  const percentage = ((currentValue - min) / Math.max(max - min, 1)) * 100;
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const next = Number(event.target.value);
-    if (!isControlled) setInternalValue(next);
-    onValueChange?.([next]);
-  };
+  ...props
+}: SliderPrimitive.Root.Props) {
+  const _values = React.useMemo(
+    () =>
+      Array.isArray(value)
+        ? value
+        : Array.isArray(defaultValue)
+          ? defaultValue
+          : [min, max],
+    [value, defaultValue, min, max]
+  )
 
   return (
-    <div className={cn("relative w-full", className)}>
-      <div className="pointer-events-none absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-muted" />
-      <div
-        className="pointer-events-none absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary"
-        style={{ width: `${percentage}%` }}
-      />
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={currentValue}
-        disabled={disabled}
-        onChange={handleChange}
-        className="relative z-10 h-6 w-full cursor-pointer appearance-none bg-transparent disabled:cursor-not-allowed [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:mt-[-4px] [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-ring [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-track]:h-1 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:size-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-ring [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-sm"
-      />
-    </div>
-  );
+    <SliderPrimitive.Root
+      className={cn("data-horizontal:w-full data-vertical:h-full", className)}
+      data-slot="slider"
+      defaultValue={defaultValue}
+      value={value}
+      min={min}
+      max={max}
+      thumbAlignment="edge"
+      renderBeforeHydration={false}
+      {...props}
+    >
+      <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
+        <SliderPrimitive.Track
+          data-slot="slider-track"
+          className="relative grow overflow-hidden rounded-full bg-muted select-none data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1"
+        >
+          <SliderPrimitive.Indicator
+            data-slot="slider-range"
+            className="bg-primary select-none data-horizontal:h-full data-vertical:w-full"
+          />
+        </SliderPrimitive.Track>
+        {Array.from({ length: _values.length }, (_, index) => (
+          <SliderPrimitive.Thumb
+            data-slot="slider-thumb"
+            key={index}
+            className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+          />
+        ))}
+      </SliderPrimitive.Control>
+    </SliderPrimitive.Root>
+  )
 }
 
-export { Slider };
+export { Slider }
