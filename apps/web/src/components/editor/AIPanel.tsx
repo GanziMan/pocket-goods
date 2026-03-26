@@ -10,6 +10,7 @@ import {
   Upload,
   Loader2,
   ImagePlus,
+  MessageSquarePlus,
   LogIn,
   X,
 } from "lucide-react";
@@ -28,20 +29,13 @@ interface AIPanelProps {
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
 
 type Style =
-  | "ghibli"
-  | "sd"
-  | "steampunk"
-  | "fairly-odd"
-  | "powerpuff"
-  | "akatsuki"
   | "everskies"
   | "sylvanian"
   | "animal-crossing"
   | "ios-emoji"
   | "maplestory"
   | "tanning-kitty"
-  | "snoopy"
-  | "custom";
+  | "snoopy";
 
 type StyleFeedItem = {
   id: string;
@@ -52,46 +46,6 @@ type StyleFeedItem = {
 };
 
 const STYLE_FEED_ITEMS: StyleFeedItem[] = [
-  {
-    id: "ghibli",
-    title: "지브리 만들기",
-    style: "ghibli",
-    preview: "/logo.png",
-    basePrompt:
-      "Studio Ghibli 감성의 따뜻한 애니메이션 스타일. 파스텔 톤과 부드러운 수채화 질감, 따뜻한 표정과 자연스러운 디테일을 유지해 캐릭터를 변환해주세요. 배경은 투명으로 유지해주세요.",
-  },
-  {
-    id: "sd",
-    title: "SD 만들기",
-    style: "sd",
-    preview: "/logo.png",
-    basePrompt:
-      "일본 SD/치비 스타일로 변환해주세요. 큰 머리와 짧은 팔다리의 귀여운 비율, 선명한 외곽선, 밝은 셀 애니메이션 색감으로 표현해주세요. 배경은 투명으로 유지해주세요.",
-  },
-  {
-    id: "steampunk",
-    title: "스팀펑크 만들기",
-    style: "steampunk",
-    preview: "/logo.png",
-    basePrompt:
-      "스팀펑크 무드로 변환해주세요. 황동 장치, 톱니바퀴, 빈티지 기계 디테일, 빅토리아풍 분위기를 살려 캐릭터를 구성해주세요. 배경은 투명으로 유지해주세요.",
-  },
-  {
-    id: "fairly-odd",
-    title: "수호천사 만들기",
-    style: "fairly-odd",
-    preview: "/logo.png",
-    basePrompt:
-      "The Fairly OddParents 느낌의 카툰 스타일로 변환해주세요. 굵고 깔끔한 외곽선, 단순한 플랫 컬러, 과장된 얼굴 비율로 표현해주세요. 배경은 투명으로 유지해주세요.",
-  },
-  {
-    id: "powerpuff",
-    title: "파워퍼프걸 만들기",
-    style: "powerpuff",
-    preview: "/logo.png",
-    basePrompt:
-      "파워퍼프걸 스타일로 변환해주세요. 매우 큰 눈, 단순한 얼굴 요소, 둥근 실루엣, 또렷한 라인과 플랫 컬러 느낌으로 표현해주세요. 배경은 투명으로 유지해주세요.",
-  },
   {
     id: "everskies",
     title: "Everskies",
@@ -107,14 +61,6 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     preview: "/logo.png",
     basePrompt:
       "실바니안 패밀리 인형 감성으로 변환해주세요. 보송한 플록 질감, 둥글고 순한 얼굴, 아기자기한 의상 디테일, 따뜻한 색감을 반영해주세요. 원본의 스타일 요소를 살리되 인형 같은 귀여운 분위기를 유지하고 배경은 투명으로 유지해주세요.",
-  },
-  {
-    id: "custom",
-    title: "커스텀 만들기",
-    style: "custom",
-    preview: "/logo.png",
-    basePrompt:
-      "사용자 요청을 최우선으로 반영해 자유 스타일로 생성해주세요. 캐릭터 중심 구도와 선명한 외곽선을 유지하고, 배경은 투명으로 유지해주세요.",
   },
   {
     id: "animal-crossing",
@@ -176,9 +122,10 @@ export default function AIPanel({
   } = useImagePreprocessor();
 
   const [mode, setMode] = useState<Mode>("from-upload");
-  const [style, setStyle] = useState<Style>("ghibli");
+  const [style, setStyle] = useState<Style>("everskies");
   const [prompt, setPrompt] = useState("");
-  const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
+  const [showPromptInput, setShowPromptInput] = useState(false);
+  const [activeFeedId, setActiveFeedId] = useState<string | null>(STYLE_FEED_ITEMS[0]?.id ?? null);
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
@@ -201,10 +148,9 @@ export default function AIPanel({
   );
 
   const finalPrompt = useMemo(() => {
-    if (activeFeed) {
-      return activeFeed.basePrompt;
-    }
-    return prompt.trim();
+    if (!activeFeed) return prompt.trim();
+    const extraPrompt = prompt.trim();
+    return extraPrompt ? `${activeFeed.basePrompt}\n\n추가 요청: ${extraPrompt}` : activeFeed.basePrompt;
   }, [activeFeed, prompt]);
 
   const handleUpload = async (ev: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,7 +173,6 @@ export default function AIPanel({
   const handleSelectFeedItem = (item: StyleFeedItem) => {
     setActiveFeedId(item.id);
     setStyle(item.style);
-    setPrompt(item.basePrompt);
     setError(null);
   };
 
@@ -353,10 +298,19 @@ export default function AIPanel({
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs">둘러보기</Label>
-          <span className="text-[10px] text-muted-foreground">좌우로 넘겨 선택</span>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="h-7 rounded-full px-2.5 text-[10px]"
+            onClick={() => setShowPromptInput((prev) => !prev)}
+          >
+            <MessageSquarePlus className="mr-1 h-3 w-3" />
+            추가프롬프트입력하기
+          </Button>
         </div>
 
-        <div className="ai-feed-scroll -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
+        <div className="ai-feed-scroll -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden touch-pan-x cursor-grab active:cursor-grabbing">
           {STYLE_FEED_ITEMS.map((item) => {
             const isActive = activeFeedId === item.id;
 
@@ -367,7 +321,7 @@ export default function AIPanel({
                 onClick={() => handleSelectFeedItem(item)}
                 className={`group relative h-56 min-w-[220px] snap-start overflow-hidden rounded-2xl border text-left transition-all ${
                   isActive
-                    ? "border-primary shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
+                    ? "border-primary shadow-[0_14px_32px_rgba(0,0,0,0.18)] ring-2 ring-primary/30"
                     : "border-zinc-200 hover:-translate-y-0.5 hover:border-zinc-300"
                 }`}
               >
@@ -385,6 +339,7 @@ export default function AIPanel({
             );
           })}
         </div>
+        <p className="text-[10px] text-muted-foreground">카드를 직접 밀어서 좌우로 넘길 수 있어요.</p>
       </section>
 
       <div className="grid grid-cols-1 gap-1.5">
@@ -454,35 +409,24 @@ export default function AIPanel({
         onChange={handleUpload}
       />
 
-      {!activeFeed && (
+      {showPromptInput && (
         <>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs">
-                {style === "custom"
-                  ? e.promptLabelCustom ?? "프롬프트를 자유롭게 입력하세요"
-                  : e.promptLabel ?? "어떤 캐릭터를 만들까요?"}
-              </Label>
+              <Label className="text-xs">{e.promptLabel ?? "추가 프롬프트를 입력하세요"}</Label>
 
             </div>
 
             <Textarea
               value={prompt}
               onChange={(ev) => setPrompt(ev.target.value)}
-              placeholder={
-                style === "custom"
-                  ? e.promptPlaceholderCustom ?? "스타일, 색감, 구도, 분위기 등을 자유롭게 묘사해주세요"
-                  : e.promptPlaceholder ?? "졸린 표정으로 하품하는 캐릭터"
-              }
+              placeholder={e.promptPlaceholderCustom ?? "표정, 배경, 포즈 등 추가 요청을 입력해주세요"}
               className="resize-none text-sm"
-              rows={style === "custom" ? 4 : 3}
+              rows={4}
             />
-
-            {style === "custom" && (
-              <p className="text-[10px] text-muted-foreground">
-                {e.customHint ?? "스타일, 인물, 구도, 배경을 구체적으로 적을수록 결과가 좋아집니다."}
-              </p>
-            )}
+            <p className="text-[10px] text-muted-foreground">
+              스타일 프리셋은 유지하고 요청만 추가됩니다.
+            </p>
           </div>
 
         </>
