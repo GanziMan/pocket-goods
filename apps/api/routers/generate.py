@@ -168,7 +168,7 @@ def _pil_to_part(image: Image.Image, mime: str = "image/png") -> types.Part:
 async def generate_image(
     request: Request,
     prompt: str = Form(...),
-    style: str = Form(default="ghibli"),
+    style: str = Form(default="everskies"),
     canvas_image: Optional[UploadFile] = File(default=None),
     upload_image: Optional[UploadFile] = File(default=None),
 ):
@@ -213,7 +213,7 @@ async def generate_image(
         logger.info("[generate] Gemini API 키 사용")
     else:
         raise HTTPException(status_code=500, detail="GCP_PROJECT_ID 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
-    style_prompt = STYLE_PROMPTS.get(style, STYLE_PROMPTS["ghibli"])
+    style_prompt = STYLE_PROMPTS.get(style, STYLE_PROMPTS["everskies"])
 
     # 프롬프트 + 이미지 파트 조합
     parts: list = []
