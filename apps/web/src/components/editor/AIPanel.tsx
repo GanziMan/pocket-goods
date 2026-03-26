@@ -139,7 +139,10 @@ export default function AIPanel({
 
   const finalPrompt = useMemo(() => {
     if (activeFeed) {
-      return activeFeed.basePrompt;
+      const extraPrompt = prompt.trim();
+      return extraPrompt
+        ? `${activeFeed.basePrompt}\n\n추가 요청: ${extraPrompt}`
+        : activeFeed.basePrompt;
     }
     return prompt.trim();
   }, [activeFeed, prompt]);
@@ -164,7 +167,7 @@ export default function AIPanel({
   const handleSelectFeedItem = (item: StyleFeedItem) => {
     setActiveFeedId(item.id);
     setStyle(item.style);
-    setPrompt(item.basePrompt);
+    setPrompt("");
     setError(null);
   };
 
@@ -302,7 +305,7 @@ export default function AIPanel({
                 key={item.id}
                 type="button"
                 onClick={() => handleSelectFeedItem(item)}
-                className={`group relative h-56 min-w-[220px] snap-start overflow-hidden rounded-2xl border text-left transition-all ${
+                className={`group relative h-56 min-w-[220px] snap-start select-none overflow-hidden rounded-2xl border text-left transition-all ${
                   isActive
                     ? "border-primary shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
                     : "border-zinc-200 hover:-translate-y-0.5 hover:border-zinc-300"
@@ -391,39 +394,37 @@ export default function AIPanel({
         onChange={handleUpload}
       />
 
-      {!activeFeed && (
-        <>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">
-                {style === "custom"
-                  ? e.promptLabelCustom ?? "프롬프트를 자유롭게 입력하세요"
-                  : e.promptLabel ?? "어떤 캐릭터를 만들까요?"}
-              </Label>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">
+            {activeFeed
+              ? e.promptLabelExtra ?? "추가 프롬프트 입력하기"
+              : style === "custom"
+                ? e.promptLabelCustom ?? "프롬프트를 자유롭게 입력하세요"
+                : e.promptLabel ?? "어떤 캐릭터를 만들까요?"}
+          </Label>
+        </div>
 
-            </div>
+        <Textarea
+          value={prompt}
+          onChange={(ev) => setPrompt(ev.target.value)}
+          placeholder={
+            activeFeed
+              ? e.promptPlaceholderExtra ?? "원하는 디테일을 추가로 입력하세요 (선택)"
+              : style === "custom"
+                ? e.promptPlaceholderCustom ?? "스타일, 색감, 구도, 분위기 등을 자유롭게 묘사해주세요"
+                : e.promptPlaceholder ?? "졸린 표정으로 하품하는 캐릭터"
+          }
+          className="resize-none text-sm"
+          rows={activeFeed ? 2 : style === "custom" ? 4 : 3}
+        />
 
-            <Textarea
-              value={prompt}
-              onChange={(ev) => setPrompt(ev.target.value)}
-              placeholder={
-                style === "custom"
-                  ? e.promptPlaceholderCustom ?? "스타일, 색감, 구도, 분위기 등을 자유롭게 묘사해주세요"
-                  : e.promptPlaceholder ?? "졸린 표정으로 하품하는 캐릭터"
-              }
-              className="resize-none text-sm"
-              rows={style === "custom" ? 4 : 3}
-            />
-
-            {style === "custom" && (
-              <p className="text-[10px] text-muted-foreground">
-                {e.customHint ?? "스타일, 인물, 구도, 배경을 구체적으로 적을수록 결과가 좋아집니다."}
-              </p>
-            )}
-          </div>
-
-        </>
-      )}
+        {style === "custom" && !activeFeed && (
+          <p className="text-[10px] text-muted-foreground">
+            {e.customHint ?? "스타일, 인물, 구도, 배경을 구체적으로 적을수록 결과가 좋아집니다."}
+          </p>
+        )}
+      </div>
 
       <Button className="w-full" onClick={handleGenerate} disabled={loading || !finalPrompt.trim()}>
         {loading ? (

@@ -200,6 +200,7 @@ const ja = {
     canvasRefHint: "現在のキャンバスデザインを参考にAIが新しい画像を生成します。",
     promptLabel: "どんなキャラクターを作りますか？",
     promptLabelCustom: "プロンプトを自由に入力してください",
+    promptLabelExtra: "追加プロンプトを入力",
     writingTips: "作成のコツ",
     guideTitle: "こう書くとより良い結果が得られます",
     guideWho: "誰を",
@@ -216,6 +217,7 @@ const ja = {
     guideTipExample: "「メガネなし」→「裸眼の」",
     promptPlaceholder: "誰が＋何をしている＋どこで\n例）雨の中で赤い傘をさして立っている猫",
     promptPlaceholderCustom: "スタイル、対象、動作、雰囲気を具体的に描写してください\n例）水彩画風のかわいい猫が窓辺に座って雨を眺めている",
+    promptPlaceholderExtra: "追加したいディテールを入力してください（任意）",
     customHint: "スタイルの制約なく、入力したプロンプトそのまま生成されます。",
     exampleHint: "クリックで自動入力",
     examplePrompts: {

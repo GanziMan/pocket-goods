@@ -200,6 +200,7 @@ const en = {
     canvasRefHint: "AI will generate a new image referencing your current canvas design.",
     promptLabel: "What character shall we create?",
     promptLabelCustom: "Enter your prompt freely",
+    promptLabelExtra: "Add extra prompt details",
     writingTips: "Tips",
     guideTitle: "Tips for better results",
     guideWho: "Who",
@@ -216,6 +217,7 @@ const en = {
     guideTipExample: '"without glasses" → "bare-eyed"',
     promptPlaceholder: "Who + doing what + where\ne.g. A cat standing in the rain with a red umbrella",
     promptPlaceholderCustom: "Describe the style, subject, action, and mood in detail\ne.g. A cute cat in watercolor style sitting by a window watching the rain",
+    promptPlaceholderExtra: "Add any extra details you want (optional)",
     customHint: "No style constraints — your prompt is used as-is.",
     exampleHint: "Click to auto-fill",
     examplePrompts: {
