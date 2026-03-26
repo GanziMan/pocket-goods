@@ -46,31 +46,54 @@ type StyleFeedItem = {
 
 const STYLE_FEED_ITEMS: StyleFeedItem[] = [
   {
-    id: "sylvanian",
-    title: "실바니안 만들기",
-    style: "custom",
+    id: "ghibli",
+    title: "지브리 만들기",
+    style: "ghibli",
     preview: "/logo.png",
     basePrompt:
-      "Transform the person in this photo into a Sylvanian Families (Calico Critters) animal figure. Convert them into a cute anthropomorphic animal (choose an animal that best matches their vibe: tiny beige bunny, rabbit, cat, puppy, bear) wearing a detailed miniature outfit matching their original clothing. Use soft flocked fur texture, tiny black dot eyes, small pink nose, and a gentle expression. Keep the figure isolated and centered on plain white background with neutral studio lighting. No furniture, no background elements, no dollhouse decor.",
+      "Studio Ghibli 감성의 따뜻한 애니메이션 스타일. 파스텔 톤과 부드러운 수채화 질감, 따뜻한 표정과 자연스러운 디테일을 유지해 캐릭터를 변환해주세요. 배경은 투명으로 유지해주세요.",
   },
   {
-    id: "everskies",
-    title: "Everskies 만들기",
+    id: "sd",
+    title: "SD 만들기",
+    style: "sd",
+    preview: "/logo.png",
+    basePrompt:
+      "일본 SD/치비 스타일로 변환해주세요. 큰 머리와 짧은 팔다리의 귀여운 비율, 선명한 외곽선, 밝은 셀 애니메이션 색감으로 표현해주세요. 배경은 투명으로 유지해주세요.",
+  },
+  {
+    id: "steampunk",
+    title: "스팀펑크 만들기",
+    style: "steampunk",
+    preview: "/logo.png",
+    basePrompt:
+      "스팀펑크 무드로 변환해주세요. 황동 장치, 톱니바퀴, 빈티지 기계 디테일, 빅토리아풍 분위기를 살려 캐릭터를 구성해주세요. 배경은 투명으로 유지해주세요.",
+  },
+  {
+    id: "fairly-odd",
+    title: "수호천사 만들기",
+    style: "fairly-odd",
+    preview: "/logo.png",
+    basePrompt:
+      "The Fairly OddParents 느낌의 카툰 스타일로 변환해주세요. 굵고 깔끔한 외곽선, 단순한 플랫 컬러, 과장된 얼굴 비율로 표현해주세요. 배경은 투명으로 유지해주세요.",
+  },
+  {
+    id: "powerpuff",
+    title: "파워퍼프걸 만들기",
+    style: "powerpuff",
+    preview: "/logo.png",
+    basePrompt:
+      "파워퍼프걸 스타일로 변환해주세요. 매우 큰 눈, 단순한 얼굴 요소, 둥근 실루엣, 또렷한 라인과 플랫 컬러 느낌으로 표현해주세요. 배경은 투명으로 유지해주세요.",
+  },
+  {
+    id: "custom",
+    title: "커스텀 만들기",
     style: "custom",
     preview: "/logo.png",
     basePrompt:
-      "1. Everskies의 픽셀 아트 스타일로 사진을 바꿔주세요. 2. 인체 비율, 얼굴 표정, 의상, 헤어스타일을 그대로 모방해주세요. 3. 첨부 사진 속 인물의 헤어스타일, 옷, 액세서리를 참고해 인물 일러스트를 그려주세요. 4. 배경은 흰색, 인물은 전신으로 그려주세요.",
+      "사용자 요청을 최우선으로 반영해 자유 스타일로 생성해주세요. 캐릭터 중심 구도와 선명한 외곽선을 유지하고, 배경은 투명으로 유지해주세요.",
   },
 ];
-
-const DEFAULT_EXAMPLE_PROMPTS: Partial<Record<Style, string[]>> = {
-  ghibli: ["숲속의 따뜻한 분위기", "햇살이 비치는 평화로운 장면"],
-  sd: ["졸린 표정으로 하품하는", "왕관 쓰고 의기양양한", "하트 들고 수줍어하는"],
-  steampunk: ["황동 장치와 톱니바퀴가 많은", "빅토리아풍 기계 도시 배경"],
-  "fairly-odd": ["마법 요정 느낌으로", "채도가 높은 만화 스타일"],
-  powerpuff: ["크고 동그란 눈으로", "심플한 카툰 전신 캐릭터"],
-  custom: ["구도, 표정, 색감, 배경을 자세히 적어주세요"],
-};
 
 export default function AIPanel({
   onGetCanvasImage,
@@ -120,11 +143,6 @@ export default function AIPanel({
     }
     return prompt.trim();
   }, [activeFeed, prompt]);
-
-  const examplePrompts =
-    e?.examplePrompts?.[style as keyof typeof e.examplePrompts] ??
-    DEFAULT_EXAMPLE_PROMPTS[style] ??
-    [];
 
   const handleUpload = async (ev: React.ChangeEvent<HTMLInputElement>) => {
     const file = ev.target.files?.[0];
@@ -275,7 +293,7 @@ export default function AIPanel({
           <span className="text-[10px] text-muted-foreground">좌우로 넘겨 선택</span>
         </div>
 
-        <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
+        <div className="ai-feed-scroll -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
           {STYLE_FEED_ITEMS.map((item) => {
             const isActive = activeFeedId === item.id;
 
@@ -404,31 +422,6 @@ export default function AIPanel({
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <p className="text-[10px] text-muted-foreground">
-              {e.exampleHint ?? "예시 프롬프트"}
-            </p>
-            <div
-              className={
-                compact
-                  ? "scrollbar-hide -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1"
-                  : "flex flex-wrap gap-1"
-              }
-            >
-              {examplePrompts.map((ex) => (
-                <button
-                  key={ex}
-                  type="button"
-                  onClick={() => setPrompt(ex)}
-                  className={`rounded-full border border-zinc-200 px-2 py-0.5 text-[10px] transition-colors hover:border-primary hover:bg-zinc-50 ${
-                    compact ? "shrink-0 whitespace-nowrap" : ""
-                  }`}
-                >
-                  {ex}
-                </button>
-              ))}
-            </div>
-          </div>
         </>
       )}
 
