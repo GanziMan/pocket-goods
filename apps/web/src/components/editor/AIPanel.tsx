@@ -47,6 +47,12 @@ type StyleFeedItem = {
   basePrompt: string;
 };
 
+type DragScrollState = {
+  isDragging: boolean;
+  startX: number;
+  startScrollLeft: number;
+};
+
 const STYLE_EMOJIS: Record<Style, string> = {
   ghibli: "🌿",
   sd: "🎀",
@@ -86,12 +92,44 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
       "Transform the person in this photo into a Sylvanian Families (Calico Critters) animal figure. Convert them into a cute anthropomorphic animal (choose an animal that best matches their vibe: tiny beige bunny, rabbit, cat, puppy, bear) wearing a detailed miniature outfit matching their original clothing. Use soft flocked fur texture, tiny black dot eyes, small pink nose, and a gentle expression. Keep the figure isolated and centered on plain white background with neutral studio lighting. No furniture, no background elements, no dollhouse decor.",
   },
   {
-    id: "everskies",
-    title: "Everskies 만들기",
-    style: "custom",
+    id: "ghibli",
+    title: "지브리 만들기",
+    style: "ghibli",
     preview: "/logo.png",
     basePrompt:
-      "1. Everskies의 픽셀 아트 스타일로 사진을 바꿔주세요. 2. 인체 비율, 얼굴 표정, 의상, 헤어스타일을 그대로 모방해주세요. 3. 첨부 사진 속 인물의 헤어스타일, 옷, 액세서리를 참고해 인물 일러스트를 그려주세요. 4. 배경은 흰색, 인물은 전신으로 그려주세요.",
+      "Transform the person in this photo into a warm, hand-painted Ghibli-style animation character with soft natural lighting, gentle watercolor-like textures, and cozy cinematic mood.",
+  },
+  {
+    id: "sd",
+    title: "SD 만들기",
+    style: "sd",
+    preview: "/logo.png",
+    basePrompt:
+      "Transform the subject into a super-deformed (SD/chibi) character with a big head, tiny body proportions, expressive eyes, clean line art, and playful pastel color palette.",
+  },
+  {
+    id: "steampunk",
+    title: "스팀펑크 만들기",
+    style: "steampunk",
+    preview: "/logo.png",
+    basePrompt:
+      "Create a steampunk version of the subject with brass details, mechanical accessories, leather and vintage outfit accents, dramatic warm lighting, and retro-futuristic atmosphere.",
+  },
+  {
+    id: "fairly-odd",
+    title: "수호천사 만들기",
+    style: "fairly-odd",
+    preview: "/logo.png",
+    basePrompt:
+      "Convert the subject into a bright flat-color cartoon inspired by classic fairy-godparent animation style, with bold outlines, simplified shapes, and cheerful magical vibe.",
+  },
+  {
+    id: "powerpuff",
+    title: "파워퍼프걸 만들기",
+    style: "powerpuff",
+    preview: "/logo.png",
+    basePrompt:
+      "Turn the subject into a Powerpuff-inspired character with oversized round eyes, minimal geometric forms, vivid colors, and a dynamic cartoon pose.",
   },
 ];
 
@@ -122,10 +160,10 @@ export default function AIPanel({
   } = useImagePreprocessor();
 
   const [mode, setMode] = useState<Mode>("prompt-only");
-  const [style, setStyle] = useState<Style>("ghibli");
+  const [style, setStyle] = useState<Style>("custom");
   const [prompt, setPrompt] = useState("");
   const [customPrompt, setCustomPrompt] = useState("");
-  const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
+  const [activeFeedId, setActiveFeedId] = useState<string | null>("sylvanian");
   const [showCustomPromptInput, setShowCustomPromptInput] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -143,6 +181,12 @@ export default function AIPanel({
   const [showGuide, setShowGuide] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const feedScrollRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef<DragScrollState>({
+    isDragging: false,
+    startX: 0,
+    startScrollLeft: 0,
+  });
 
   const activeFeed = useMemo(
     () => STYLE_FEED_ITEMS.find((item) => item.id === activeFeedId) ?? null,
@@ -198,6 +242,28 @@ export default function AIPanel({
     setCustomPrompt("");
     setShowCustomPromptInput(false);
     setError(null);
+  };
+
+  const handleFeedMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    const container = feedScrollRef.current;
+    if (!container) return;
+    dragStateRef.current = {
+      isDragging: true,
+      startX: event.pageX,
+      startScrollLeft: container.scrollLeft,
+    };
+  };
+
+  const handleFeedMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const container = feedScrollRef.current;
+    if (!container || !dragStateRef.current.isDragging) return;
+    event.preventDefault();
+    const deltaX = event.pageX - dragStateRef.current.startX;
+    container.scrollLeft = dragStateRef.current.startScrollLeft - deltaX;
+  };
+
+  const stopFeedDragging = () => {
+    dragStateRef.current.isDragging = false;
   };
 
   const resetFeedSelection = () => {
@@ -333,7 +399,14 @@ export default function AIPanel({
           <span className="text-[10px] text-muted-foreground">좌우로 넘겨 선택</span>
         </div>
 
-        <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
+        <div
+          ref={feedScrollRef}
+          className="-mx-1 flex cursor-grab snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 active:cursor-grabbing"
+          onMouseDown={handleFeedMouseDown}
+          onMouseMove={handleFeedMouseMove}
+          onMouseUp={stopFeedDragging}
+          onMouseLeave={stopFeedDragging}
+        >
           {STYLE_FEED_ITEMS.map((item) => {
             const isActive = activeFeedId === item.id;
 
@@ -487,8 +560,9 @@ export default function AIPanel({
                 className="h-10 w-full border-zinc-300 bg-white text-sm font-medium"
                 onClick={() => setShowCustomPromptInput(true)}
               >
-                <Plus className="mr-2 h-4 w-4" />+ 추가 프롬프트 입력하기
-              </Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  추가 프롬프트 입력하기
+                </Button>
             ) : (
               <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
                 <Label className="text-xs">추가 프롬프트</Label>
