@@ -5,6 +5,7 @@ import "./globals.css";
 import { getLocale } from "@/lib/i18n/server";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { LocaleProvider } from "@/lib/i18n/client";
+import SiteFooter from "@/components/landing/SiteFooter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -131,7 +132,10 @@ export default async function RootLayout({
           }}
         />
         <LocaleProvider locale={locale} dictionary={dictionary}>
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </div>
         </LocaleProvider>
         <Script id="sw-register" strategy="afterInteractive">
           {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`}
