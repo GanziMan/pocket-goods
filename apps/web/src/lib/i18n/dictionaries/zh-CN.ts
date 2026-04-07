@@ -200,6 +200,7 @@ const zhCN = {
     canvasRefHint: "AI将参考你当前的画布设计生成新图片。",
     promptLabel: "要创建什么角色？",
     promptLabelCustom: "自由输入你的提示词",
+    promptLabelExtra: "输入额外提示词",
     writingTips: "写作技巧",
     guideTitle: "这样写效果更好",
     guideWho: "谁",
@@ -216,6 +217,7 @@ const zhCN = {
     guideTipExample: '"不戴眼镜" → "裸眼的"',
     promptPlaceholder: "谁 + 在做什么 + 在哪里\n例）一只猫撑着红伞站在雨中",
     promptPlaceholderCustom: "详细描述风格、对象、动作和氛围\n例）水彩风格的可爱猫咪坐在窗边看雨",
+    promptPlaceholderExtra: "补充你想要的额外细节（可选）",
     customHint: "无风格限制——按你输入的提示词直接生成。",
     exampleHint: "点击自动填充",
     examplePrompts: {

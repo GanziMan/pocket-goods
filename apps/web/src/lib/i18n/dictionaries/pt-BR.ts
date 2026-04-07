@@ -200,6 +200,7 @@ const ptBR = {
     canvasRefHint: "IA vai gerar uma nova imagem referenciando seu design atual no canvas.",
     promptLabel: "Que personagem vamos criar?",
     promptLabelCustom: "Digite seu prompt livremente",
+    promptLabelExtra: "Adicione detalhes extras ao prompt",
     writingTips: "Dicas",
     guideTitle: "Dicas para melhores resultados",
     guideWho: "Quem",
@@ -216,6 +217,7 @@ const ptBR = {
     guideTipExample: '"sem óculos" → "com olhos livres"',
     promptPlaceholder: "Quem + fazendo o quê + onde\nex) Um gato parado na chuva com um guarda-chuva vermelho",
     promptPlaceholderCustom: "Descreva o estilo, sujeito, ação e humor em detalhe\nex) Um gato fofo em estilo aquarela sentado na janela olhando a chuva",
+    promptPlaceholderExtra: "Adicione detalhes extras que você quiser (opcional)",
     customHint: "Sem restrições de estilo — seu prompt é usado diretamente.",
     exampleHint: "Clique para preencher",
     examplePrompts: {
