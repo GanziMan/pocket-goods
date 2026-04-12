@@ -270,4 +270,5 @@ function chaikin(points: Point[], iterations: number): Point[] {
     }
     result = next;
   }
-  
+  return result;
+}
