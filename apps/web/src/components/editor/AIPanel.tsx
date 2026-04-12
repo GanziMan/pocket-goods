@@ -66,7 +66,7 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     id: "maplestory",
     kicker: "픽셀 RPG",
     title: "메이플 만들기",
-    description: "키링에 잘 어울리는 귀여운 픽셀 캐릭터",
+    description: "스티커에 잘 어울리는 귀여운 픽셀 캐릭터",
     style: "maplestory",
     preview: "/ai-feed-previews/maplestory.svg",
     basePrompt:
@@ -74,7 +74,7 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
   },
   {
     id: "minimi",
-    kicker: "미니 키링",
+    kicker: "미니 스티커",
     title: "미니미 만들기",
     description: "작고 단순한 굿즈용 미니 캐릭터",
     style: "minimi",

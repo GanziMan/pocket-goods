@@ -19,15 +19,6 @@ export function FooterCTA() {
         <p className="mt-3 text-muted-foreground">
           {t.footer.ctaDescription}
         </p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          <Link
-            href="/login"
-            className="font-semibold text-primary underline underline-offset-2"
-          >
-            {t.footer.loginInfo}
-          </Link>
-          {t.footer.loginInfoSuffix}
-        </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/design"
@@ -39,7 +30,8 @@ export function FooterCTA() {
             {t.footer.ctaDesign}
             <ArrowRight className="size-4" />
           </Link>
-          <Link
+          {/* AI 프로필 만들기 버튼은 스티커 단일 판매 전환 중이라 랜딩에서 숨김 */}
+          {/* <Link
             href="/ai-profile"
             className={buttonVariants({
               size: "lg",
@@ -49,7 +41,7 @@ export function FooterCTA() {
           >
             {t.footer.ctaProfile}
             <ArrowRight className="size-4" />
-          </Link>
+          </Link> */}
         </div>
       </div>
     </section>

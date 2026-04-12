@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "결제 - AI 스타일 변환 이미지 생성권",
-  description: "AI 스타일 변환 이미지 생성권 결제 안내",
+  title: "결제 - 투명 스티커",
+  description: "투명 스티커 결제 안내",
 };
 
 export default function CheckoutPage() {
@@ -15,13 +15,13 @@ export default function CheckoutPage() {
       <section className="rounded-lg border p-5 text-sm leading-relaxed">
         <h2 className="mb-4 text-lg font-semibold">주문 상품</h2>
         <ul className="space-y-2">
-          <li><strong>상품명:</strong> AI 스타일 변환 이미지 생성권 (1회)</li>
-          <li><strong>가격:</strong> 990원</li>
-          <li><strong>상품 설명:</strong> 업로드한 사진을 AI 스타일 이미지로 변환하여 다운로드 가능한 결과물을 제공합니다.</li>
-          <li><strong>제공 방식:</strong> 디지털 콘텐츠</li>
-          <li><strong>제공 시점:</strong> 결제 완료 후 즉시 생성 시작, 생성 완료 후 다운로드 제공</li>
+          <li><strong>상품명:</strong> 투명 스티커</li>
+          <li><strong>가격:</strong> 4,000원</li>
+          <li><strong>상품 설명:</strong> 직접 디자인한 이미지를 투명 스티커로 제작해드립니다.</li>
+          <li><strong>제공 방식:</strong> 실물 제작 및 바로 배송</li>
+          <li><strong>제공 시점:</strong> 주문 확인 후 제작을 시작해 배송합니다.</li>
           <li>
-            <strong>환불/취소 가능 조건:</strong> 생성 전 결제 취소 가능, 생성 완료 후 단순 변심 환불 불가 (
+            <strong>환불/취소 가능 조건:</strong> 제작 전 결제 취소 가능, 제작 시작 후 단순 변심 환불 제한 (
             <Link href="/refund" className="underline">환불/취소 정책 보기</Link>)
           </li>
         </ul>

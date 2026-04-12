@@ -61,25 +61,14 @@ export function HeroSection() {
               <ArrowRight className="size-4" />
             </Button>
           </Link>
-          <Link href="/ai-profile">
+          {/* AI 프로필 만들기 버튼은 스티커 단일 판매 전환 중이라 랜딩에서 숨김 */}
+          {/* <Link href="/ai-profile">
             <Button className="h-12 gap-2 px-6 text-base border-[1.5px]" variant="outline">
               {t.hero.ctaProfile}
               <ArrowRight className="size-4" />
             </Button>
-          </Link>
+          </Link> */}
         </div>
-
-        <p className="mt-4 text-xs text-muted-foreground">
-          {t.hero.freeInfo}
-          <span className="hidden sm:inline"> &middot; </span>
-          <br className="sm:hidden" />
-          <Link
-            href="/login"
-            className="font-semibold text-primary underline underline-offset-2"
-          >
-            {t.hero.loginBenefit}
-          </Link>
-        </p>
       </div>
     </section>
   );

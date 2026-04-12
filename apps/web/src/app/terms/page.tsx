@@ -29,12 +29,12 @@ export default function TermsPage() {
 
         <section>
           <h2 className="mb-2 text-lg font-semibold">4. 제공 방식</h2>
-          <p>현재 판매 상품은 디지털 콘텐츠이며, 결제 후 즉시 이용하거나 생성 완료 후 다운로드 방식으로 제공합니다.</p>
+          <p>현재 판매 상품은 투명 스티커이며, 주문 확인 후 제작을 시작해 배송 방식으로 제공합니다.</p>
         </section>
 
         <section>
           <h2 className="mb-2 text-lg font-semibold">5. 청약철회/환불 기준</h2>
-          <p>환불 기준은 환불/취소 정책 페이지를 따릅니다. 생성 또는 다운로드 완료 이후에는 단순 변심 환불이 제한될 수 있습니다.</p>
+          <p>환불 기준은 환불/취소 정책 페이지를 따릅니다. 제작 시작 이후에는 단순 변심 환불이 제한될 수 있습니다.</p>
         </section>
 
         <section>

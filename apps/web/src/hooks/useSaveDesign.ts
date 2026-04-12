@@ -55,11 +55,11 @@ export function useSaveDesign(
         try {
           sessionStorage.setItem(SESSION_STORAGE_KEY, serialized);
           setSaveWarning(
-            "사진 용량이 커서 임시 저장소에만 저장했어요. 브라우저 탭을 닫기 전 주문/다운로드를 완료해주세요.",
+            "사진 용량이 커서 임시 저장소에만 저장했어요. 브라우저 탭을 닫기 전 주문/배송 진행을 완료해주세요.",
           );
         } catch {
           setSaveWarning(
-            "사진 용량이 커서 자동 저장을 건너뛰었어요. 주문/다운로드는 계속 사용할 수 있습니다.",
+            "사진 용량이 커서 자동 저장을 건너뛰었어요. 주문/배송 진행은 계속 사용할 수 있습니다.",
           );
           console.warn("Draft storage skipped:", storageError);
         }

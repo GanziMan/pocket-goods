@@ -4,8 +4,8 @@ export const SHIPPING_FEE_KRW = 4000;
 
 export const PRINT_PRICE_KRW: Record<OutputSize, number> = {
   A6: 4000,
-  A5: 5000,
-  A4: 6000,
+  A5: 4000,
+  A4: 4000,
 };
 
 export function getOrderAmount(outputSize: OutputSize) {

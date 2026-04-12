@@ -30,14 +30,14 @@ export default function RefundPage() {
         <section>
           <h2 className="mb-2 text-lg font-semibold">3. 환불 불가 조건</h2>
           <ul className="list-disc space-y-1 pl-5">
-            <li>디지털 상품 생성이 완료되었거나 다운로드가 가능한 상태가 된 경우</li>
+            <li>스티커 제작이 시작되었거나 배송 준비가 진행된 경우</li>
             <li>이용자 귀책 사유로 결과물을 사용하지 못한 경우</li>
           </ul>
         </section>
 
         <section>
           <h2 className="mb-2 text-lg font-semibold">4. 디지털 상품 환불 제한</h2>
-          <p>디지털 콘텐츠의 특성상 사용·다운로드·생성 완료 이후에는 단순 변심 환불이 제한됩니다.</p>
+          <p>주문 제작 상품의 특성상 제작 시작 또는 배송 준비 이후에는 단순 변심 환불이 제한됩니다.</p>
         </section>
 
         <section>

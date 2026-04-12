@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Paintbrush, Sparkles, PawPrint, LogOut } from "lucide-react";
+import { Menu, X, Paintbrush, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import UserMenu from "@/components/auth/UserMenu";
@@ -47,8 +47,9 @@ export function LandingNav() {
 
   const navLinks = [
     { href: "/design", label: t.nav.editor, icon: Paintbrush },
-    { href: "/ai-profile", label: t.nav.aiProfile, icon: Sparkles },
-    { href: "/pet-profile", label: t.nav.petProfile, icon: PawPrint },
+    // AI 프로필/펫 프로필 링크는 스티커 단일 판매 전환 중이라 랜딩 내비게이션에서 숨김
+    // { href: "/ai-profile", label: t.nav.aiProfile, icon: Sparkles },
+    // { href: "/pet-profile", label: t.nav.petProfile, icon: PawPrint },
   ];
 
   return (

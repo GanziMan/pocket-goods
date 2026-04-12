@@ -10,11 +10,6 @@ export function ProductShowcase() {
 
   const products = [
     {
-      ...t.products.keyring,
-      emoji: "🔑",
-      gradient: "from-amber-100 to-orange-100",
-    },
-    {
       ...t.products.sticker,
       emoji: "✨",
       gradient: "from-sky-100 to-indigo-100",

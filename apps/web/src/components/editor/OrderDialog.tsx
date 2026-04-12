@@ -41,10 +41,10 @@ type CompletePaymentPayload = {
   shipping: Omit<OrderForm, "agree">;
 };
 
-const TEMP_ORDER_AMOUNT = 7000;
+const TEMP_ORDER_AMOUNT = 4000;
 
 const PRODUCT_LABELS: Record<ProductType, string> = {
-  keyring: "아크릴 키링",
+  keyring: "투명 스티커",
   sticker: "투명 스티커",
 };
 
@@ -247,7 +247,7 @@ export default function OrderDialog({
             </div>
             <h2 className="mt-1 text-xl font-bold">{orderName}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              임시 판매가 <span className="font-bold text-foreground">7,000원</span>으로 PortOne
+              임시 판매가 <span className="font-bold text-foreground">4,000원</span>으로 PortOne
               결제를 진행합니다.
             </p>
           </div>
@@ -391,7 +391,7 @@ export default function OrderDialog({
             ) : (
               <>
                 <ShoppingCart className="mr-2 size-4" />
-                7,000원 결제
+                4,000원 결제
               </>
             )}
           </Button>
