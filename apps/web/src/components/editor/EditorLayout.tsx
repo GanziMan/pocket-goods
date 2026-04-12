@@ -13,7 +13,7 @@ import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import PreviewDialog from "@/components/editor/PreviewDialog";
 import OrderCartDialog from "@/components/editor/OrderCartDialog";
-import type { ProductType } from "@/lib/assets";
+import { SHEET_CANVAS_SIZE, type ProductType } from "@/lib/assets";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale, tpl } from "@/lib/i18n/client";
@@ -68,6 +68,7 @@ export default function EditorLayout() {
     zoomIn,
     zoomOut,
     setZoom,
+    setCanvasSize,
   } = useCanvas(productType);
 
   const { save, loadDraft, markDirty, savedAt, isDirty, saveWarning } = useSaveDesign(
@@ -80,6 +81,10 @@ export default function EditorLayout() {
   useEffect(() => {
     onChangeCb.current = markDirty;
   }, [onChangeCb, markDirty]);
+
+  useEffect(() => {
+    setCanvasSize(SHEET_CANVAS_SIZE[outputSize]);
+  }, [outputSize, setCanvasSize]);
 
   // 키보드 단축키
   useEffect(() => {
