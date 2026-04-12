@@ -78,8 +78,9 @@ export default function EditorLayout() {
   }, [onChangeCb, markDirty]);
 
   useEffect(() => {
+    if (!isCanvasReady) return;
     setCanvasSize(OUTPUT_CANVAS_SIZE[outputSize]);
-  }, [outputSize, setCanvasSize]);
+  }, [isCanvasReady, outputSize, setCanvasSize]);
 
   // 키보드 단축키
   useEffect(() => {

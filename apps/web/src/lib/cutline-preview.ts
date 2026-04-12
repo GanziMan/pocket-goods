@@ -11,7 +11,9 @@ export type CutlinePreviewResult = {
   reason?: string;
   warning?: string;
   contours: Point[][];
+  cutRegionCount: number;
   islandCount: number;
+  cutlineOffsetMm: number;
 };
 
 type MaskComponent = {
@@ -37,7 +39,9 @@ export function buildCutlinePreview(imageData: ImageData, outputSize: OutputSize
       safe: false,
       reason: "이미지가 비어 있어 칼선을 만들 수 없습니다.",
       contours: [],
+      cutRegionCount: 0,
       islandCount: 0,
+      cutlineOffsetMm: CUTLINE_OFFSET_MM,
     };
   }
 
@@ -51,14 +55,17 @@ export function buildCutlinePreview(imageData: ImageData, outputSize: OutputSize
       safe: false,
       reason: "이미지 외곽을 찾을 수 없어 칼선을 만들 수 없습니다.",
       contours: [],
+      cutRegionCount: 0,
       islandCount: components.length,
+      cutlineOffsetMm: CUTLINE_OFFSET_MM,
     };
   }
 
+  const cutRegionCount = contours.length;
   const safe = bounds.minX > 0 && bounds.minY > 0 && bounds.maxX < width - 1 && bounds.maxY < height - 1;
   const warning =
-    components.length > 1
-      ? `분리된 이미지가 있어 칼선이 ${components.length}개의 섬으로 나뉠 수 있습니다. 한 장으로 이어 붙이려면 이미지를 겹치거나 간격을 줄여주세요.`
+    cutRegionCount > 1
+      ? `칼선이 ${cutRegionCount}개의 분리 영역으로 나뉩니다. 한 이미지 안에서도 투명 여백으로 떨어진 그림 조각은 ${CUTLINE_OFFSET_MM}mm 칼선 확장 영역 밖이면 각각 별도 칼선으로 제작됩니다. 하나로 만들려면 이미지를 겹치거나 간격을 줄여주세요.`
       : undefined;
 
   return {
@@ -68,7 +75,9 @@ export function buildCutlinePreview(imageData: ImageData, outputSize: OutputSize
       : "이미지 또는 칼선이 작업 영역 바깥쪽에 너무 가깝습니다. 캔버스 안쪽으로 옮긴 뒤 주문해주세요.",
     warning,
     contours,
+    cutRegionCount,
     islandCount: components.length,
+    cutlineOffsetMm: CUTLINE_OFFSET_MM,
   };
 }
 
@@ -257,9 +266,8 @@ function chaikin(points: Point[], iterations: number): Point[] {
       const p0 = result[i];
       const p1 = result[(i + 1) % result.length];
       next.push({ x: p0.x * 0.75 + p1.x * 0.25, y: p0.y * 0.75 + p1.y * 0.25 });
-      next.push({ x: p0.x * 0.25 + p1.x * 0.75, y: p0.y * 0.75 + p1.y * 0.75 });
+      next.push({ x: p0.x * 0.25 + p1.x * 0.75, y: p0.y * 0.25 + p1.y * 0.75 });
     }
     result = next;
   }
-  return result;
-}
+  
