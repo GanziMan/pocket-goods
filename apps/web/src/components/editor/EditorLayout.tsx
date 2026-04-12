@@ -208,7 +208,7 @@ export default function EditorLayout() {
     } finally {
       setIsExporting(false);
     }
-  }, [toJSON, toDataURL, productType, outputSize, isExporting]);
+  }, [toJSON, toDataURL, productType, outputSize, isExporting, t.toolbar.exportFailed]);
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden bg-zinc-50">
