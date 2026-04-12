@@ -17,6 +17,10 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: "https://pocket-goods.com/pet-profile",
     },
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 

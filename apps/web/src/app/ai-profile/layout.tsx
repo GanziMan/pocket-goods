@@ -17,6 +17,10 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: "https://pocket-goods.com/ai-profile",
     },
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 

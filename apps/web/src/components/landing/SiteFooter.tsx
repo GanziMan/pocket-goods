@@ -17,7 +17,14 @@ export default function SiteFooter() {
           {businessInfo.map((item) => (
             <span key={item}>{item}</span>
           ))}
-          <span>사업자정보확인</span>
+          <a
+            href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4402102327"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            사업자정보확인
+          </a>
         </div>
 
         <nav aria-label="정책 링크" className="flex flex-wrap gap-x-4 gap-y-1">
