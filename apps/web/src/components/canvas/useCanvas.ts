@@ -41,6 +41,7 @@ export interface UseCanvasReturn {
   getSelectedImageDataURL: () => string | null;
   loadDesign: (json: object) => Promise<void>;
   setProductType: (type: ProductType) => void;
+  setCanvasSize: (size: { width: number; height: number }) => void;
   zoom: number;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -444,6 +445,17 @@ export function useCanvas(
     [saveHistory]
   );
 
+  const setCanvasSize = useCallback(
+    (size: { width: number; height: number }) => {
+      const canvas = fabricRef.current;
+      if (!canvas) return;
+      originalSizeRef.current = size;
+      applyZoom(canvas, canvas.getZoom());
+      saveHistory();
+    },
+    [applyZoom, saveHistory]
+  );
+
   const applyZoom = useCallback((canvas: FabricCanvas, z: number) => {
     const { width: ow, height: oh } = originalSizeRef.current;
     canvas.viewportTransform = [z, 0, 0, z, 0, 0] as typeof canvas.viewportTransform;
@@ -514,6 +526,7 @@ export function useCanvas(
     loadDesign,
     replaceSelectedImage,
     setProductType,
+    setCanvasSize,
     zoom,
     zoomIn,
     zoomOut,
