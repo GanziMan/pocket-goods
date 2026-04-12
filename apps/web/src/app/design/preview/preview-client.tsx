@@ -22,6 +22,9 @@ type CutlineInfo = {
   safe: boolean;
   reason?: string;
   warning?: string;
+  cutRegionCount?: number;
+  islandCount?: number;
+  cutlineOffsetMm?: number;
 };
 
 type OrderForm = {
@@ -224,6 +227,22 @@ export default function DesignPreviewClient() {
           {cutline.warning && (
             <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-700">{cutline.warning}</p>
           )}
+          {typeof cutline.cutRegionCount === "number" && (
+            <dl className="mt-3 grid gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600 sm:grid-cols-3">
+              <div>
+                <dt className="font-bold text-zinc-500">칼선 영역</dt>
+                <dd className="mt-0.5 text-sm font-extrabold text-zinc-950">{cutline.cutRegionCount}개</dd>
+              </div>
+              <div>
+                <dt className="font-bold text-zinc-500">분리 감지</dt>
+                <dd className="mt-0.5 text-sm font-extrabold text-zinc-950">{cutline.islandCount ?? cutline.cutRegionCount}개</dd>
+              </div>
+              <div>
+                <dt className="font-bold text-zinc-500">칼선 간격</dt>
+                <dd className="mt-0.5 text-sm font-extrabold text-zinc-950">약 {cutline.cutlineOffsetMm ?? 2}mm</dd>
+              </div>
+            </dl>
+          )}
         </section>
 
         <aside className="rounded-2xl border bg-white p-4 shadow-sm">
@@ -239,7 +258,8 @@ export default function DesignPreviewClient() {
                 <li>칼선은 이미지 바깥쪽에 약 2mm 떨어져 표시됩니다.</li>
                 <li>작업 영역 가장자리에 너무 붙으면 주문이 막힙니다.</li>
                 <li>빨간 선이 지나치게 잘리거나 영역 밖으로 나가면 원래 편집 화면에서 이미지를 안쪽으로 옮겨주세요.</li>
-                <li>이미지가 떨어져 있으면 칼선이 여러 섬으로 나뉠 수 있어 안내를 표시합니다.</li>
+                <li>한 이미지라도 투명 여백으로 떨어진 그림 조각은 각각 별도 칼선으로 나뉠 수 있습니다.</li>
+                <li>분리된 칼선 영역 수와 감지 개수를 미리보기 메타데이터로 표시합니다.</li>
               </ul>
             </div>
           ) : (

@@ -30,6 +30,9 @@ type CutlineInfo = {
   safe: boolean;
   reason?: string;
   warning?: string;
+  cutRegionCount?: number;
+  islandCount?: number;
+  cutlineOffsetMm?: number;
 };
 
 type OrderForm = {
@@ -303,6 +306,22 @@ export default function PreviewDialog({
             {cutline.warning && (
               <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-700">{cutline.warning}</p>
             )}
+            {typeof cutline.cutRegionCount === "number" && (
+              <dl className="mt-3 grid gap-2 rounded-xl border border-zinc-200 bg-white p-3 text-xs text-zinc-600 sm:grid-cols-3">
+                <div>
+                  <dt className="font-bold text-zinc-500">칼선 영역</dt>
+                  <dd className="mt-0.5 text-sm font-extrabold text-zinc-950">{cutline.cutRegionCount}개</dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-zinc-500">분리 감지</dt>
+                  <dd className="mt-0.5 text-sm font-extrabold text-zinc-950">{cutline.islandCount ?? cutline.cutRegionCount}개</dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-zinc-500">칼선 간격</dt>
+                  <dd className="mt-0.5 text-sm font-extrabold text-zinc-950">약 {cutline.cutlineOffsetMm ?? 2}mm</dd>
+                </div>
+              </dl>
+            )}
           </section>
 
           <aside className="min-h-0 overflow-y-auto border-t p-4 md:border-l md:border-t-0">
@@ -316,7 +335,8 @@ export default function PreviewDialog({
                 <h3 className="font-bold">체크 포인트</h3>
                 <ul className="list-disc space-y-2 pl-5 text-zinc-600">
                   <li>칼선은 이미지 바깥쪽 약 2mm 지점에 표시됩니다.</li>
-                  <li>이미지가 떨어져 있으면 칼선이 여러 섬으로 나뉠 수 있어 안내를 표시합니다.</li>
+                  <li>한 이미지라도 투명 여백으로 떨어진 그림 조각은 각각 별도 칼선으로 나뉠 수 있습니다.</li>
+                  <li>분리된 칼선 영역 수와 감지 개수를 미리보기 메타데이터로 표시합니다.</li>
                   <li>이미지가 너무 바깥쪽이면 주문이 막힙니다.</li>
                   <li>빨간 선이 잘리면 편집 화면에서 이미지를 안쪽으로 옮겨주세요.</li>
                 </ul>
