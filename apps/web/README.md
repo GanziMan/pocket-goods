@@ -33,6 +33,10 @@ npm run dev
 
 PortOne을 다시 활성화할 때는 위 수동 주문 접수 경로를 제거하지 말고, 결제 완료 후 같은 메일/인쇄 이미지 생성 계약을 재사용하세요.
 
+메일 발송은 FastAPI의 `/api/payments/complete`에서 SMTP로 처리합니다. 운영 환경에는 최소한
+`ORDER_EMAIL_SMTP_HOST`, `ORDER_EMAIL_SMTP_PORT`, `ORDER_EMAIL_SMTP_USER`, `ORDER_EMAIL_SMTP_PASSWORD`,
+`ORDER_EMAIL_FROM`을 설정해야 합니다. 개발 중 메일 미설정을 허용하려면 `ORDER_EMAIL_ALLOW_SKIP=1`을 명시하세요.
+
 ## Verification
 
 ```bash
@@ -44,3 +48,4 @@ npm run build
 
 현재 별도 테스트 러너는 설정되어 있지 않습니다. 회귀 검증은 미리보기 열기, A4/A5/A6 전환, 칼선 안내, 주문 완료 버튼,
 제작자 메일 payload/이미지 계약을 수동 또는 향후 E2E 테스트로 확인합니다.
+
