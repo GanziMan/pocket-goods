@@ -11,6 +11,7 @@ import PropertiesPanel from "@/components/editor/PropertiesPanel";
 import MobileHeader from "@/components/editor/MobileHeader";
 import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
+import OrderDialog from "@/components/editor/OrderDialog";
 import type { ProductType } from "@/lib/assets";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export default function EditorLayout() {
   const [productType, setProductTypeState] = useState<ProductType>("keyring");
   const [mobilePanel, setMobilePanel] = useState<"assets" | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [orderOpen, setOrderOpen] = useState(false);
   const [outputSize, setOutputSize] = useState<OutputSize>("A5");
 
   const {
@@ -222,6 +224,7 @@ export default function EditorLayout() {
           onSendBackward={sendBackward}
           onSave={save}
           onExportPreview={handleExportPreview}
+          onOrder={() => setOrderOpen(true)}
           isExporting={isExporting}
         />
       </div>
@@ -331,6 +334,7 @@ export default function EditorLayout() {
           onDelete={deleteSelected}
           onOpenAssets={() => setMobilePanel("assets")}
           onExportPreview={handleExportPreview}
+          onOrder={() => setOrderOpen(true)}
           isExporting={isExporting}
         />
       </div>
@@ -349,6 +353,14 @@ export default function EditorLayout() {
           className="w-full border-0"
         />
       </MobileDrawer>
+
+      <OrderDialog
+        open={orderOpen}
+        onClose={() => setOrderOpen(false)}
+        productType={productType}
+        outputSize={outputSize}
+        canvasJSON={toJSON}
+      />
     </div>
   );
 }

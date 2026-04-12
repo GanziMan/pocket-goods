@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Plus, Trash2, Download } from "lucide-react";
+import { Undo2, Redo2, Plus, Trash2, Download, ShoppingCart } from "lucide-react";
 import { useLocale } from "@/lib/i18n/client";
 
 interface MobileActionBarProps {
@@ -13,11 +13,12 @@ interface MobileActionBarProps {
   onDelete: () => void;
   onOpenAssets: () => void;
   onExportPreview: () => void;
+  onOrder: () => void;
   isExporting?: boolean;
 }
 
 export default function MobileActionBar({
-  canUndo, canRedo, onUndo, onRedo, hasSelection, onDelete, onOpenAssets, onExportPreview, isExporting,
+  canUndo, canRedo, onUndo, onRedo, hasSelection, onDelete, onOpenAssets, onExportPreview, onOrder, isExporting,
 }: MobileActionBarProps) {
   const { t } = useLocale();
   const tb = t.toolbar;
@@ -31,6 +32,7 @@ export default function MobileActionBar({
       <ActionButton icon={<Plus className="w-4 h-4" />} label={tb.assets} onClick={onOpenAssets} />
       <ActionButton icon={<Trash2 className="w-4 h-4" />} label={tb.delete} onClick={onDelete} disabled={!hasSelection} destructive />
       <ActionButton icon={<Download className="w-4 h-4" />} label={isExporting ? tb.exporting : tb.exportLabel} onClick={onExportPreview} disabled={isExporting} />
+      <ActionButton icon={<ShoppingCart className="w-4 h-4" />} label={tb.order} onClick={onOrder} />
     </div>
   );
 }

@@ -12,6 +12,8 @@ import {
   ImagePlus,
   LogIn,
   X,
+  ChevronDown,
+  Plus,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,18 +29,13 @@ interface AIPanelProps {
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
 
-type Style =
-  | "ghibli"
-  | "sd"
-  | "steampunk"
-  | "fairly-odd"
-  | "powerpuff"
-  | "akatsuki"
-  | "custom";
+type Style = "everskies" | "sylvanian" | "maplestory" | "minimi";
 
 type StyleFeedItem = {
   id: string;
+  kicker: string;
   title: string;
+  description: string;
   style: Style;
   preview: string;
   basePrompt: string;
@@ -46,52 +43,44 @@ type StyleFeedItem = {
 
 const STYLE_FEED_ITEMS: StyleFeedItem[] = [
   {
-    id: "ghibli",
-    title: "지브리 만들기",
-    style: "ghibli",
-    preview: "/logo.png",
+    id: "everskies",
+    kicker: "OOTD 아바타",
+    title: "EverSkies 만들기",
+    description: "패션 아바타처럼 또렷하고 트렌디하게",
+    style: "everskies",
+    preview: "/ai-feed-previews/everskies.svg",
     basePrompt:
-      "Studio Ghibli 감성의 따뜻한 애니메이션 스타일. 파스텔 톤과 부드러운 수채화 질감, 따뜻한 표정과 자연스러운 디테일을 유지해 캐릭터를 변환해주세요. 배경은 투명으로 유지해주세요.",
+      "Everskies 아바타 감성의 패션 일러스트로 변환해주세요. 트렌디한 의상 레이어링, 또렷한 메이크업, 선명한 외곽선과 현대적인 색 조합을 살리고 원본의 헤어·의상·액세서리 특징은 유지해주세요. 배경은 투명으로 유지해주세요.",
   },
   {
-    id: "sd",
-    title: "SD 만들기",
-    style: "sd",
-    preview: "/logo.png",
+    id: "sylvanian",
+    kicker: "포근한 인형",
+    title: "실바니안 만들기",
+    description: "보송한 인형 질감과 순한 표정",
+    style: "sylvanian",
+    preview: "/ai-feed-previews/sylvanian.svg",
     basePrompt:
-      "일본 SD/치비 스타일로 변환해주세요. 큰 머리와 짧은 팔다리의 귀여운 비율, 선명한 외곽선, 밝은 셀 애니메이션 색감으로 표현해주세요. 배경은 투명으로 유지해주세요.",
+      "실바니안 인형 감성으로 변환해주세요. 보송한 플록 질감, 둥글고 순한 얼굴, 따뜻한 톤의 의상과 작은 소품 디테일을 살리고 원본의 핵심 특징은 귀엽게 재해석해주세요. 배경은 투명으로 유지해주세요.",
   },
   {
-    id: "steampunk",
-    title: "스팀펑크 만들기",
-    style: "steampunk",
-    preview: "/logo.png",
+    id: "maplestory",
+    kicker: "픽셀 RPG",
+    title: "메이플 만들기",
+    description: "키링에 잘 어울리는 귀여운 픽셀 캐릭터",
+    style: "maplestory",
+    preview: "/ai-feed-previews/maplestory.svg",
     basePrompt:
-      "스팀펑크 무드로 변환해주세요. 황동 장치, 톱니바퀴, 빈티지 기계 디테일, 빅토리아풍 분위기를 살려 캐릭터를 구성해주세요. 배경은 투명으로 유지해주세요.",
+      "메이플스토리 인게임 캐릭터 감성의 귀여운 2D 픽셀 RPG 아바타로 변환해주세요. 큰 눈, 작은 몸, 선명한 색감, 헤어스타일과 의상·액세서리의 특징을 반영하고 스티커처럼 또렷한 외곽을 유지해주세요. 배경은 투명으로 유지해주세요.",
   },
   {
-    id: "fairly-odd",
-    title: "수호천사 만들기",
-    style: "fairly-odd",
-    preview: "/logo.png",
+    id: "minimi",
+    kicker: "미니 키링",
+    title: "미니미 만들기",
+    description: "작고 단순한 굿즈용 미니 캐릭터",
+    style: "minimi",
+    preview: "/ai-feed-previews/minimi.svg",
     basePrompt:
-      "The Fairly OddParents 느낌의 카툰 스타일로 변환해주세요. 굵고 깔끔한 외곽선, 단순한 플랫 컬러, 과장된 얼굴 비율로 표현해주세요. 배경은 투명으로 유지해주세요.",
-  },
-  {
-    id: "powerpuff",
-    title: "파워퍼프걸 만들기",
-    style: "powerpuff",
-    preview: "/logo.png",
-    basePrompt:
-      "파워퍼프걸 스타일로 변환해주세요. 매우 큰 눈, 단순한 얼굴 요소, 둥근 실루엣, 또렷한 라인과 플랫 컬러 느낌으로 표현해주세요. 배경은 투명으로 유지해주세요.",
-  },
-  {
-    id: "custom",
-    title: "커스텀 만들기",
-    style: "custom",
-    preview: "/logo.png",
-    basePrompt:
-      "사용자 요청을 최우선으로 반영해 자유 스타일로 생성해주세요. 캐릭터 중심 구도와 선명한 외곽선을 유지하고, 배경은 투명으로 유지해주세요.",
+      "미니미 굿즈 캐릭터로 변환해주세요. 작고 단순한 비율, 동글동글한 얼굴과 짧은 팔다리, 깔끔한 라인, 부드러운 파스텔 색감으로 표현하고 원본의 헤어·의상 특징은 알아볼 수 있게 유지해주세요. 배경은 투명으로 유지해주세요.",
   },
 ];
 
@@ -113,9 +102,11 @@ export default function AIPanel({
   } = useImagePreprocessor();
 
   const [mode, setMode] = useState<Mode>("from-upload");
-  const [style, setStyle] = useState<Style>("ghibli");
+  const [style, setStyle] = useState<Style>("everskies");
   const [prompt, setPrompt] = useState("");
-  const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
+  const [activeFeedId, setActiveFeedId] = useState<string | null>("everskies");
+  const [showAllFeeds, setShowAllFeeds] = useState(false);
+  const [promptExpanded, setPromptExpanded] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
@@ -168,6 +159,7 @@ export default function AIPanel({
     setActiveFeedId(item.id);
     setStyle(item.style);
     setPrompt("");
+    setPromptExpanded(false);
     setError(null);
   };
 
@@ -292,11 +284,32 @@ export default function AIPanel({
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">둘러보기</Label>
-          <span className="text-[10px] text-muted-foreground">좌우로 넘겨 선택</span>
+          <div className="space-y-0.5">
+            <Label className="text-xs">둘러보기</Label>
+            <p className="text-[10px] text-muted-foreground">
+              {showAllFeeds ? "한눈에 보고 선택" : "좌우로 넘겨 선택"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAllFeeds((value) => !value)}
+            className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-zinc-100 hover:text-foreground"
+            aria-expanded={showAllFeeds}
+          >
+            {showAllFeeds ? "접기" : "더보기"}
+            <ChevronDown
+              className={`h-3 w-3 transition-transform ${showAllFeeds ? "rotate-180" : ""}`}
+            />
+          </button>
         </div>
 
-        <div className="ai-feed-scroll -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
+        <div
+          className={
+            showAllFeeds
+              ? "grid grid-cols-2 gap-2"
+              : "ai-feed-scroll -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1"
+          }
+        >
           {STYLE_FEED_ITEMS.map((item) => {
             const isActive = activeFeedId === item.id;
 
@@ -305,21 +318,45 @@ export default function AIPanel({
                 key={item.id}
                 type="button"
                 onClick={() => handleSelectFeedItem(item)}
-                className={`group relative h-56 min-w-[220px] snap-start select-none overflow-hidden rounded-2xl border text-left transition-all ${
+                className={`group relative select-none overflow-hidden rounded-2xl border bg-white text-left transition-all ${
+                  showAllFeeds
+                    ? "h-40 min-w-0"
+                    : `${compact ? "h-48 min-w-[190px]" : "h-56 min-w-[220px]"} snap-start`
+                } ${
                   isActive
-                    ? "border-primary shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
-                    : "border-zinc-200 hover:-translate-y-0.5 hover:border-zinc-300"
+                    ? "border-primary shadow-[0_16px_35px_rgba(0,0,0,0.18)]"
+                    : "border-zinc-200 shadow-sm hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md"
                 }`}
+                aria-pressed={isActive}
               >
                 <Image
                   src={item.preview}
                   alt={`${item.title} 미리보기`}
                   fill
-                  className="object-cover"
+                  sizes={showAllFeeds ? "(max-width: 768px) 50vw, 180px" : "220px"}
+                  loading={item.id === "everskies" ? "eager" : "lazy"}
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-white/95 px-3 py-2 text-center text-sm font-semibold shadow-sm">
-                  {item.title}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-white/0" />
+                <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-zinc-700 shadow-sm backdrop-blur">
+                  {item.kicker}
+                </div>
+                {isActive && (
+                  <div className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground shadow-sm">
+                    선택됨
+                  </div>
+                )}
+                <div
+                  className={`absolute inset-x-3 bottom-3 rounded-2xl bg-white/95 shadow-sm backdrop-blur ${
+                    showAllFeeds ? "px-2.5 py-2" : "px-3 py-2.5"
+                  }`}
+                >
+                  <p className="text-center text-sm font-bold leading-tight">{item.title}</p>
+                  {!showAllFeeds && (
+                    <p className="mt-1 line-clamp-2 text-center text-[10px] leading-snug text-zinc-500">
+                      {item.description}
+                    </p>
+                  )}
                 </div>
               </button>
             );
@@ -395,34 +432,51 @@ export default function AIPanel({
       />
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs">
-            {activeFeed
-              ? e.promptLabelExtra ?? "추가 프롬프트 입력하기"
-              : style === "custom"
-                ? e.promptLabelCustom ?? "프롬프트를 자유롭게 입력하세요"
-                : e.promptLabel ?? "어떤 캐릭터를 만들까요?"}
-          </Label>
-        </div>
+        {activeFeed && !promptExpanded ? (
+          <button
+            type="button"
+            onClick={() => setPromptExpanded(true)}
+            className="flex w-full items-center justify-between rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-3 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
+          >
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold">+ 프롬프트 입력하기</span>
+              <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                {prompt.trim() || `${activeFeed.title} 기본 프롬프트로 바로 생성돼요`}
+              </span>
+            </span>
+            <Plus className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+          </button>
+        ) : (
+          <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                {activeFeed
+                  ? e.promptLabelExtra ?? "추가 프롬프트 입력하기"
+                  : e.promptLabel ?? "어떤 캐릭터를 만들까요?"}
+              </Label>
+              {activeFeed && (
+                <button
+                  type="button"
+                  onClick={() => setPromptExpanded(false)}
+                  className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  최소화
+                </button>
+              )}
+            </div>
 
-        <Textarea
-          value={prompt}
-          onChange={(ev) => setPrompt(ev.target.value)}
-          placeholder={
-            activeFeed
-              ? e.promptPlaceholderExtra ?? "원하는 디테일을 추가로 입력하세요 (선택)"
-              : style === "custom"
-                ? e.promptPlaceholderCustom ?? "스타일, 색감, 구도, 분위기 등을 자유롭게 묘사해주세요"
-                : e.promptPlaceholder ?? "졸린 표정으로 하품하는 캐릭터"
-          }
-          className="resize-none text-sm"
-          rows={activeFeed ? 2 : style === "custom" ? 4 : 3}
-        />
-
-        {style === "custom" && !activeFeed && (
-          <p className="text-[10px] text-muted-foreground">
-            {e.customHint ?? "스타일, 인물, 구도, 배경을 구체적으로 적을수록 결과가 좋아집니다."}
-          </p>
+            <Textarea
+              value={prompt}
+              onChange={(ev) => setPrompt(ev.target.value)}
+              placeholder={
+                activeFeed
+                  ? e.promptPlaceholderExtra ?? "원하는 디테일을 추가로 입력하세요 (선택)"
+                  : e.promptPlaceholder ?? "졸린 표정으로 하품하는 캐릭터"
+              }
+              className="resize-none text-sm"
+              rows={activeFeed ? 2 : 3}
+            />
+          </div>
         )}
       </div>
 

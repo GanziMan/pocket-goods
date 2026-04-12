@@ -1,4 +1,4 @@
-const CACHE_NAME = "pocket-goods-v2";
+const CACHE_NAME = "pocket-goods-v3";
 
 const PRECACHE_ASSETS = [
   "/",
@@ -6,7 +6,7 @@ const PRECACHE_ASSETS = [
   "/icon-512.png",
 ];
 
-const STATIC_EXTENSIONS = /\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?)$/;
+const STATIC_EXTENSIONS = /\.(png|jpg|jpeg|webp|svg|ico|woff2?)$/;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -34,6 +34,12 @@ self.addEventListener("fetch", (event) => {
 
   // API requests — Network Only
   if (url.pathname.startsWith("/api/")) {
+    return;
+  }
+
+  // Next.js chunks must revalidate through the network. Serving stale chunks
+  // can break module factories during development or after deploys.
+  if (url.pathname.startsWith("/_next/")) {
     return;
   }
 

@@ -87,6 +87,7 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   const dictionary = getDictionary(locale);
+  const isProduction = process.env.NODE_ENV === "production";
 
   return (
     <html lang={locale}>
@@ -99,6 +100,24 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {!isProduction && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations()
+                    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+                    .catch(() => {});
+                }
+                if ('caches' in window) {
+                  caches.keys()
+                    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+                    .catch(() => {});
+                }
+              `,
+            }}
+          />
+        )}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-YYTZZJ7PVD"
           strategy="afterInteractive"
@@ -137,9 +156,11 @@ export default async function RootLayout({
             <SiteFooter />
           </div>
         </LocaleProvider>
-        <Script id="sw-register" strategy="afterInteractive">
-          {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`}
-        </Script>
+        {isProduction && (
+          <Script id="sw-register" strategy="afterInteractive">
+            {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`}
+          </Script>
+        )}
         {/* 카카오 SDK */}
         <Script
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"

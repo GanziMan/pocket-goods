@@ -26,12 +26,13 @@ interface ToolbarProps {
   onSendBackward: () => void;
   onSave: () => void;
   onExportPreview: () => void;
+  onOrder: () => void;
   isExporting?: boolean;
 }
 
 export default function Toolbar({
   productType, onProductTypeChange, canUndo, canRedo, hasSelection, isDirty, savedAt,
-  onUndo, onRedo, onDelete, onBringForward, onSendBackward, onSave, onExportPreview, isExporting,
+  onUndo, onRedo, onDelete, onBringForward, onSendBackward, onSave, onExportPreview, onOrder, isExporting,
 }: ToolbarProps) {
   const { locale, t } = useLocale();
   const tb = t.toolbar;
@@ -85,7 +86,7 @@ export default function Toolbar({
         <Button variant="outline" size="sm" onClick={onExportPreview} disabled={isExporting}>
           {isExporting ? (<><Loader2 className="w-4 h-4 mr-1 animate-spin" />{tb.downloading}</>) : (<><Download className="w-4 h-4 mr-1" />{t.common.download}</>)}
         </Button>
-        <Button size="sm" disabled title={tb.orderDisabledTitle}>
+        <Button size="sm" onClick={onOrder} title={tb.order}>
           <ShoppingCart className="w-4 h-4 mr-1" />{tb.order}
         </Button>
 

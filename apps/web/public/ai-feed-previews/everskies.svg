@@ -1,0 +1,42 @@
+<svg width="640" height="640" viewBox="0 0 640 640" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="EverSkies avatar preview">
+  <defs>
+    <linearGradient id="bg" x1="92" y1="45" x2="555" y2="602" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8EE7FF"/>
+      <stop offset="0.46" stop-color="#B7A4FF"/>
+      <stop offset="1" stop-color="#FF9AC6"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="194" y1="135" x2="435" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20163E"/>
+      <stop offset="1" stop-color="#6157C8"/>
+    </linearGradient>
+    <filter id="soft" x="35" y="42" width="570" height="560" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="30" stdDeviation="28" flood-color="#2D1F5E" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" rx="76" fill="url(#bg)"/>
+  <circle cx="115" cy="115" r="62" fill="white" fill-opacity="0.22"/>
+  <circle cx="537" cy="140" r="42" fill="white" fill-opacity="0.18"/>
+  <path d="M82 507C173 446 243 519 321 468C421 403 485 442 558 501V640H82V507Z" fill="white" fill-opacity="0.24"/>
+  <g filter="url(#soft)">
+    <path d="M211 514C227 439 257 398 319 398C382 398 414 439 432 514C378 548 273 548 211 514Z" fill="#2C2B51"/>
+    <path d="M234 522L262 395H378L406 522C363 545 278 545 234 522Z" fill="#F7F1FF"/>
+    <path d="M266 411L244 514H396L373 411H266Z" fill="#B6F5FF"/>
+    <path d="M238 294C229 213 267 143 322 143C383 143 420 213 404 302C392 374 364 420 322 420C278 420 246 367 238 294Z" fill="#FFE0D4" stroke="#3E3154" stroke-width="12" stroke-linecap="round"/>
+    <path d="M226 285C224 199 260 119 323 119C388 119 424 200 415 293C391 257 357 249 318 252C278 255 253 267 226 285Z" fill="url(#hair)"/>
+    <path d="M247 271C262 231 292 205 339 202C374 200 399 216 413 249C402 175 367 119 323 119C265 119 225 194 226 285C232 280 239 275 247 271Z" fill="#150F2E" fill-opacity="0.48"/>
+    <circle cx="286" cy="319" r="13" fill="#322945"/>
+    <circle cx="356" cy="319" r="13" fill="#322945"/>
+    <circle cx="291" cy="314" r="4" fill="white"/>
+    <circle cx="361" cy="314" r="4" fill="white"/>
+    <path d="M304 358C315 368 329 368 340 358" stroke="#322945" stroke-width="8" stroke-linecap="round"/>
+    <path d="M205 344C177 356 156 386 150 432" stroke="#3E3154" stroke-width="16" stroke-linecap="round"/>
+    <path d="M435 344C467 361 484 394 489 432" stroke="#3E3154" stroke-width="16" stroke-linecap="round"/>
+    <path d="M241 448H399" stroke="#3E3154" stroke-width="12" stroke-linecap="round"/>
+    <path d="M282 446L252 512" stroke="#3E3154" stroke-width="10" stroke-linecap="round"/>
+    <path d="M358 446L389 512" stroke="#3E3154" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g opacity="0.84">
+    <path d="M117 258L132 288L165 293L141 316L147 349L117 333L88 349L94 316L70 293L103 288L117 258Z" fill="#FFF6A8"/>
+    <path d="M511 296L521 316L543 319L527 334L531 356L511 345L491 356L495 334L479 319L501 316L511 296Z" fill="#FFFFFF" fill-opacity="0.82"/>
+  </g>
+</svg>
