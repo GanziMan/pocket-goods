@@ -373,12 +373,13 @@ function SizeSelector({
 }) {
   const index = SIZE_OPTIONS.indexOf(value);
   return (
-    <div className="relative grid w-[174px] grid-cols-3 rounded-full border border-zinc-200 bg-white p-1 shadow-sm">
+    <div className="relative flex w-[174px] items-center rounded-full border border-zinc-200 bg-white p-1 shadow-sm">
       <div
         className="absolute bottom-1 top-1 rounded-full bg-zinc-950 shadow-md transition-transform duration-300 ease-out"
         style={{
+          left: "0.25rem",
           width: "calc((100% - 0.5rem) / 3)",
-          transform: `translateX(calc(${index} * 100%))`,
+          transform: `translateX(${index * 100}%)`,
         }}
       />
       {SIZE_OPTIONS.map((size) => (
@@ -386,7 +387,7 @@ function SizeSelector({
           key={size}
           type="button"
           onClick={() => onChange(size)}
-          className={`relative z-10 rounded-full py-1.5 text-xs font-extrabold transition-colors ${
+          className={`relative z-10 flex h-8 flex-1 items-center justify-center rounded-full text-center text-xs font-extrabold leading-none transition-colors ${
             value === size ? "text-white" : "text-zinc-500 hover:text-zinc-950"
           }`}
         >

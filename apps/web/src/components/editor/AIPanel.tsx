@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -12,9 +12,6 @@ import {
   ImagePlus,
   LogIn,
   X,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Flame,
   Plus,
 } from "lucide-react";
@@ -32,7 +29,7 @@ interface AIPanelProps {
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
 
-type Style = "everskies" | "sylvanian" | "maplestory" | "minimi";
+type Style = "everskies" | "sylvanian" | "maplestory" | "minimi" | "custom";
 
 type StyleFeedItem = {
   id: string;
@@ -105,10 +102,9 @@ export default function AIPanel({
   } = useImagePreprocessor();
 
   const [mode, setMode] = useState<Mode>("from-upload");
-  const [style, setStyle] = useState<Style>("everskies");
+  const [style, setStyle] = useState<Style>("custom");
   const [prompt, setPrompt] = useState("");
-  const [activeFeedId, setActiveFeedId] = useState<string | null>("everskies");
-  const [showAllFeeds, setShowAllFeeds] = useState(false);
+  const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
   const [promptExpanded, setPromptExpanded] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -120,18 +116,12 @@ export default function AIPanel({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationHint, setValidationHint] = useState<string | null>(null);
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const feedScrollRef = useRef<HTMLDivElement>(null);
-  const feedDragRef = useRef({
-    dragging: false,
-    moved: false,
-    startX: 0,
-    scrollLeft: 0,
-  });
 
   const activeFeed = useMemo(
     () => STYLE_FEED_ITEMS.find((item) => item.id === activeFeedId) ?? null,
@@ -166,62 +156,28 @@ export default function AIPanel({
   };
 
   const handleSelectFeedItem = (item: StyleFeedItem) => {
-    if (feedDragRef.current.moved) return;
+    if (activeFeedId === item.id) {
+      setActiveFeedId(null);
+      setStyle("custom");
+      setPromptExpanded(true);
+      setError(null);
+      setValidationHint("스타일 선택을 해제했어요. 프롬프트를 입력해 자유롭게 생성할 수 있습니다.");
+      return;
+    }
     setActiveFeedId(item.id);
     setStyle(item.style);
     setPrompt("");
     setPromptExpanded(false);
     setError(null);
-  };
-
-  const scrollFeed = useCallback(
-    (direction: "prev" | "next") => {
-      feedScrollRef.current?.scrollBy({
-        left: direction === "next" ? (compact ? 210 : 240) : -(compact ? 210 : 240),
-        behavior: "smooth",
-      });
-    },
-    [compact],
-  );
-
-  const handleFeedPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (showAllFeeds || !feedScrollRef.current) return;
-    feedDragRef.current = {
-      dragging: true,
-      moved: false,
-      startX: event.clientX,
-      scrollLeft: feedScrollRef.current.scrollLeft,
-    };
-    feedScrollRef.current.setPointerCapture(event.pointerId);
-  };
-
-  const handleFeedPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!feedDragRef.current.dragging || !feedScrollRef.current) return;
-    const deltaX = event.clientX - feedDragRef.current.startX;
-    if (Math.abs(deltaX) > 4) feedDragRef.current.moved = true;
-    feedScrollRef.current.scrollLeft = feedDragRef.current.scrollLeft - deltaX;
-  };
-
-  const handleFeedPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!feedScrollRef.current) return;
-    feedDragRef.current.dragging = false;
-    if (feedScrollRef.current.hasPointerCapture(event.pointerId)) {
-      feedScrollRef.current.releasePointerCapture(event.pointerId);
-    }
-    window.setTimeout(() => {
-      feedDragRef.current.moved = false;
-    }, 0);
-  };
-
-  const handleFeedWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (showAllFeeds || !feedScrollRef.current) return;
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventDefault();
-    feedScrollRef.current.scrollLeft += event.deltaY;
+    setValidationHint(null);
   };
 
   const handleGenerate = async () => {
-    if (!finalPrompt.trim()) return;
+    const validationMessage = getGenerateValidationMessage();
+    if (validationMessage) {
+      setValidationHint(validationMessage);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -233,7 +189,7 @@ export default function AIPanel({
     try {
       const formData = new FormData();
       formData.append("prompt", finalPrompt);
-      formData.append("style", style);
+      formData.append("style", activeFeed ? style : "custom");
 
       if (mode === "from-canvas") {
         const dataURL = onGetCanvasImage();
@@ -314,6 +270,18 @@ export default function AIPanel({
     }
   };
 
+  const getGenerateValidationMessage = () => {
+    if (activeFeed && !uploadedFile) return "스타일 변환은 기준 사진이 필요해요. 먼저 사진을 업로드해주세요.";
+    if (!activeFeed && !prompt.trim()) return "스타일을 선택하지 않은 경우 만들고 싶은 이미지를 프롬프트로 입력해주세요.";
+    return null;
+  };
+
+  const generateValidationMessage = getGenerateValidationMessage();
+
+  useEffect(() => {
+    setValidationHint(generateValidationMessage);
+  }, [generateValidationMessage]);
+
   return (
     <div
       className={`flex flex-col ${
@@ -350,114 +318,62 @@ export default function AIPanel({
               </span>
             </Label>
             <p className="text-[10px] text-muted-foreground">
-              {showAllFeeds
-                ? "인기 스타일 한눈에 보기"
-                : "드래그해서 넘겨보세요"}
+              {activeFeed ? "선택된 스타일을 다시 누르면 해제돼요" : "최대 4개 스타일을 한눈에 선택하세요"}
             </p>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setShowAllFeeds((value) => !value)}
-              className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground shadow-sm ring-1 ring-zinc-200 transition-colors hover:bg-zinc-100 hover:text-foreground"
-              aria-expanded={showAllFeeds}
-            >
-              {showAllFeeds ? "접기" : "더보기"}
-              <ChevronDown
-                className={`h-3 w-3 transition-transform ${showAllFeeds ? "rotate-180" : ""}`}
-              />
-            </button>
-          </div>
         </div>
 
-        {!showAllFeeds && (
-          <>
-            <button
-              type="button"
-              onClick={() => scrollFeed("prev")}
-              className="absolute left-1 top-[52%] z-10 hidden size-8 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-zinc-700 shadow-lg ring-1 ring-black/5 transition hover:scale-105 hover:text-zinc-950 md:grid"
-              aria-label="이전 추천 보기"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollFeed("next")}
-              className="absolute right-1 top-[52%] z-10 hidden size-8 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-zinc-700 shadow-lg ring-1 ring-black/5 transition hover:scale-105 hover:text-zinc-950 md:grid"
-              aria-label="다음 추천 보기"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </>
+        {activeFeed && (
+          <button
+            type="button"
+            onClick={() => {
+              setActiveFeedId(null);
+              setStyle("custom");
+              setPromptExpanded(true);
+              setValidationHint("스타일 선택을 해제했어요. 프롬프트를 입력해 자유롭게 생성할 수 있습니다.");
+            }}
+            className="mt-3 w-full rounded-2xl border border-zinc-200 bg-white p-2 text-left shadow-sm"
+          >
+            <div className="relative h-44 overflow-hidden rounded-xl">
+              <Image src={activeFeed.preview} alt={`${activeFeed.title} 선택됨`} fill className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-white/95 px-3 py-2 text-center shadow-sm">
+                <p className="text-sm font-bold">{activeFeed.title}</p>
+                <p className="mt-0.5 text-[10px] text-zinc-500">다시 누르거나 이 영역을 누르면 선택 해제</p>
+              </div>
+            </div>
+          </button>
         )}
 
-        <div
-          ref={feedScrollRef}
-          className={
-            showAllFeeds
-              ? "grid grid-cols-2 gap-2"
-              : "ai-feed-scroll -mx-3 flex cursor-grab snap-x snap-mandatory gap-3 overflow-x-scroll px-3 pb-3 pt-3 active:cursor-grabbing"
-          }
-          role="listbox"
-          aria-label="AI 이미지 스타일 피드"
-          onPointerDown={handleFeedPointerDown}
-          onPointerMove={handleFeedPointerMove}
-          onPointerUp={handleFeedPointerUp}
-          onPointerCancel={handleFeedPointerUp}
-          onWheel={handleFeedWheel}
-        >
-          {STYLE_FEED_ITEMS.map((item) => {
-            const isActive = activeFeedId === item.id;
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleSelectFeedItem(item)}
-                className={`group relative select-none overflow-hidden rounded-2xl border bg-white text-left transition-all ${
-                  showAllFeeds
-                    ? "h-40 min-w-0"
-                    : `${compact ? "h-48 min-w-[190px]" : "h-56 min-w-[220px]"} snap-start`
-                } ${
-                  isActive
-                    ? "border-zinc-950 shadow-[0_18px_45px_rgba(0,0,0,0.22)] ring-2 ring-zinc-950/10"
-                    : "border-zinc-200 shadow-sm hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg"
-                }`}
-                aria-pressed={isActive}
-              >
-                <Image
-                  src={item.preview}
-                  alt={`${item.title} 미리보기`}
-                  fill
-                  sizes={showAllFeeds ? "(max-width: 768px) 50vw, 180px" : "220px"}
-                  loading={item.id === "everskies" ? "eager" : "lazy"}
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-white/0" />
-                <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-zinc-700 shadow-sm backdrop-blur">
-                  {item.kicker}
-                </div>
-                {isActive && (
-                  <div className="absolute right-3 top-3 rounded-full bg-zinc-950 px-2 py-1 text-[10px] font-semibold text-white shadow-sm">
-                    선택됨
-                  </div>
-                )}
-                <div
-                  className={`absolute inset-x-3 bottom-3 rounded-2xl bg-white/95 shadow-sm backdrop-blur ${
-                    showAllFeeds ? "px-2.5 py-2" : "px-3 py-2.5"
-                  }`}
+        {!activeFeed && (
+          <div className="mt-3 grid grid-cols-2 gap-2" role="listbox" aria-label="AI 이미지 스타일 피드">
+            {STYLE_FEED_ITEMS.slice(0, 4).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleSelectFeedItem(item)}
+                  className="group relative h-28 select-none overflow-hidden rounded-2xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg"
+                  aria-pressed={activeFeedId === item.id}
                 >
-                  <p className="text-center text-sm font-bold leading-tight">{item.title}</p>
-                  {!showAllFeeds && (
-                    <p className="mt-1 line-clamp-2 text-center text-[10px] leading-snug text-zinc-500">
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <Image
+                    src={item.preview}
+                    alt={`${item.title} 미리보기`}
+                    fill
+                    sizes="120px"
+                    loading={item.id === "everskies" ? "eager" : "lazy"}
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-white/0" />
+                  <div className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-semibold text-zinc-700 shadow-sm backdrop-blur">
+                    {item.kicker}
+                  </div>
+                  <div className="absolute inset-x-2 bottom-2 rounded-xl bg-white/95 px-2 py-1.5 shadow-sm backdrop-blur">
+                    <p className="text-center text-xs font-bold leading-tight">{item.title}</p>
+                  </div>
+                </button>
+              ))}
+          </div>
+        )}
       </section>
 
       <div className="grid grid-cols-1 gap-1.5">
@@ -535,7 +451,7 @@ export default function AIPanel({
             className="flex w-full items-center justify-between rounded-2xl border border-dashed border-zinc-300 bg-white px-3 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-md"
           >
             <span className="min-w-0">
-              <span className="block text-xs font-semibold">+ 프롬프트 입력하기</span>
+              <span className="block text-xs font-semibold">+ 추가 프롬프트 입력하기</span>
               <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
                 {prompt.trim() || `${activeFeed.title} 기본 프롬프트로 바로 생성돼요`}
               </span>
@@ -576,7 +492,20 @@ export default function AIPanel({
         )}
       </div>
 
-      <Button className="h-10 w-full rounded-xl shadow-sm" onClick={handleGenerate} disabled={loading || !finalPrompt.trim()}>
+      {validationHint && (
+        <p className="rounded-xl bg-amber-50 p-2 text-[11px] text-amber-700">{validationHint}</p>
+      )}
+
+      <Button
+        className={`h-10 w-full rounded-xl shadow-sm ${
+          generateValidationMessage
+            ? "bg-zinc-200 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-400"
+            : ""
+        }`}
+        onClick={handleGenerate}
+        disabled={loading || Boolean(generateValidationMessage)}
+        title={generateValidationMessage ?? undefined}
+      >
         {loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
