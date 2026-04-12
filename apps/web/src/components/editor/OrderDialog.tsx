@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import * as PortOne from "@portone/browser-sdk/v2";
 import { Loader2, ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +39,7 @@ type CompletePaymentPayload = {
   productType: ProductType;
   outputSize: OutputSize;
   shipping: Omit<OrderForm, "agree">;
+  canvasJSON: object;
 };
 
 const PRODUCT_LABELS: Record<ProductType, string> = {
@@ -70,14 +70,11 @@ export default function OrderDialog({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-  const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
   const productName = PRODUCT_LABELS[productType];
   const orderName = `${productName} 주문`;
   const productPrice = PRINT_PRICE_KRW[outputSize];
   const orderAmount = getOrderAmount(outputSize);
 
-  const isConfigReady = Boolean(storeId && channelKey);
   const isFormReady = useMemo(
     () =>
       form.buyerName.trim() &&
@@ -101,16 +98,6 @@ export default function OrderDialog({
     };
 
   const handlePayment = async () => {
-    if (!isConfigReady) {
-      setError(
-        "PortOne 설정이 필요합니다. apps/web/.env에 NEXT_PUBLIC_PORTONE_STORE_ID, NEXT_PUBLIC_PORTONE_CHANNEL_KEY를 넣어주세요.",
-      );
-      return;
-    }
-
-    const portoneStoreId = storeId as string;
-    const portoneChannelKey = channelKey as string;
-
     if (!isFormReady) {
       setError("주문자 정보, 배송지, 개인정보 제공 동의를 모두 입력해주세요.");
       return;
@@ -118,7 +105,7 @@ export default function OrderDialog({
 
     setSubmitting(true);
     setError(null);
-    setMessage("결제창을 여는 중입니다…");
+    setMessage("주문을 접수하는 중입니다…");
 
     const paymentId = `pocket_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const shipping = {
@@ -132,69 +119,18 @@ export default function OrderDialog({
     };
 
     try {
-      const response = await PortOne.requestPayment({
-        storeId: portoneStoreId,
-        channelKey: portoneChannelKey,
-        paymentId,
-        orderName,
-        totalAmount: orderAmount,
-        currency: "KRW",
-        payMethod: "CARD",
-        customer: {
-          fullName: shipping.buyerName,
-          phoneNumber: shipping.buyerPhone,
-          email: shipping.buyerEmail,
-          zipcode: shipping.zipcode,
-          address: {
-            country: "KR",
-            addressLine1: shipping.addressLine1,
-            addressLine2: shipping.addressLine2,
-          },
-        },
-        shippingAddress: {
-          country: "KR",
-          addressLine1: shipping.addressLine1,
-          addressLine2: shipping.addressLine2,
-        },
-        products: [
-          {
-            id: productType,
-            name: productName,
-            amount: productPrice,
-            quantity: 1,
-          },
-          { id: "shipping", name: "택배비", amount: SHIPPING_FEE_KRW, quantity: 1 },
-        ],
-        productType: "REAL",
-        redirectUrl: `${window.location.origin}/design?paymentId=${paymentId}`,
-        customData: {
-          productType,
-          outputSize,
-          shipping,
-        },
-      });
-
-      if (response == null) {
-        setMessage("결제창이 닫혔습니다. 결제를 완료했다면 잠시 후 주문 상태를 확인해주세요.");
-        return;
-      }
-
-      if (response.code) {
-        setError(response.message ?? "결제가 취소되었거나 실패했습니다.");
-        return;
-      }
-
-      setMessage("결제 결과를 서버에서 검증하는 중입니다…");
+      setMessage("주문 정보를 서버로 보내는 중입니다…");
 
       const completePayload: CompletePaymentPayload = {
-        paymentId: response.paymentId,
-        txId: response.txId,
+        paymentId,
+        txId: "portone-disabled",
         orderName,
         amount: orderAmount,
         currency: "KRW",
         productType,
         outputSize,
         shipping,
+        canvasJSON: canvasJSON(),
       };
 
       const verification = await fetch(
@@ -212,11 +148,11 @@ export default function OrderDialog({
         const detail =
           typeof verificationBody?.detail === "string"
             ? verificationBody.detail
-            : "결제 검증에 실패했습니다. 결제 내역 확인이 필요합니다.";
+            : "주문 접수에 실패했습니다. 입력 정보를 확인해주세요.";
         throw new Error(detail);
       }
 
-      setMessage("결제 확인 완료. 인쇄 파일을 저장하는 중입니다…");
+      setMessage("주문 확인 완료. 인쇄 파일을 저장하는 중입니다…");
 
       await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`, {
         method: "POST",
@@ -225,12 +161,12 @@ export default function OrderDialog({
           canvas_json: canvasJSON(),
           product_type: productType,
           output_size: outputSize,
-          order_id: response.paymentId,
+          order_id: paymentId,
           save_to_storage: true,
         }),
       }).catch(() => null);
 
-      setMessage("주문 접수가 완료되었습니다. 제작 준비 상태로 저장했어요.");
+      setMessage("주문 접수가 완료되었습니다. 결제는 일시적으로 비활성화되어 있습니다.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "주문 처리 중 오류가 발생했습니다.");
     } finally {
@@ -263,15 +199,9 @@ export default function OrderDialog({
           </button>
         </div>
 
-        {!isConfigReady && (
-          <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
-            PortOne 실제 결제 설정이 아직 없습니다. 프론트 환경변수
-            <code className="mx-1 rounded bg-white/80 px-1">NEXT_PUBLIC_PORTONE_STORE_ID</code>
-            와
-            <code className="mx-1 rounded bg-white/80 px-1">NEXT_PUBLIC_PORTONE_CHANNEL_KEY</code>
-            를 설정하면 결제창이 열립니다.
-          </div>
-        )}
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
+          결제는 일시적으로 비활성화되어 있으며, 버튼을 누르면 주문 정보가 바로 접수됩니다.
+        </div>
 
         <div className="grid gap-3">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -397,7 +327,7 @@ export default function OrderDialog({
             ) : (
               <>
                 <ShoppingCart className="mr-2 size-4" />
-                {orderAmount.toLocaleString("ko-KR")}원 결제
+                {orderAmount.toLocaleString("ko-KR")}원 주문 접수
               </>
             )}
           </Button>

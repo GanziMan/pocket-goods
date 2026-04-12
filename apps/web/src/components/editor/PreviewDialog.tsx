@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import * as PortOne from "@portone/browser-sdk/v2";
 import { AlertTriangle, CheckCircle2, Loader2, PackagePlus, ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ProductType } from "@/lib/assets";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
 import { addOrderCartItem, compactCartPreviewImage, createDefaultQuantities } from "@/lib/order-cart";
+import { buildCutlinePreview, drawSmoothClosedPath } from "@/lib/cutline-preview";
 
 type PreviewPayload = {
   imageSrc: string;
@@ -29,6 +29,7 @@ type PreviewDialogProps = {
 type CutlineInfo = {
   safe: boolean;
   reason?: string;
+  warning?: string;
 };
 
 type OrderForm = {
@@ -57,13 +58,6 @@ const initialForm: OrderForm = {
   addressLine2: "",
   memo: "",
   agree: false,
-};
-
-const CUTLINE_OFFSET_MM = 2;
-const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
-  A4: { width: 210, height: 297 },
-  A5: { width: 148, height: 210 },
-  A6: { width: 105, height: 148 },
 };
 
 export default function PreviewDialog({
@@ -130,36 +124,16 @@ export default function PreviewDialog({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      const cutlineOffsetPx = getCutlineOffsetPx(canvas.width, canvas.height, payload.outputSize);
-      const alphaMask = extractAlphaMask(ctx.getImageData(0, 0, canvas.width, canvas.height));
-      const dilatedMask = dilateMask(alphaMask, canvas.width, canvas.height, cutlineOffsetPx);
-      const contour = traceOuterCutline(dilatedMask, canvas.width, canvas.height);
-      const bounds = getMaskBounds(dilatedMask, canvas.width, canvas.height);
-
-      if (!bounds || !contour) {
-        setCutline({ safe: false, reason: "이미지가 비어 있어 칼선을 만들 수 없습니다." });
-        return;
-      }
-
       ctx.lineWidth = 2;
       ctx.strokeStyle = "#ff1f2d";
-      ctx.setLineDash([10, 6]);
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
-      drawSmoothClosedPath(ctx, contour);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      const safe = bounds.minX > 0 && bounds.minY > 0 && bounds.maxX < canvas.width - 1 && bounds.maxY < canvas.height - 1;
-      setCutline(
-        safe
-          ? { safe: true }
-          : {
-              safe: false,
-              reason:
-                "이미지 또는 칼선이 작업 영역 바깥쪽에 너무 가깝습니다. 캔버스 안쪽으로 옮긴 뒤 주문해주세요.",
-            },
-      );
+      const result = buildCutlinePreview(ctx.getImageData(0, 0, canvas.width, canvas.height), payload.outputSize);
+      for (const contour of result.contours) {
+        drawSmoothClosedPath(ctx, contour);
+        ctx.stroke();
+      }
+      setCutline(result);
     };
     img.src = payload.imageSrc;
   }, [open, payload]);
@@ -201,16 +175,9 @@ export default function PreviewDialog({
       return;
     }
 
-    const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-    const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
-    if (!storeId || !channelKey) {
-      setError("PortOne 설정이 필요합니다. NEXT_PUBLIC_PORTONE_STORE_ID / NEXT_PUBLIC_PORTONE_CHANNEL_KEY를 설정해주세요.");
-      return;
-    }
-
     setSubmitting(true);
     setError(null);
-    setMessage("결제창을 여는 중입니다…");
+    setMessage("주문을 접수하는 중입니다…");
 
     const paymentId = `pocket_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const selectedItems = (["A6", "A5", "A4"] as OutputSize[])
@@ -231,69 +198,27 @@ export default function PreviewDialog({
     };
 
     try {
-      const response = await PortOne.requestPayment({
-        storeId,
-        channelKey,
-        paymentId,
-        orderName,
-        totalAmount: amount,
-        currency: "KRW",
-        payMethod: "CARD",
-        customer: {
-          fullName: shipping.buyerName,
-          phoneNumber: shipping.buyerPhone,
-          email: shipping.buyerEmail,
-          zipcode: shipping.zipcode,
-          address: {
-            country: "KR",
-            addressLine1: shipping.addressLine1,
-            addressLine2: shipping.addressLine2,
-          },
-        },
-        shippingAddress: {
-          country: "KR",
-          addressLine1: shipping.addressLine1,
-          addressLine2: shipping.addressLine2,
-        },
-        products: [
-          ...selectedItems.map(({ size, quantity }) => ({
-            id: `sticker-${size}`,
-            name: `투명 스티커 ${size}`,
-            amount: PRINT_PRICE_KRW[size],
-            quantity,
-          })),
-          { id: "shipping", name: "택배비", amount: SHIPPING_FEE_KRW, quantity: 1 },
-        ],
-        productType: "REAL",
-        redirectUrl: `${window.location.origin}/design?paymentId=${paymentId}`,
-        customData: { items: selectedItems, outputSize: payload.outputSize, shipping },
-      });
-
-      if (!response || response.code) {
-        setError(response?.message ?? "결제가 취소되었거나 실패했습니다.");
-        return;
-      }
-
-      setMessage("결제 결과를 서버에서 검증하는 중입니다…");
+      setMessage("주문 정보를 서버로 보내는 중입니다…");
       const verification = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/payments/complete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            paymentId: response.paymentId,
-            txId: response.txId,
+            paymentId,
+            txId: "portone-disabled",
             orderName,
             amount,
             currency: "KRW",
             productType: "sticker",
             outputSize: payload.outputSize,
             items: selectedItems,
+            canvasJSON: payload.canvasJSON,
             shipping,
           }),
         },
       );
-      if (!verification.ok) throw new Error("결제 검증에 실패했습니다.");
+      if (!verification.ok) throw new Error("주문 접수에 실패했습니다.");
 
       await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`, {
         method: "POST",
@@ -302,12 +227,12 @@ export default function PreviewDialog({
           canvas_json: payload.canvasJSON,
           product_type: "sticker",
           output_size: payload.outputSize,
-          order_id: response.paymentId,
+          order_id: paymentId,
           save_to_storage: true,
         }),
       }).catch(() => null);
 
-      setMessage("주문 접수가 완료되었습니다.");
+      setMessage("주문 접수가 완료되었습니다. 결제는 일시적으로 비활성화되어 있습니다.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "주문 처리 중 오류가 발생했습니다.");
     } finally {
@@ -350,7 +275,7 @@ export default function PreviewDialog({
         <div className="grid min-h-0 flex-1 md:grid-cols-[minmax(0,1fr)_360px]">
           <section className="min-h-0 overflow-auto bg-zinc-50 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-bold text-zinc-500">빨간 점선 = 재단 기준선</p>
+              <p className="text-xs font-bold text-zinc-500">빨간 실선 = 재단 기준선</p>
               {cutline.safe ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                   <CheckCircle2 className="size-3.5" /> 주문 가능
@@ -367,6 +292,9 @@ export default function PreviewDialog({
             {!cutline.safe && cutline.reason && (
               <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-600">{cutline.reason}</p>
             )}
+            {cutline.warning && (
+              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-700">{cutline.warning}</p>
+            )}
           </section>
 
           <aside className="min-h-0 overflow-y-auto border-t p-4 md:border-l md:border-t-0">
@@ -380,7 +308,7 @@ export default function PreviewDialog({
                 <h3 className="font-bold">체크 포인트</h3>
                 <ul className="list-disc space-y-2 pl-5 text-zinc-600">
                   <li>칼선은 이미지 바깥쪽 약 2mm 지점에 표시됩니다.</li>
-                  <li>복잡한 이미지도 내부 선이 겹치지 않도록 바깥쪽 칼선 1개만 표시합니다.</li>
+                  <li>이미지가 떨어져 있으면 칼선이 여러 섬으로 나뉠 수 있어 안내를 표시합니다.</li>
                   <li>이미지가 너무 바깥쪽이면 주문이 막힙니다.</li>
                   <li>빨간 선이 잘리면 편집 화면에서 이미지를 안쪽으로 옮겨주세요.</li>
                 </ul>
@@ -451,7 +379,7 @@ export default function PreviewDialog({
                 </Button>
                 <Button className="w-full" onClick={handlePayment} disabled={submitting || !isFormReady || !cutline.safe}>
                   {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <ShoppingCart className="mr-2 size-4" />}
-                  현재 디자인만 {amount.toLocaleString("ko-KR")}원 주문
+                  현재 디자인만 {amount.toLocaleString("ko-KR")}원 주문 접수
                 </Button>
               </div>
             )}
@@ -469,136 +397,4 @@ function Field({ label, required, children }: { label: string; required?: boolea
       {children}
     </div>
   );
-}
-
-type Point = { x: number; y: number };
-type MaskBounds = { minX: number; minY: number; maxX: number; maxY: number };
-
-function extractAlphaMask(imageData: ImageData): Uint8Array {
-  const mask = new Uint8Array(imageData.width * imageData.height);
-  for (let i = 0; i < mask.length; i += 1) {
-    mask[i] = imageData.data[i * 4 + 3] > 18 ? 1 : 0;
-  }
-  return mask;
-}
-
-function dilateMask(mask: Uint8Array, width: number, height: number, radius: number): Uint8Array {
-  const output = new Uint8Array(mask.length);
-  const r2 = radius * radius;
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      if (!mask[y * width + x]) continue;
-      for (let dy = -radius; dy <= radius; dy += 1) {
-        for (let dx = -radius; dx <= radius; dx += 1) {
-          if (dx * dx + dy * dy > r2) continue;
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-            output[ny * width + nx] = 1;
-          }
-        }
-      }
-    }
-  }
-  return output;
-}
-
-function getMaskBounds(mask: Uint8Array, width: number, height: number): MaskBounds | null {
-  let minX = width;
-  let minY = height;
-  let maxX = -1;
-  let maxY = -1;
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      if (!mask[y * width + x]) continue;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-    }
-  }
-  return maxX < 0 ? null : { minX, minY, maxX, maxY };
-}
-
-function getCutlineOffsetPx(width: number, height: number, outputSize: OutputSize): number {
-  const size = OUTPUT_SIZE_MM[outputSize];
-  const pxPerMm = Math.min(width / size.width, height / size.height);
-  return Math.max(2, Math.round(CUTLINE_OFFSET_MM * pxPerMm));
-}
-
-function traceOuterCutline(mask: Uint8Array, width: number, height: number): Point[] | null {
-  const points: Point[] = [];
-  for (let y = 1; y < height - 1; y += 1) {
-    for (let x = 1; x < width - 1; x += 1) {
-      const idx = y * width + x;
-      if (!mask[idx]) continue;
-      if (!mask[idx - 1] || !mask[idx + 1] || !mask[idx - width] || !mask[idx + width]) {
-        points.push({ x, y });
-      }
-    }
-  }
-
-  return points.length > 24 ? smoothRadialContour(points, 160) : null;
-}
-
-function smoothRadialContour(points: Point[], samples: number): Point[] {
-  const center = points.reduce(
-    (acc, point) => ({ x: acc.x + point.x / points.length, y: acc.y + point.y / points.length }),
-    { x: 0, y: 0 },
-  );
-
-  const buckets: Point[][] = Array.from({ length: samples }, () => []);
-  for (const point of points) {
-    const angle = Math.atan2(point.y - center.y, point.x - center.x);
-    const bucket = Math.floor(((angle + Math.PI) / (Math.PI * 2)) * samples) % samples;
-    buckets[bucket].push(point);
-  }
-
-  const contour: Point[] = [];
-  for (const bucket of buckets) {
-    if (!bucket.length) continue;
-    let farthest = bucket[0];
-    let farthestDistance = -1;
-    for (const point of bucket) {
-      const dx = point.x - center.x;
-      const dy = point.y - center.y;
-      const distance = dx * dx + dy * dy;
-      if (distance > farthestDistance) {
-        farthest = point;
-        farthestDistance = distance;
-      }
-    }
-    contour.push(farthest);
-  }
-
-  return chaikin(contour, 2);
-}
-
-function chaikin(points: Point[], iterations: number): Point[] {
-  let result = points;
-  for (let iteration = 0; iteration < iterations; iteration += 1) {
-    const next: Point[] = [];
-    for (let i = 0; i < result.length; i += 1) {
-      const p0 = result[i];
-      const p1 = result[(i + 1) % result.length];
-      next.push({ x: p0.x * 0.75 + p1.x * 0.25, y: p0.y * 0.75 + p1.y * 0.25 });
-      next.push({ x: p0.x * 0.25 + p1.x * 0.75, y: p0.y * 0.25 + p1.y * 0.75 });
-    }
-    result = next;
-  }
-  return result;
-}
-
-function drawSmoothClosedPath(ctx: CanvasRenderingContext2D, points: Point[]) {
-  if (!points.length) return;
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 0; i < points.length; i += 1) {
-    const current = points[i];
-    const next = points[(i + 1) % points.length];
-    const midX = (current.x + next.x) / 2;
-    const midY = (current.y + next.y) / 2;
-    ctx.quadraticCurveTo(current.x, current.y, midX, midY);
-  }
-  ctx.closePath();
 }
