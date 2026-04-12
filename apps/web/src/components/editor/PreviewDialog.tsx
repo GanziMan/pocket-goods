@@ -1,19 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import * as PortOne from "@portone/browser-sdk/v2";
-import { AlertTriangle, CheckCircle2, Loader2, ShoppingCart, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, PackagePlus, ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ProductType } from "@/lib/assets";
-import {
-  getOrderAmount,
-  PRINT_PRICE_KRW,
-  SHIPPING_FEE_KRW,
-  type OutputSize,
-} from "@/lib/order-pricing";
+import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
+import { addOrderCartItem, createDefaultQuantities } from "@/lib/order-cart";
 
 type PreviewPayload = {
   imageSrc: string;
@@ -36,6 +32,7 @@ type CutlineInfo = {
 };
 
 type OrderForm = {
+  quantities: Record<OutputSize, number>;
   buyerName: string;
   buyerPhone: string;
   buyerEmail: string;
@@ -47,6 +44,11 @@ type OrderForm = {
 };
 
 const initialForm: OrderForm = {
+  quantities: {
+    A6: 0,
+    A5: 0,
+    A4: 0,
+  },
   buyerName: "",
   buyerPhone: "",
   buyerEmail: "",
@@ -72,12 +74,30 @@ export default function PreviewDialog({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) setTab(initialTab);
-  }, [initialTab, open]);
+    if (!open || !payload) return;
+    setTab(initialTab);
+      setForm((current) => ({
+      ...current,
+      quantities: createDefaultQuantities(payload.outputSize),
+    }));
+  }, [initialTab, open, payload]);
 
-  const amount = payload ? getOrderAmount(payload.outputSize) : 0;
+  const printAmount = useMemo(
+    () =>
+      (["A6", "A5", "A4"] as OutputSize[]).reduce(
+        (sum, size) => sum + PRINT_PRICE_KRW[size] * form.quantities[size],
+        0,
+      ),
+    [form.quantities],
+  );
+  const totalQuantity = useMemo(
+    () => (["A6", "A5", "A4"] as OutputSize[]).reduce((sum, size) => sum + form.quantities[size], 0),
+    [form.quantities],
+  );
+  const amount = totalQuantity > 0 ? printAmount + SHIPPING_FEE_KRW : 0;
   const isFormReady = useMemo(
     () =>
+      totalQuantity > 0 &&
       form.buyerName.trim() &&
       form.buyerPhone.trim() &&
       form.buyerEmail.trim() &&
@@ -85,7 +105,7 @@ export default function PreviewDialog({
       form.addressLine1.trim() &&
       form.addressLine2.trim() &&
       form.agree,
-    [form],
+    [form, totalQuantity],
   );
 
   useEffect(() => {
@@ -153,13 +173,25 @@ export default function PreviewDialog({
       setMessage(null);
     };
 
+  const updateQuantity = (size: OutputSize, nextQuantity: number) => {
+    setForm((current) => ({
+      ...current,
+      quantities: {
+        ...current.quantities,
+        [size]: Math.max(0, Math.min(99, nextQuantity)),
+      },
+    }));
+    setError(null);
+    setMessage(null);
+  };
+
   const handlePayment = async () => {
     if (!cutline.safe) {
       setError(cutline.reason ?? "칼선이 안전하지 않아 주문할 수 없습니다.");
       return;
     }
     if (!isFormReady) {
-      setError("주문자 정보와 배송지, 동의를 모두 입력해주세요.");
+      setError("제작 수량, 주문자 정보와 배송지, 동의를 모두 입력해주세요.");
       return;
     }
 
@@ -175,7 +207,13 @@ export default function PreviewDialog({
     setMessage("결제창을 여는 중입니다…");
 
     const paymentId = `pocket_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-    const orderName = `투명 스티커 ${payload.outputSize} 주문`;
+    const selectedItems = (["A6", "A5", "A4"] as OutputSize[])
+      .filter((size) => form.quantities[size] > 0)
+      .map((size) => ({ size, quantity: form.quantities[size] }));
+    const orderName =
+      selectedItems.length === 1
+        ? `투명 스티커 ${selectedItems[0].size} ${selectedItems[0].quantity}장 주문`
+        : `투명 스티커 ${totalQuantity}장 묶음 주문`;
     const shipping = {
       buyerName: form.buyerName.trim(),
       buyerPhone: form.buyerPhone.trim(),
@@ -212,17 +250,17 @@ export default function PreviewDialog({
           addressLine2: shipping.addressLine2,
         },
         products: [
-          {
-            id: `sticker-${payload.outputSize}`,
-            name: `투명 스티커 ${payload.outputSize}`,
-            amount: PRINT_PRICE_KRW[payload.outputSize],
-            quantity: 1,
-          },
+          ...selectedItems.map(({ size, quantity }) => ({
+            id: `sticker-${size}`,
+            name: `투명 스티커 ${size}`,
+            amount: PRINT_PRICE_KRW[size],
+            quantity,
+          })),
           { id: "shipping", name: "택배비", amount: SHIPPING_FEE_KRW, quantity: 1 },
         ],
         productType: "REAL",
         redirectUrl: `${window.location.origin}/design?paymentId=${paymentId}`,
-        customData: { outputSize: payload.outputSize, shipping },
+        customData: { items: selectedItems, outputSize: payload.outputSize, shipping },
       });
 
       if (!response || response.code) {
@@ -244,6 +282,7 @@ export default function PreviewDialog({
             currency: "KRW",
             productType: "sticker",
             outputSize: payload.outputSize,
+            items: selectedItems,
             shipping,
           }),
         },
@@ -268,6 +307,20 @@ export default function PreviewDialog({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleAddToCart = () => {
+    if (!cutline.safe) {
+      setError(cutline.reason ?? "칼선이 안전하지 않아 주문함에 담을 수 없습니다.");
+      return;
+    }
+    addOrderCartItem({
+      imageSrc: payload.imageSrc,
+      canvasJSON: payload.canvasJSON,
+      productType: "sticker",
+      quantities: form.quantities,
+    });
+    setMessage("주문함에 담았습니다. 다른 디자인도 추가한 뒤 한 번에 결제할 수 있어요.");
   };
 
   return (
@@ -323,8 +376,52 @@ export default function PreviewDialog({
             ) : (
               <div className="space-y-3">
                 <div className="rounded-xl bg-zinc-50 p-3 text-sm">
-                  <div className="flex justify-between"><span>인쇄비 ({payload.outputSize})</span><b>{PRINT_PRICE_KRW[payload.outputSize].toLocaleString("ko-KR")}원</b></div>
-                  <div className="mt-2 flex justify-between"><span>택배비</span><b>{SHIPPING_FEE_KRW.toLocaleString("ko-KR")}원</b></div>
+                  <p className="mb-3 text-xs font-bold text-zinc-500">제작 수량</p>
+                  <div className="space-y-2">
+                    {(["A6", "A5", "A4"] as OutputSize[]).map((size) => (
+                      <div key={size} className="flex items-center justify-between gap-3 rounded-lg bg-white p-2 ring-1 ring-zinc-200">
+                        <div>
+                          <p className="font-bold">{size}</p>
+                          <p className="text-[11px] text-zinc-500">장당 {PRINT_PRICE_KRW[size].toLocaleString("ko-KR")}원</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="grid size-7 place-items-center rounded-full border text-sm font-bold"
+                            onClick={() => updateQuantity(size, form.quantities[size] - 1)}
+                          >
+                            -
+                          </button>
+                          <Input
+                            className="h-8 w-12 text-center"
+                            inputMode="numeric"
+                            value={form.quantities[size]}
+                            onChange={(event) => updateQuantity(size, Number(event.target.value) || 0)}
+                          />
+                          <button
+                            type="button"
+                            className="grid size-7 place-items-center rounded-full border text-sm font-bold"
+                            onClick={() => updateQuantity(size, form.quantities[size] + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 space-y-2 border-t pt-3">
+                    {(["A6", "A5", "A4"] as OutputSize[]).map((size) =>
+                      form.quantities[size] > 0 ? (
+                        <div key={size} className="flex justify-between">
+                          <span>인쇄비 {size} × {form.quantities[size]}</span>
+                          <b>{(PRINT_PRICE_KRW[size] * form.quantities[size]).toLocaleString("ko-KR")}원</b>
+                        </div>
+                      ) : (
+                        <Fragment key={size} />
+                      ),
+                    )}
+                  </div>
+                  <div className="mt-2 flex justify-between"><span>택배비 <span className="text-[11px] text-zinc-400">(묶음 1회)</span></span><b>{totalQuantity > 0 ? SHIPPING_FEE_KRW.toLocaleString("ko-KR") : 0}원</b></div>
                   <div className="mt-3 flex justify-between border-t pt-3 text-base"><span className="font-bold">총 결제금액</span><b>{amount.toLocaleString("ko-KR")}원</b></div>
                 </div>
                 <Field label="주문자 이름" required><Input value={form.buyerName} onChange={(e) => updateField("buyerName")(e.target.value)} /></Field>
@@ -336,9 +433,13 @@ export default function PreviewDialog({
                 <Field label="배송 메모"><Textarea rows={3} className="resize-none" value={form.memo} onChange={(e) => updateField("memo")(e.target.value)} /></Field>
                 <label className="flex gap-2 rounded-xl border p-3 text-xs"><input type="checkbox" checked={form.agree} onChange={(e) => updateField("agree")(e.target.checked)} /> 개인정보를 결제/배송 처리에 사용하는 데 동의합니다.</label>
                 {(message || error) && <p className={`rounded-xl p-3 text-sm ${error ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>{error ?? message}</p>}
+                <Button variant="outline" className="w-full" onClick={handleAddToCart} disabled={!cutline.safe || totalQuantity < 1}>
+                  <PackagePlus className="mr-2 size-4" />
+                  주문함에 담기
+                </Button>
                 <Button className="w-full" onClick={handlePayment} disabled={submitting || !isFormReady || !cutline.safe}>
                   {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <ShoppingCart className="mr-2 size-4" />}
-                  {amount.toLocaleString("ko-KR")}원 주문하기
+                  현재 디자인만 {amount.toLocaleString("ko-KR")}원 주문
                 </Button>
               </div>
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Plus, Trash2, Eye, ShoppingCart } from "lucide-react";
+import { Undo2, Redo2, Plus, Trash2, Eye, ShoppingBag, ShoppingCart } from "lucide-react";
 import { useLocale } from "@/lib/i18n/client";
 
 interface MobileActionBarProps {
@@ -14,11 +14,12 @@ interface MobileActionBarProps {
   onOpenAssets: () => void;
   onExportPreview: () => void;
   onOrder: () => void;
+  onOpenCart: () => void;
   isExporting?: boolean;
 }
 
 export default function MobileActionBar({
-  canUndo, canRedo, onUndo, onRedo, hasSelection, onDelete, onOpenAssets, onExportPreview, onOrder, isExporting,
+  canUndo, canRedo, onUndo, onRedo, hasSelection, onDelete, onOpenAssets, onExportPreview, onOrder, onOpenCart, isExporting,
 }: MobileActionBarProps) {
   const { t } = useLocale();
   const tb = t.toolbar;
@@ -33,6 +34,7 @@ export default function MobileActionBar({
       <ActionButton icon={<Trash2 className="w-4 h-4" />} label={tb.delete} onClick={onDelete} disabled={!hasSelection} destructive />
       <ActionButton icon={<Eye className="w-4 h-4" />} label={isExporting ? "준비중" : "미리보기"} onClick={onExportPreview} disabled={isExporting} />
       <ActionButton icon={<ShoppingCart className="w-4 h-4" />} label={tb.order} onClick={onOrder} />
+      <ActionButton icon={<ShoppingBag className="w-4 h-4" />} label="주문함" onClick={onOpenCart} />
     </div>
   );
 }

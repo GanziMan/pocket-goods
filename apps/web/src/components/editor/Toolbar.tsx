@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Undo2, Redo2, Trash2, BringToFront, SendToBack, Eye, ShoppingCart, Save, CheckCheck, Loader2,
+  Undo2, Redo2, Trash2, BringToFront, SendToBack, Eye, ShoppingBag, ShoppingCart, Save, CheckCheck, Loader2,
 } from "lucide-react";
 import UserMenu from "@/components/auth/UserMenu";
 import { useLocale, tpl } from "@/lib/i18n/client";
@@ -23,12 +23,13 @@ interface ToolbarProps {
   onSave: () => void;
   onExportPreview: () => void;
   onOrder: () => void;
+  onOpenCart: () => void;
   isExporting?: boolean;
 }
 
 export default function Toolbar({
   canUndo, canRedo, hasSelection, isDirty, savedAt,
-  onUndo, onRedo, onDelete, onBringForward, onSendBackward, onSave, onExportPreview, onOrder, isExporting,
+  onUndo, onRedo, onDelete, onBringForward, onSendBackward, onSave, onExportPreview, onOrder, onOpenCart, isExporting,
 }: ToolbarProps) {
   const { locale, t } = useLocale();
   const tb = t.toolbar;
@@ -71,6 +72,9 @@ export default function Toolbar({
         </Button>
         <Button size="sm" onClick={onOrder} title={tb.order}>
           <ShoppingCart className="w-4 h-4 mr-1" />{tb.order}
+        </Button>
+        <Button variant="outline" size="sm" onClick={onOpenCart} title="묶음 주문함">
+          <ShoppingBag className="w-4 h-4 mr-1" />주문함
         </Button>
 
         <Separator orientation="vertical" className="h-6" />

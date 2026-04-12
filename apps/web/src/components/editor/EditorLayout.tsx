@@ -12,6 +12,7 @@ import MobileHeader from "@/components/editor/MobileHeader";
 import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import PreviewDialog from "@/components/editor/PreviewDialog";
+import OrderCartDialog from "@/components/editor/OrderCartDialog";
 import type { ProductType } from "@/lib/assets";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export default function EditorLayout() {
     outputSize: OutputSize;
     revokeOnClose?: boolean;
   } | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const {
     canvasRef,
@@ -225,6 +227,7 @@ export default function EditorLayout() {
           onSave={save}
           onExportPreview={() => handleOpenPreview("preview")}
           onOrder={() => handleOpenPreview("order")}
+          onOpenCart={() => setCartOpen(true)}
           isExporting={isExporting}
         />
       </div>
@@ -323,6 +326,7 @@ export default function EditorLayout() {
           onOpenAssets={() => setMobilePanel("assets")}
           onExportPreview={() => handleOpenPreview("preview")}
           onOrder={() => handleOpenPreview("order")}
+          onOpenCart={() => setCartOpen(true)}
           isExporting={isExporting}
         />
       </div>
@@ -353,6 +357,7 @@ export default function EditorLayout() {
           })
         }
       />
+      <OrderCartDialog open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   );
 }

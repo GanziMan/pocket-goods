@@ -38,6 +38,8 @@ class CompletePaymentRequest(BaseModel):
     currency: Literal["KRW"] = "KRW"
     productType: Literal["keyring", "sticker"]
     outputSize: Literal["A4", "A5", "A6"]
+    items: list[dict[str, int | str]] | None = None
+    orderItems: list[dict] | None = None
     shipping: ShippingInfo
 
 
@@ -80,7 +82,34 @@ async def complete_payment(req: CompletePaymentRequest):
     PortOne V2 결제 단건 조회로 결제 상태와 금액을 서버에서 검증합니다.
     실제 주문 저장소가 붙기 전까지는 검증 완료 응답만 반환합니다.
     """
-    expected_amount = PRINT_PRICE_KRW[req.outputSize] + SHIPPING_FEE_KRW
+    if req.orderItems:
+        print_total = 0
+        for design in req.orderItems:
+            quantities = design.get("quantities")
+            if not isinstance(quantities, dict):
+                raise HTTPException(status_code=400, detail="묶음 주문 수량 정보가 올바르지 않습니다.")
+            has_quantity = False
+            for size, unit_price in PRINT_PRICE_KRW.items():
+                quantity = quantities.get(size, 0)
+                if not isinstance(quantity, int) or quantity < 0:
+                    raise HTTPException(status_code=400, detail="묶음 주문 수량 정보가 올바르지 않습니다.")
+                if quantity > 0:
+                    has_quantity = True
+                    print_total += unit_price * quantity
+            if not has_quantity:
+                raise HTTPException(status_code=400, detail="수량이 없는 디자인이 포함되어 있습니다.")
+        expected_amount = print_total + SHIPPING_FEE_KRW
+    elif req.items:
+        print_total = 0
+        for item in req.items:
+            size = item.get("size")
+            quantity = item.get("quantity")
+            if size not in PRINT_PRICE_KRW or not isinstance(quantity, int) or quantity < 1:
+                raise HTTPException(status_code=400, detail="주문 수량 정보가 올바르지 않습니다.")
+            print_total += PRINT_PRICE_KRW[size] * quantity
+        expected_amount = print_total + SHIPPING_FEE_KRW
+    else:
+        expected_amount = PRINT_PRICE_KRW[req.outputSize] + SHIPPING_FEE_KRW
     if req.amount != expected_amount:
         raise HTTPException(status_code=400, detail="주문 금액이 올바르지 않습니다.")
 
