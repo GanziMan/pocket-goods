@@ -26,12 +26,14 @@ class ExportRequest(BaseModel):
     output_size: Literal["A4", "A5", "A6"] = "A5"
     order_id: str | None = None   # 결제 완료 후 전달, 없으면 미리보기 전용
     save_to_storage: bool = False  # True면 Supabase 업로드
+    return_base64: bool = False    # True면 JSON에 PNG data URL 포함
 
 
 class ExportResponse(BaseModel):
     print_url: str | None = None    # Supabase signed URL (save_to_storage=True)
     thumbnail_url: str | None = None
     cutting_line_svg: str | None = None  # 칼선 SVG path (save_to_storage=True)
+    image: str | None = None
 
 
 
@@ -54,6 +56,11 @@ async def export_design(req: ExportRequest):
         png_bytes = to_png_bytes(img)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"렌더링 실패: {e}")
+
+    if req.return_base64:
+        import base64
+        image_b64 = base64.b64encode(png_bytes).decode("utf-8")
+        return ExportResponse(image=f"data:image/png;base64,{image_b64}")
 
     # 미리보기 다운로드 — 단일 PNG 파일 반환
     if not req.save_to_storage:

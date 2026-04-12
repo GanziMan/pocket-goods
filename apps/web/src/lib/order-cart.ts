@@ -7,7 +7,7 @@ export type OrderCartItem = {
   id: string;
   createdAt: string;
   title: string;
-  imageSrc: string;
+  thumbnailSrc: string;
   canvasJSON: object;
   productType: ProductType;
   quantities: CartQuantities;
@@ -55,4 +55,25 @@ export function addOrderCartItem(item: Omit<OrderCartItem, "id" | "createdAt" | 
 
 export function clearOrderCart() {
   writeOrderCart([]);
+}
+
+export function compactCartPreviewImage(imageSrc: string, maxWidth = 220): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Canvas context unavailable"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    img.onerror = () => reject(new Error("Failed to load cart preview image"));
+    img.src = imageSrc;
+  });
 }

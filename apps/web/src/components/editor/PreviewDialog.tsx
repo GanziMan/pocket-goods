@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ProductType } from "@/lib/assets";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
-import { addOrderCartItem, createDefaultQuantities } from "@/lib/order-cart";
+import { addOrderCartItem, compactCartPreviewImage, createDefaultQuantities } from "@/lib/order-cart";
 
 type PreviewPayload = {
   imageSrc: string;
@@ -309,18 +309,23 @@ export default function PreviewDialog({
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!cutline.safe) {
       setError(cutline.reason ?? "칼선이 안전하지 않아 주문함에 담을 수 없습니다.");
       return;
     }
-    addOrderCartItem({
-      imageSrc: payload.imageSrc,
-      canvasJSON: payload.canvasJSON,
-      productType: "sticker",
-      quantities: form.quantities,
-    });
-    setMessage("주문함에 담았습니다. 다른 디자인도 추가한 뒤 한 번에 결제할 수 있어요.");
+    try {
+      const thumbnailSrc = await compactCartPreviewImage(payload.imageSrc);
+      addOrderCartItem({
+        thumbnailSrc,
+        canvasJSON: payload.canvasJSON,
+        productType: "sticker",
+        quantities: form.quantities,
+      });
+      setMessage("주문함에 담았습니다. 다른 디자인도 추가한 뒤 한 번에 결제할 수 있어요.");
+    } catch {
+      setError("주문함 미리보기 저장에 실패했습니다. 이미지를 다시 확인해주세요.");
+    }
   };
 
   return (

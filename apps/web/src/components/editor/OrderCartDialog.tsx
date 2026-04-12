@@ -263,7 +263,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
                   <div key={item.id} className="rounded-2xl border bg-white p-3 shadow-sm">
                     <div className="flex gap-3">
                       <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100 ring-1 ring-zinc-200">
-                        <Image src={item.imageSrc} alt={item.title} fill className="object-contain" />
+                        <Image src={item.thumbnailSrc} alt={item.title} fill className="object-contain" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="mb-2 flex items-center justify-between">
