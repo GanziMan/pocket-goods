@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Type, Sparkles } from "lucide-react";
+import { ImagePlus, Type, Sparkles } from "lucide-react";
 import AIPanel from "@/components/editor/AIPanel";
+import PhotoPanel from "@/components/editor/PhotoPanel";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n/client";
 
@@ -34,6 +35,9 @@ export default function AssetPanel({
           <TabsTrigger value="ai" className={cn("flex-1 gap-1.5 font-semibold", isMobile ? "text-sm" : "text-xs")}>
             <Sparkles className={cn("w-3.5 h-3.5", isMobile && "w-4 h-4 text-yellow-500")} />{ap.aiTab}
           </TabsTrigger>
+          <TabsTrigger value="photo" className={cn("flex-1 gap-1.5 font-semibold", isMobile ? "text-sm" : "text-xs")}>
+            <ImagePlus className={cn("w-3.5 h-3.5", isMobile && "w-4 h-4")} />사진
+          </TabsTrigger>
           <TabsTrigger value="text" className={cn("flex-1 gap-1.5 font-semibold", isMobile ? "text-sm" : "text-xs")}>
             <Type className={cn("w-3.5 h-3.5", isMobile && "w-4 h-4")} />{ap.textTab}
           </TabsTrigger>
@@ -41,6 +45,10 @@ export default function AssetPanel({
 
         <TabsContent value="ai" className={cn("flex-1 m-0", isMobile ? "overflow-visible" : "overflow-hidden")}>
           <AIPanel onGetCanvasImage={onGetCanvasImage} onAddGeneratedImage={onAddCharacter} compact={isMobile} />
+        </TabsContent>
+
+        <TabsContent value="photo" className={cn("flex-1 m-0", isMobile ? "overflow-visible" : "overflow-hidden")}>
+          <PhotoPanel onAddImage={onAddCharacter} compact={isMobile} />
         </TabsContent>
 
         <TabsContent value="text" className="flex-1 m-0">
