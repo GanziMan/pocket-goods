@@ -28,7 +28,7 @@ const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
 
 export default function EditorLayout() {
   const { locale, t } = useLocale();
-  const [productType, setProductTypeState] = useState<ProductType>("keyring");
+  const [productType] = useState<ProductType>("sticker");
   const [mobilePanel, setMobilePanel] = useState<"assets" | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
@@ -43,7 +43,6 @@ export default function EditorLayout() {
     selectedInfo,
     addCharacter,
     addText,
-    addSticker,
     updateSelectedText,
     updateSelectedOpacity,
     getSelectedImageDataURL,
@@ -56,7 +55,6 @@ export default function EditorLayout() {
     toJSON,
     toDataURL,
     loadDesign,
-    setProductType,
     onChangeCb,
     zoom,
     zoomIn,
@@ -153,20 +151,9 @@ export default function EditorLayout() {
     const restore = window.confirm(tpl(t.toolbar.restorePrompt, { timeStr }));
     if (restore) {
       loadDesign(draft.canvasJSON);
-      if (draft.productType === "keyring" || draft.productType === "sticker") {
-        setProductTypeState(draft.productType as ProductType);
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCanvasReady]);
-
-  const handleProductTypeChange = useCallback(
-    (type: ProductType) => {
-      setProductTypeState(type);
-      setProductType(type);
-    },
-    [setProductType]
-  );
 
   const handleExportPreview = useCallback(async () => {
     if (isExporting) return;
@@ -210,8 +197,6 @@ export default function EditorLayout() {
       {/* 상단: 데스크탑=Toolbar, 모바일=MobileHeader */}
       <div className="hidden md:block">
         <Toolbar
-          productType={productType}
-          onProductTypeChange={handleProductTypeChange}
           canUndo={canUndo}
           canRedo={canRedo}
           hasSelection={!!selectedInfo}
@@ -230,8 +215,6 @@ export default function EditorLayout() {
       </div>
       <div className="block md:hidden">
         <MobileHeader
-          productType={productType}
-          onProductTypeChange={handleProductTypeChange}
           onSave={save}
           isDirty={isDirty}
           savedAt={savedAt}
@@ -255,7 +238,7 @@ export default function EditorLayout() {
               {saveWarning}
             </div>
           )}
-          <div className="flex-1 overflow-auto p-2 md:p-8">
+          <div className="flex-1 overflow-hidden">
             <DesignCanvas
               canvasRef={canvasRef}
               outputSizeMm={OUTPUT_SIZE_MM[outputSize]}
@@ -264,12 +247,12 @@ export default function EditorLayout() {
           </div>
 
           {/* 모바일 용지 크기 선택 */}
-          <div className="flex md:hidden items-center justify-center gap-2 py-2 border-t bg-white shrink-0">
+          <div className="flex md:hidden items-center justify-center gap-2 border-t border-zinc-200/70 bg-white/85 py-2 shadow-[0_-12px_30px_rgba(15,23,42,0.04)] backdrop-blur shrink-0">
             {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
               <Badge
                 key={size}
                 variant={outputSize === size ? "default" : "outline"}
-                className="cursor-pointer select-none"
+                className="cursor-pointer select-none rounded-full px-3 py-1"
                 onClick={() => setOutputSize(size)}
               >
                 {size}
@@ -278,35 +261,39 @@ export default function EditorLayout() {
           </div>
 
           {/* 줌 컨트롤 — 캔버스 바로 아래 (데스크탑 전용) */}
-          <div className="hidden md:flex items-center justify-center gap-2 py-2 border-t bg-white shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={zoomOut}
-              disabled={zoom <= 0.5}
-              title={t.toolbar.zoomOut}
-            >
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-            <span className="text-xs text-zinc-500 w-12 text-center tabular-nums select-none">
-              {Math.round(zoom * 100)}%
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={zoomIn}
-              disabled={zoom >= 2.0}
-              title={t.toolbar.zoomIn}
-            >
-              <ZoomIn className="w-4 h-4" />
-            </Button>
+          <div className="hidden md:flex items-center justify-center border-t border-zinc-200/70 bg-white/80 py-2 shadow-[0_-12px_30px_rgba(15,23,42,0.04)] backdrop-blur shrink-0">
+            <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-2 py-1 shadow-sm">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={zoomOut}
+                disabled={zoom <= 0.5}
+                title={t.toolbar.zoomOut}
+                className="size-8 rounded-full"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+              <span className="w-14 select-none text-center text-xs font-bold tabular-nums text-zinc-600">
+                {Math.round(zoom * 100)}%
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={zoomIn}
+                disabled={zoom >= 2.0}
+                title={t.toolbar.zoomIn}
+                className="size-8 rounded-full"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+            </div>
 
-            <div className="ml-4 pl-4 border-l flex items-center gap-2">
+            <div className="ml-3 flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-2 py-1 shadow-sm">
               {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
                 <Badge
                   key={size}
                   variant={outputSize === size ? "default" : "outline"}
-                  className="cursor-pointer select-none"
+                  className="cursor-pointer select-none rounded-full px-3 py-1"
                   onClick={() => setOutputSize(size)}
                 >
                   {size}

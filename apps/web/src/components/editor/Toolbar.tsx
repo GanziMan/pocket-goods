@@ -3,17 +3,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import {
   Undo2, Redo2, Trash2, BringToFront, SendToBack, Download, ShoppingCart, Save, CheckCheck, Loader2,
 } from "lucide-react";
-import type { ProductType } from "@/lib/assets";
 import UserMenu from "@/components/auth/UserMenu";
 import { useLocale, tpl } from "@/lib/i18n/client";
 
 interface ToolbarProps {
-  productType: ProductType;
-  onProductTypeChange: (type: ProductType) => void;
   canUndo: boolean;
   canRedo: boolean;
   hasSelection: boolean;
@@ -31,28 +27,15 @@ interface ToolbarProps {
 }
 
 export default function Toolbar({
-  productType, onProductTypeChange, canUndo, canRedo, hasSelection, isDirty, savedAt,
+  canUndo, canRedo, hasSelection, isDirty, savedAt,
   onUndo, onRedo, onDelete, onBringForward, onSendBackward, onSave, onExportPreview, onOrder, isExporting,
 }: ToolbarProps) {
   const { locale, t } = useLocale();
   const tb = t.toolbar;
 
-  const PRODUCT_LABELS: Record<ProductType, string> = {
-    keyring: tb.keyring,
-    sticker: tb.sticker,
-  };
-
   return (
     <header className="flex items-center gap-2 px-4 h-14 border-b bg-white shrink-0">
       <Link href="/" className="font-bold text-lg tracking-tight mr-2 select-none">{t.common.brandName}</Link>
-
-      <div className="flex gap-1">
-        {(["keyring", "sticker"] as ProductType[]).map((type) => (
-          <Badge key={type} variant={productType === type ? "default" : "outline"} className="cursor-pointer select-none py-3" onClick={() => onProductTypeChange(type)}>
-            {PRODUCT_LABELS[type]}
-          </Badge>
-        ))}
-      </div>
 
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" disabled={!canUndo} onClick={onUndo} title={`${tb.undo} (${tb.undoShortcut})`}><Undo2 className="w-4 h-4" /></Button>

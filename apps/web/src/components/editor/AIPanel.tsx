@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,9 @@ import {
   LogIn,
   X,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
   Plus,
 } from "lucide-react";
 import Image from "next/image";
@@ -122,6 +125,13 @@ export default function AIPanel({
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const feedScrollRef = useRef<HTMLDivElement>(null);
+  const feedDragRef = useRef({
+    dragging: false,
+    moved: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
 
   const activeFeed = useMemo(
     () => STYLE_FEED_ITEMS.find((item) => item.id === activeFeedId) ?? null,
@@ -156,11 +166,58 @@ export default function AIPanel({
   };
 
   const handleSelectFeedItem = (item: StyleFeedItem) => {
+    if (feedDragRef.current.moved) return;
     setActiveFeedId(item.id);
     setStyle(item.style);
     setPrompt("");
     setPromptExpanded(false);
     setError(null);
+  };
+
+  const scrollFeed = useCallback(
+    (direction: "prev" | "next") => {
+      feedScrollRef.current?.scrollBy({
+        left: direction === "next" ? (compact ? 210 : 240) : -(compact ? 210 : 240),
+        behavior: "smooth",
+      });
+    },
+    [compact],
+  );
+
+  const handleFeedPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (showAllFeeds || !feedScrollRef.current) return;
+    feedDragRef.current = {
+      dragging: true,
+      moved: false,
+      startX: event.clientX,
+      scrollLeft: feedScrollRef.current.scrollLeft,
+    };
+    feedScrollRef.current.setPointerCapture(event.pointerId);
+  };
+
+  const handleFeedPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!feedDragRef.current.dragging || !feedScrollRef.current) return;
+    const deltaX = event.clientX - feedDragRef.current.startX;
+    if (Math.abs(deltaX) > 4) feedDragRef.current.moved = true;
+    feedScrollRef.current.scrollLeft = feedDragRef.current.scrollLeft - deltaX;
+  };
+
+  const handleFeedPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!feedScrollRef.current) return;
+    feedDragRef.current.dragging = false;
+    if (feedScrollRef.current.hasPointerCapture(event.pointerId)) {
+      feedScrollRef.current.releasePointerCapture(event.pointerId);
+    }
+    window.setTimeout(() => {
+      feedDragRef.current.moved = false;
+    }, 0);
+  };
+
+  const handleFeedWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (showAllFeeds || !feedScrollRef.current) return;
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    feedScrollRef.current.scrollLeft += event.deltaY;
   };
 
   const handleGenerate = async () => {
@@ -282,33 +339,72 @@ export default function AIPanel({
         )}
       </div>
 
-      <section className="space-y-2">
+      <section className="relative rounded-3xl border border-zinc-200/80 bg-gradient-to-b from-zinc-50 to-white p-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label className="text-xs">둘러보기</Label>
+          <div className="min-w-0 space-y-0.5">
+            <Label className="inline-flex items-center gap-1 text-xs font-extrabold">
+              <Flame className="size-3.5 text-orange-500" />
+              요즘 뜨는
+              <span className="rounded-full bg-orange-50 px-1.5 py-0.5 text-[9px] font-bold text-orange-600">
+                추천
+              </span>
+            </Label>
             <p className="text-[10px] text-muted-foreground">
-              {showAllFeeds ? "한눈에 보고 선택" : "좌우로 넘겨 선택"}
+              {showAllFeeds
+                ? "인기 스타일 한눈에 보기"
+                : "드래그해서 넘겨보세요"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowAllFeeds((value) => !value)}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-zinc-100 hover:text-foreground"
-            aria-expanded={showAllFeeds}
-          >
-            {showAllFeeds ? "접기" : "더보기"}
-            <ChevronDown
-              className={`h-3 w-3 transition-transform ${showAllFeeds ? "rotate-180" : ""}`}
-            />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setShowAllFeeds((value) => !value)}
+              className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground shadow-sm ring-1 ring-zinc-200 transition-colors hover:bg-zinc-100 hover:text-foreground"
+              aria-expanded={showAllFeeds}
+            >
+              {showAllFeeds ? "접기" : "더보기"}
+              <ChevronDown
+                className={`h-3 w-3 transition-transform ${showAllFeeds ? "rotate-180" : ""}`}
+              />
+            </button>
+          </div>
         </div>
 
+        {!showAllFeeds && (
+          <>
+            <button
+              type="button"
+              onClick={() => scrollFeed("prev")}
+              className="absolute left-1 top-[52%] z-10 hidden size-8 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-zinc-700 shadow-lg ring-1 ring-black/5 transition hover:scale-105 hover:text-zinc-950 md:grid"
+              aria-label="이전 추천 보기"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollFeed("next")}
+              className="absolute right-1 top-[52%] z-10 hidden size-8 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-zinc-700 shadow-lg ring-1 ring-black/5 transition hover:scale-105 hover:text-zinc-950 md:grid"
+              aria-label="다음 추천 보기"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </>
+        )}
+
         <div
+          ref={feedScrollRef}
           className={
             showAllFeeds
               ? "grid grid-cols-2 gap-2"
-              : "ai-feed-scroll -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1"
+              : "ai-feed-scroll -mx-3 flex cursor-grab snap-x snap-mandatory gap-3 overflow-x-scroll px-3 pb-3 pt-3 active:cursor-grabbing"
           }
+          role="listbox"
+          aria-label="AI 이미지 스타일 피드"
+          onPointerDown={handleFeedPointerDown}
+          onPointerMove={handleFeedPointerMove}
+          onPointerUp={handleFeedPointerUp}
+          onPointerCancel={handleFeedPointerUp}
+          onWheel={handleFeedWheel}
         >
           {STYLE_FEED_ITEMS.map((item) => {
             const isActive = activeFeedId === item.id;
@@ -324,8 +420,8 @@ export default function AIPanel({
                     : `${compact ? "h-48 min-w-[190px]" : "h-56 min-w-[220px]"} snap-start`
                 } ${
                   isActive
-                    ? "border-primary shadow-[0_16px_35px_rgba(0,0,0,0.18)]"
-                    : "border-zinc-200 shadow-sm hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md"
+                    ? "border-zinc-950 shadow-[0_18px_45px_rgba(0,0,0,0.22)] ring-2 ring-zinc-950/10"
+                    : "border-zinc-200 shadow-sm hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg"
                 }`}
                 aria-pressed={isActive}
               >
@@ -342,7 +438,7 @@ export default function AIPanel({
                   {item.kicker}
                 </div>
                 {isActive && (
-                  <div className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground shadow-sm">
+                  <div className="absolute right-3 top-3 rounded-full bg-zinc-950 px-2 py-1 text-[10px] font-semibold text-white shadow-sm">
                     선택됨
                   </div>
                 )}
@@ -436,7 +532,7 @@ export default function AIPanel({
           <button
             type="button"
             onClick={() => setPromptExpanded(true)}
-            className="flex w-full items-center justify-between rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 px-3 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
+            className="flex w-full items-center justify-between rounded-2xl border border-dashed border-zinc-300 bg-white px-3 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-md"
           >
             <span className="min-w-0">
               <span className="block text-xs font-semibold">+ 프롬프트 입력하기</span>
@@ -447,7 +543,7 @@ export default function AIPanel({
             <Plus className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
           </button>
         ) : (
-          <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3">
+          <div className="space-y-2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
             <div className="flex items-center justify-between">
               <Label className="text-xs">
                 {activeFeed
@@ -480,7 +576,7 @@ export default function AIPanel({
         )}
       </div>
 
-      <Button className="w-full" onClick={handleGenerate} disabled={loading || !finalPrompt.trim()}>
+      <Button className="h-10 w-full rounded-xl shadow-sm" onClick={handleGenerate} disabled={loading || !finalPrompt.trim()}>
         {loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -604,8 +700,8 @@ function ModeButton({
       onClick={onClick}
       className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-[10px] transition-all ${
         active
-          ? "border-primary bg-primary/5 text-primary"
-          : "border-zinc-200 text-zinc-500 hover:border-zinc-300"
+          ? "border-zinc-950 bg-zinc-950 text-white shadow-sm"
+          : "border-zinc-200 bg-white text-zinc-600 shadow-sm hover:-translate-y-0.5 hover:border-zinc-300 hover:text-zinc-950"
       }`}
     >
       {icon}

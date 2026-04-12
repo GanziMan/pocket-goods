@@ -1,31 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Save, CheckCheck } from "lucide-react";
-import type { ProductType } from "@/lib/assets";
 import UserMenu from "@/components/auth/UserMenu";
 import { useLocale } from "@/lib/i18n/client";
 
 interface MobileHeaderProps {
-  productType: ProductType;
-  onProductTypeChange: (type: ProductType) => void;
   onSave: () => void;
   isDirty: boolean;
   savedAt: Date | null;
 }
 
 export default function MobileHeader({
-  productType, onProductTypeChange, onSave, isDirty, savedAt,
+  onSave, isDirty, savedAt,
 }: MobileHeaderProps) {
   const { t } = useLocale();
   const tb = t.toolbar;
-
-  const PRODUCT_LABELS: Record<ProductType, string> = {
-    keyring: tb.keyringShort,
-    sticker: tb.stickerShort,
-  };
 
   return (
     <header className="flex items-center gap-2 px-3 h-14 border-b bg-white shrink-0">
@@ -33,15 +24,6 @@ export default function MobileHeader({
         <img src="/logo.png" alt="Logo" width={24} height={24} className="rounded" />
         <span className="font-bold text-sm tracking-tight">{t.common.brandName}</span>
       </Link>
-
-      <div className="flex gap-1">
-        {(["keyring", "sticker"] as ProductType[]).map((type) => (
-          <Badge key={type} variant={productType === type ? "default" : "outline"}
-            className="cursor-pointer select-none text-[11px] px-2 py-0.5" onClick={() => onProductTypeChange(type)}>
-            {PRODUCT_LABELS[type]}
-          </Badge>
-        ))}
-      </div>
 
       <div className="ml-auto flex items-center gap-1.5">
         {isDirty ? (
