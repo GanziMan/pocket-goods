@@ -15,7 +15,7 @@ export default function RefundPage() {
       <div className="space-y-8 text-sm leading-relaxed">
         <section>
           <h2 className="mb-2 text-lg font-semibold">1. 결제 취소 가능 조건</h2>
-          <p>결제 직후 상품 생성/제공이 시작되기 전에는 결제 취소를 요청할 수 있습니다.</p>
+          <p>결제 직후 스티커 제작 또는 배송 준비가 시작되기 전에는 결제 취소를 요청할 수 있습니다.</p>
         </section>
 
         <section>
@@ -36,13 +36,13 @@ export default function RefundPage() {
         </section>
 
         <section>
-          <h2 className="mb-2 text-lg font-semibold">4. 디지털 상품 환불 제한</h2>
+          <h2 className="mb-2 text-lg font-semibold">4. 주문 제작 상품 환불 제한</h2>
           <p>주문 제작 상품의 특성상 제작 시작 또는 배송 준비 이후에는 단순 변심 환불이 제한됩니다.</p>
         </section>
 
         <section>
           <h2 className="mb-2 text-lg font-semibold">5. 단순 변심 환불 기준</h2>
-          <p>단순 변심은 생성/제공 시작 전 요청 건에 한해 검토됩니다.</p>
+          <p>단순 변심은 제작 또는 배송 준비 시작 전 요청 건에 한해 검토됩니다.</p>
         </section>
 
         <section>
@@ -53,7 +53,7 @@ export default function RefundPage() {
         <section>
           <h2 className="mb-2 text-lg font-semibold">7. 문의 채널 및 처리 기간</h2>
           <p>문의: qjatn50089@gmail.com (영업일 기준 통상 3일 이내 1차 회신)</p>
-          <p className="mt-2">상품/결제 정보는 <Link href="/product/ai-style-image-credit" className="underline">상품 안내 페이지</Link>에서도 확인할 수 있습니다.</p>
+          <p className="mt-2">상품/결제 정보는 <Link href="/product/sticker" className="underline">상품 안내 페이지</Link>에서도 확인할 수 있습니다.</p>
         </section>
       </div>
     </main>

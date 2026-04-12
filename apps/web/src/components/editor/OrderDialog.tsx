@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ProductType } from "@/lib/assets";
+import { getOrderAmount, PRINT_PRICE_KRW, SHIPPING_FEE_KRW } from "@/lib/order-pricing";
 
 type OutputSize = "A4" | "A5" | "A6";
 
@@ -41,8 +42,6 @@ type CompletePaymentPayload = {
   shipping: Omit<OrderForm, "agree">;
 };
 
-const TEMP_ORDER_AMOUNT = 4000;
-
 const PRODUCT_LABELS: Record<ProductType, string> = {
   keyring: "투명 스티커",
   sticker: "투명 스티커",
@@ -75,6 +74,8 @@ export default function OrderDialog({
   const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
   const productName = PRODUCT_LABELS[productType];
   const orderName = `${productName} 주문`;
+  const productPrice = PRINT_PRICE_KRW[outputSize];
+  const orderAmount = getOrderAmount(outputSize);
 
   const isConfigReady = Boolean(storeId && channelKey);
   const isFormReady = useMemo(
@@ -136,7 +137,7 @@ export default function OrderDialog({
         channelKey: portoneChannelKey,
         paymentId,
         orderName,
-        totalAmount: TEMP_ORDER_AMOUNT,
+        totalAmount: orderAmount,
         currency: "KRW",
         payMethod: "CARD",
         customer: {
@@ -159,9 +160,10 @@ export default function OrderDialog({
           {
             id: productType,
             name: productName,
-            amount: TEMP_ORDER_AMOUNT,
+            amount: productPrice,
             quantity: 1,
           },
+          { id: "shipping", name: "택배비", amount: SHIPPING_FEE_KRW, quantity: 1 },
         ],
         productType: "REAL",
         redirectUrl: `${window.location.origin}/design?paymentId=${paymentId}`,
@@ -188,7 +190,7 @@ export default function OrderDialog({
         paymentId: response.paymentId,
         txId: response.txId,
         orderName,
-        amount: TEMP_ORDER_AMOUNT,
+        amount: orderAmount,
         currency: "KRW",
         productType,
         outputSize,
@@ -247,8 +249,8 @@ export default function OrderDialog({
             </div>
             <h2 className="mt-1 text-xl font-bold">{orderName}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              임시 판매가 <span className="font-bold text-foreground">4,000원</span>으로 PortOne
-              결제를 진행합니다.
+              상품가 <span className="font-bold text-foreground">{productPrice.toLocaleString("ko-KR")}원</span>에
+              택배비가 별도 부과됩니다.
             </p>
           </div>
           <button
@@ -343,11 +345,15 @@ export default function OrderDialog({
         <div className="mt-4 rounded-2xl bg-zinc-50 p-3 text-sm">
           <div className="flex justify-between">
             <span>{productName}</span>
-            <span>1개</span>
+            <span>{productPrice.toLocaleString("ko-KR")}원</span>
+          </div>
+          <div className="mt-2 flex justify-between">
+            <span>택배비</span>
+            <span>{SHIPPING_FEE_KRW.toLocaleString("ko-KR")}원</span>
           </div>
           <div className="mt-2 flex justify-between border-t pt-2 font-bold">
             <span>결제 금액</span>
-            <span>{TEMP_ORDER_AMOUNT.toLocaleString("ko-KR")}원</span>
+            <span>{orderAmount.toLocaleString("ko-KR")}원</span>
           </div>
         </div>
 
@@ -391,7 +397,7 @@ export default function OrderDialog({
             ) : (
               <>
                 <ShoppingCart className="mr-2 size-4" />
-                4,000원 결제
+                {orderAmount.toLocaleString("ko-KR")}원 결제
               </>
             )}
           </Button>

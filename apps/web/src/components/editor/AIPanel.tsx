@@ -14,6 +14,8 @@ import {
   X,
   Flame,
   Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -29,7 +31,16 @@ interface AIPanelProps {
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
 
-type Style = "everskies" | "sylvanian" | "maplestory" | "minimi" | "custom";
+type Style =
+  | "everskies"
+  | "sylvanian"
+  | "animal-crossing"
+  | "ios-emoji"
+  | "maplestory"
+  | "tanning-kitty"
+  | "snoopy"
+  | "snowglobe"
+  | "custom";
 
 type StyleFeedItem = {
   id: string;
@@ -41,17 +52,12 @@ type StyleFeedItem = {
   basePrompt: string;
 };
 
+const BACKGROUND_REMOVAL_PROMPT =
+  "각 스타일은 최종 결과에서 배경이 제거되어야 하며 투명 PNG처럼 인물/캐릭터만 남겨주세요. 첨부된 이미지를 최대한 적극적으로 활용하고, 헤어스타일·의상·가방·액세서리·로고·문양이 있다면 가능한 한 똑같이 반영해주세요. 고화질로, 발끝까지 보이는 전신 또는 요청한 구도로 완성해주세요.";
+
+const STYLE_FEED_PAGE_SIZE = 4;
+
 const STYLE_FEED_ITEMS: StyleFeedItem[] = [
-  {
-    id: "everskies",
-    kicker: "OOTD 아바타",
-    title: "EverSkies 만들기",
-    description: "패션 아바타처럼 또렷하고 트렌디하게",
-    style: "everskies",
-    preview: "/ai-feed-previews/everskies.svg",
-    basePrompt:
-      "Everskies 아바타 감성의 패션 일러스트로 변환해주세요. 트렌디한 의상 레이어링, 또렷한 메이크업, 선명한 외곽선과 현대적인 색 조합을 살리고 원본의 헤어·의상·액세서리 특징은 유지해주세요. 배경은 투명으로 유지해주세요.",
-  },
   {
     id: "sylvanian",
     kicker: "포근한 인형",
@@ -60,7 +66,37 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     style: "sylvanian",
     preview: "/ai-feed-previews/sylvanian.svg",
     basePrompt:
-      "실바니안 인형 감성으로 변환해주세요. 보송한 플록 질감, 둥글고 순한 얼굴, 따뜻한 톤의 의상과 작은 소품 디테일을 살리고 원본의 핵심 특징은 귀엽게 재해석해주세요. 배경은 투명으로 유지해주세요.",
+      `Transform the person in this photo into a Sylvanian Families (Calico Critters) animal figure. Convert them into a cute anthropomorphic animal & 🗳(choose an animal that best matches their vibe: a tiny cute beige bunny, rabbit, cat, puppy, bear) 🗳wearing a detailed miniature outfit that matches their original clothing. The figure have the signature Sylvanian look: soft flocked fur texture, tiny black dot eyes, a small pink nose, and a gentle expression. The figure should be isolated and centered on a plain, solid white background with neutral studio lighting. No furniture, no background elements, and no dollhouse decor.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
+  },
+  {
+    id: "everskies",
+    kicker: "전신 픽셀",
+    title: "픽셀",
+    description: "Everskies 감성의 전신 픽셀 아트",
+    style: "everskies",
+    preview: "/ai-feed-previews/everskies.svg",
+    basePrompt:
+      `Everskies 스타일의 전신 픽셀 아트 일러스트를 만들어줘. 인물의 체형, 얼굴 표정, 복장과 헤어 스타일의 표현 방식을 모방해줘. 첨부한 이미지 속 인물의 헤어 스타일, 의상, 액세서리를 사용하여 발까지 나오게 인물 일러스트를 그려줘.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
+  },
+  {
+    id: "animal-crossing",
+    kicker: "따뜻한 3D",
+    title: "동물의 숲",
+    description: "밝은 햇빛과 부드러운 그림자의 3D 캐릭터",
+    style: "animal-crossing",
+    preview: "/ai-feed-previews/animal-crossing.svg",
+    basePrompt:
+      `닌텐도 스위치 게임 동물의 숲 스타일의 3D 캐릭터 일러스트 화풍을 공부하고, 그 스타일의 이목구비, 의상. 헤어스타일을 따라 하는 얼굴 표현방식을 따라해. 첨부한 이미지 속 인물의 헤어스타일과 옷, 액세서리로 인물 일러스트를 그려줘. 배경은 투명하게 해줘. 자연광 아래의 밝은 햇빛과 부드러운 그림자 효과를 사용해 따뜻하고 발랄한 분위기로 만들어 줘. 실제 동물의숲 플레이 화면에 등장하는 캐릭터처럼 보여야 해, 3D인 점을 명확하게 보여줘.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
+  },
+  {
+    id: "ios-emoji",
+    kicker: "3D 이모지",
+    title: "iOS 이모지",
+    description: "말랑한 표면 질감의 공식 이모지 느낌",
+    style: "ios-emoji",
+    preview: "/ai-feed-previews/ios-emoji.svg",
+    basePrompt:
+      `사진 속 인물을 애플 ios 이모지 스타일의 3D 배경화면 캐릭터로 만들어줘. 이목구비, 피부색, 표정, 표면 질감 등을 모방하고, 헤어 스타일, 머리 장식, 의상, 포즈까지 그대로 반영해줘. 배경은 투명색이며, 최종 이미지가 ios 공식 이모지처럼 보이게 해줘.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
   },
   {
     id: "maplestory",
@@ -70,17 +106,37 @@ const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     style: "maplestory",
     preview: "/ai-feed-previews/maplestory.svg",
     basePrompt:
-      "메이플스토리 인게임 캐릭터 감성의 귀여운 2D 픽셀 RPG 아바타로 변환해주세요. 큰 눈, 작은 몸, 선명한 색감, 헤어스타일과 의상·액세서리의 특징을 반영하고 스티커처럼 또렷한 외곽을 유지해주세요. 배경은 투명으로 유지해주세요.",
+      `메이플스토리 인게임 캐릭터의 픽셀 캐릭터 느낌으로 만들어줘. 이목구비, 의상, 헤어스타일을 반영한 얼굴표현을 해줘. 스타일, 옷 액세서리는 첨부한 사진을 그대로 반영해줘. 배경은 흰색으로 이미지를 만들어줘.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
   },
   {
-    id: "minimi",
-    kicker: "미니 스티커",
-    title: "미니미 만들기",
-    description: "작고 단순한 굿즈용 미니 캐릭터",
-    style: "minimi",
-    preview: "/ai-feed-previews/minimi.svg",
+    id: "tanning-kitty",
+    kicker: "라떼 태닝",
+    title: "태닝키티",
+    description: "귀엽고 단순한 산리오풍 2D 캐릭터",
+    style: "tanning-kitty",
+    preview: "/ai-feed-previews/tanning-kitty.svg",
     basePrompt:
-      "미니미 굿즈 캐릭터로 변환해주세요. 작고 단순한 비율, 동글동글한 얼굴과 짧은 팔다리, 깔끔한 라인, 부드러운 파스텔 색감으로 표현하고 원본의 헤어·의상 특징은 알아볼 수 있게 유지해주세요. 배경은 투명으로 유지해주세요.",
+      `첨부 사진을 아래 요청 스타일에 맞춰서 2D 캐릭터화해줘. 헬로키티 스타일로 원작의 얼굴과 몸 비율, 윤곽선은 그대로 유지해줘. 피부색은 밝은 라떼색, 햇볕에 건강하게 그을린 느낌으로 변경해줘 (지나치게 어두운 색은 피함). 원래의 리본, 액세서리, 옷은 사진 스타일에 맞게 조정해줘. 사용자 사진을 참고해서 헤어스타일과 옷 스타일은 그대로 반영해줘. 전체적으로 귀엽고 단순한 산리오 스타일 유지해주고 배경은 투명하게 만들어줘.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
+  },
+  {
+    id: "snoopy",
+    kicker: "피너츠 3D",
+    title: "스누피",
+    description: "Peanuts 감성 3D와 스누피 캐릭터",
+    style: "snoopy",
+    preview: "/ai-feed-previews/snoopy.svg",
+    basePrompt:
+      `업로드한 이미지를 Peanuts-style 3d art로 변경해줘. 배경과 옷은 원본 이미지와 비슷하게 표현해주고 스타일만 바꿔줘. png 파일로 저장해주고 그 옆에 스누피 캐릭터 형태도 그대로 그려줘.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
+  },
+  {
+    id: "snowglobe",
+    kicker: "아이소메트릭",
+    title: "스노우볼",
+    description: "귀엽고 고급스러운 3D 스노우볼",
+    style: "snowglobe",
+    preview: "/ai-feed-previews/snowglobe.svg",
+    basePrompt:
+      `이미지를 귀엽고 아기같은 차비 스타일의 3D 캐릭터로 만들어줘. 이걸 아이소메트릭 스타일로 만들어줘. 깔끔하고 미니멀한 스타일이어야해. 테마는 첨부 사진의 분위기와 인물에게 가장 잘 어울리는 콘셉트로 최대한 구체적으로 정해줘. 이제 이 사진으로 나만의 3D 스노우볼을 만들어줘. 캐릭터는 스노우볼 중앙에 배치해주고 스노우볼 배경색은 인물의 옷과 가장 잘 어울리는 색으로 해줘. 어울리는 소품도 추가해줘. 귀엽고 고급스럽게 만들어줘. 스노우 볼 안에 물방울처럼 떠다니는 스노우 입자 효과 넣어줘. 오르골 바닥에는 인물에게 어울리는 짧은 이름이나 문구를 필기체로 적어줘.\n\n${BACKGROUND_REMOVAL_PROMPT}`,
   },
 ];
 
@@ -105,6 +161,7 @@ export default function AIPanel({
   const [style, setStyle] = useState<Style>("custom");
   const [prompt, setPrompt] = useState("");
   const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
+  const [feedPage, setFeedPage] = useState(0);
   const [promptExpanded, setPromptExpanded] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -126,6 +183,15 @@ export default function AIPanel({
   const activeFeed = useMemo(
     () => STYLE_FEED_ITEMS.find((item) => item.id === activeFeedId) ?? null,
     [activeFeedId],
+  );
+  const feedPageCount = Math.ceil(STYLE_FEED_ITEMS.length / STYLE_FEED_PAGE_SIZE);
+  const visibleFeedItems = useMemo(
+    () =>
+      STYLE_FEED_ITEMS.slice(
+        feedPage * STYLE_FEED_PAGE_SIZE,
+        feedPage * STYLE_FEED_PAGE_SIZE + STYLE_FEED_PAGE_SIZE,
+      ),
+    [feedPage],
   );
 
   const finalPrompt = useMemo(() => {
@@ -321,6 +387,11 @@ export default function AIPanel({
               {activeFeed ? "선택된 스타일을 다시 누르면 해제돼요" : "최대 4개 스타일을 한눈에 선택하세요"}
             </p>
           </div>
+          {!activeFeed && (
+            <div className="text-[10px] font-semibold text-zinc-400">
+              {feedPage + 1}/{feedPageCount}
+            </div>
+          )}
         </div>
 
         {activeFeed && (
@@ -346,8 +417,29 @@ export default function AIPanel({
         )}
 
         {!activeFeed && (
-          <div className="mt-3 grid grid-cols-2 gap-2" role="listbox" aria-label="AI 이미지 스타일 피드">
-            {STYLE_FEED_ITEMS.slice(0, 4).map((item) => (
+          <div className="relative mt-3">
+            {feedPage > 0 && (
+              <button
+                type="button"
+                onClick={() => setFeedPage((page) => Math.max(0, page - 1))}
+                className="absolute -left-2 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-md backdrop-blur transition hover:-translate-x-0.5 hover:bg-white"
+                aria-label="이전 추천 스타일 보기"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+            )}
+            {feedPage < feedPageCount - 1 && (
+              <button
+                type="button"
+                onClick={() => setFeedPage((page) => Math.min(feedPageCount - 1, page + 1))}
+                className="absolute -right-2 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-md backdrop-blur transition hover:translate-x-0.5 hover:bg-white"
+                aria-label="다음 추천 스타일 보기"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            )}
+            <div className="grid grid-cols-2 gap-2" role="listbox" aria-label="AI 이미지 스타일 피드">
+              {visibleFeedItems.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -360,7 +452,7 @@ export default function AIPanel({
                     alt={`${item.title} 미리보기`}
                     fill
                     sizes="120px"
-                    loading={item.id === "everskies" ? "eager" : "lazy"}
+                    loading={item.id === "sylvanian" ? "eager" : "lazy"}
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-white/0" />
@@ -372,6 +464,7 @@ export default function AIPanel({
                   </div>
                 </button>
               ))}
+            </div>
           </div>
         )}
       </section>
