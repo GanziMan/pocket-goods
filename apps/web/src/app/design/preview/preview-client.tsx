@@ -45,6 +45,13 @@ const initialForm: OrderForm = {
   agree: false,
 };
 
+const CUTLINE_OFFSET_MM = 2;
+const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
+  A4: { width: 210, height: 297 },
+  A5: { width: 148, height: 210 },
+  A6: { width: 105, height: 148 },
+};
+
 export default function DesignPreviewClient() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [payload, setPayload] = useState<PreviewPayload | null>(null);
@@ -117,7 +124,7 @@ export default function DesignPreviewClient() {
         return;
       }
 
-      const offset = 2;
+      const offset = getCutlineOffsetPx(canvas.width, canvas.height, payload.outputSize);
       const safe = minX - offset >= 0 && minY - offset >= 0 && maxX + offset < canvas.width && maxY + offset < canvas.height;
       const x = Math.max(0, minX - offset);
       const y = Math.max(0, minY - offset);
@@ -304,7 +311,7 @@ export default function DesignPreviewClient() {
             <div className="space-y-3 text-sm">
               <h2 className="font-bold">체크 포인트</h2>
               <ul className="list-disc space-y-2 pl-5 text-zinc-600">
-                <li>칼선은 이미지 바깥쪽에 약 2px 떨어져 표시됩니다.</li>
+                <li>칼선은 이미지 바깥쪽에 약 2mm 떨어져 표시됩니다.</li>
                 <li>작업 영역 가장자리에 너무 붙으면 주문이 막힙니다.</li>
                 <li>빨간 선이 지나치게 잘리거나 영역 밖으로 나가면 원래 편집 화면에서 이미지를 안쪽으로 옮겨주세요.</li>
               </ul>
@@ -347,6 +354,12 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, radius);
   ctx.arcTo(x, y, x + w, y, radius);
   ctx.closePath();
+}
+
+function getCutlineOffsetPx(width: number, height: number, outputSize: OutputSize): number {
+  const size = OUTPUT_SIZE_MM[outputSize];
+  const pxPerMm = Math.min(width / size.width, height / size.height);
+  return Math.max(2, Math.round(CUTLINE_OFFSET_MM * pxPerMm));
 }
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {

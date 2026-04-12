@@ -59,6 +59,13 @@ const initialForm: OrderForm = {
   agree: false,
 };
 
+const CUTLINE_OFFSET_MM = 2;
+const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
+  A4: { width: 210, height: 297 },
+  A5: { width: 148, height: 210 },
+  A6: { width: 105, height: 148 },
+};
+
 export default function PreviewDialog({
   open,
   payload,
@@ -123,12 +130,13 @@ export default function PreviewDialog({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+      const cutlineOffsetPx = getCutlineOffsetPx(canvas.width, canvas.height, payload.outputSize);
       const alphaMask = extractAlphaMask(ctx.getImageData(0, 0, canvas.width, canvas.height));
-      const dilatedMask = dilateMask(alphaMask, canvas.width, canvas.height, 2);
-      const contours = traceMaskContours(dilatedMask, canvas.width, canvas.height);
+      const dilatedMask = dilateMask(alphaMask, canvas.width, canvas.height, cutlineOffsetPx);
+      const contour = traceOuterCutline(dilatedMask, canvas.width, canvas.height);
       const bounds = getMaskBounds(dilatedMask, canvas.width, canvas.height);
 
-      if (!bounds || contours.length === 0) {
+      if (!bounds || !contour) {
         setCutline({ safe: false, reason: "이미지가 비어 있어 칼선을 만들 수 없습니다." });
         return;
       }
@@ -138,10 +146,8 @@ export default function PreviewDialog({
       ctx.setLineDash([10, 6]);
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
-      for (const contour of contours) {
-        drawSmoothClosedPath(ctx, contour);
-        ctx.stroke();
-      }
+      drawSmoothClosedPath(ctx, contour);
+      ctx.stroke();
       ctx.setLineDash([]);
 
       const safe = bounds.minX > 0 && bounds.minY > 0 && bounds.maxX < canvas.width - 1 && bounds.maxY < canvas.height - 1;
@@ -373,7 +379,8 @@ export default function PreviewDialog({
               <div className="space-y-3 text-sm">
                 <h3 className="font-bold">체크 포인트</h3>
                 <ul className="list-disc space-y-2 pl-5 text-zinc-600">
-                  <li>칼선은 이미지 바깥쪽 약 2px에 표시됩니다.</li>
+                  <li>칼선은 이미지 바깥쪽 약 2mm 지점에 표시됩니다.</li>
+                  <li>복잡한 이미지도 내부 선이 겹치지 않도록 바깥쪽 칼선 1개만 표시합니다.</li>
                   <li>이미지가 너무 바깥쪽이면 주문이 막힙니다.</li>
                   <li>빨간 선이 잘리면 편집 화면에서 이미지를 안쪽으로 옮겨주세요.</li>
                 </ul>
@@ -513,7 +520,13 @@ function getMaskBounds(mask: Uint8Array, width: number, height: number): MaskBou
   return maxX < 0 ? null : { minX, minY, maxX, maxY };
 }
 
-function traceMaskContours(mask: Uint8Array, width: number, height: number): Point[][] {
+function getCutlineOffsetPx(width: number, height: number, outputSize: OutputSize): number {
+  const size = OUTPUT_SIZE_MM[outputSize];
+  const pxPerMm = Math.min(width / size.width, height / size.height);
+  return Math.max(2, Math.round(CUTLINE_OFFSET_MM * pxPerMm));
+}
+
+function traceOuterCutline(mask: Uint8Array, width: number, height: number): Point[] | null {
   const points: Point[] = [];
   for (let y = 1; y < height - 1; y += 1) {
     for (let x = 1; x < width - 1; x += 1) {
@@ -525,42 +538,7 @@ function traceMaskContours(mask: Uint8Array, width: number, height: number): Poi
     }
   }
 
-  const clusters = clusterBoundaryPoints(points, 12);
-  return clusters
-    .filter((cluster) => cluster.length > 24)
-    .map((cluster) => smoothRadialContour(cluster, 96))
-    .filter((cluster) => cluster.length > 8);
-}
-
-function clusterBoundaryPoints(points: Point[], distance: number): Point[][] {
-  const remaining = new Set(points.map((_, index) => index));
-  const clusters: Point[][] = [];
-  const d2 = distance * distance;
-
-  while (remaining.size) {
-    const first = remaining.values().next().value as number;
-    remaining.delete(first);
-    const queue = [first];
-    const cluster: Point[] = [];
-
-    while (queue.length) {
-      const index = queue.pop()!;
-      const point = points[index];
-      cluster.push(point);
-      for (const otherIndex of Array.from(remaining)) {
-        const other = points[otherIndex];
-        const dx = point.x - other.x;
-        const dy = point.y - other.y;
-        if (dx * dx + dy * dy <= d2) {
-          remaining.delete(otherIndex);
-          queue.push(otherIndex);
-        }
-      }
-    }
-    clusters.push(cluster);
-  }
-
-  return clusters;
+  return points.length > 24 ? smoothRadialContour(points, 160) : null;
 }
 
 function smoothRadialContour(points: Point[], samples: number): Point[] {
