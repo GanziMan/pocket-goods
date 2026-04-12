@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ImagePlus, Loader2, Scissors, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -32,29 +32,19 @@ export default function PhotoPanel({ onAddImage, compact = false }: PhotoPanelPr
   const [removingBg, setRemovingBg] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview);
-      if (cutoutPreview) URL.revokeObjectURL(cutoutPreview);
-    },
-    [preview, cutoutPreview],
-  );
-
   const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const nextFile = event.target.files?.[0];
     if (!nextFile) return;
 
     reset();
     setRemoveError(null);
-    if (preview) URL.revokeObjectURL(preview);
-    if (cutoutPreview) URL.revokeObjectURL(cutoutPreview);
     setCutoutPreview(null);
 
     const processed = await processFile(nextFile);
     if (!processed) return;
 
     setFile(processed.file);
-    setPreview(URL.createObjectURL(processed.file));
+    setPreview(await blobToDataURL(processed.file));
   };
 
   const handleRemoveBackground = async () => {
@@ -65,8 +55,7 @@ export default function PhotoPanel({ onAddImage, compact = false }: PhotoPanelPr
     try {
       const { removeBackground } = await import("@imgly/background-removal");
       const blob = await removeBackground(preview);
-      if (cutoutPreview) URL.revokeObjectURL(cutoutPreview);
-      setCutoutPreview(URL.createObjectURL(blob));
+      setCutoutPreview(await blobToDataURL(blob));
     } catch {
       setRemoveError("누끼 따기에 실패했습니다. 원본 사진으로 추가하거나 다시 시도해주세요.");
     } finally {
@@ -78,8 +67,6 @@ export default function PhotoPanel({ onAddImage, compact = false }: PhotoPanelPr
     reset();
     setFile(null);
     setRemoveError(null);
-    if (preview) URL.revokeObjectURL(preview);
-    if (cutoutPreview) URL.revokeObjectURL(cutoutPreview);
     setPreview(null);
     setCutoutPreview(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -199,4 +186,13 @@ export default function PhotoPanel({ onAddImage, compact = false }: PhotoPanelPr
       {removeError && <p className="rounded-xl bg-red-50 p-3 text-[11px] text-red-500">{removeError}</p>}
     </div>
   );
+}
+
+function blobToDataURL(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }

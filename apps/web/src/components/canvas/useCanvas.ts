@@ -66,7 +66,11 @@ const BASE_TOUCH_CORNER_SIZE = 24;
 /** blob: URL → data URL 변환 (백엔드 전송 가능하도록) */
 async function toDataURLFromSrc(src: string): Promise<string> {
   if (!src.startsWith("blob:")) return src;
-  const res = await fetch(src);
+  const res = await fetch(src).catch((error) => {
+    throw new Error("이미지 임시 URL이 만료되었습니다. 사진을 다시 선택한 뒤 추가해주세요.", {
+      cause: error,
+    });
+  });
   const blob = await res.blob();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

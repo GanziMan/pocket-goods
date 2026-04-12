@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "pocketgoods-design-draft";
+const SESSION_STORAGE_KEY = "pocketgoods-design-draft-session";
+const MAX_LOCAL_STORAGE_CHARS = 4_000_000;
 
 export interface SavedDraft {
   canvasJSON: object;
@@ -18,11 +20,12 @@ export function useSaveDesign(
 ) {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
 
   // 저장된 드래프트 로드
   const loadDraft = useCallback((): SavedDraft | null => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (!raw) return null;
       return JSON.parse(raw) as SavedDraft;
     } catch {
@@ -39,7 +42,28 @@ export function useSaveDesign(
         productType,
         savedAt: new Date().toISOString(),
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      const serialized = JSON.stringify(draft);
+      try {
+        if (serialized.length > MAX_LOCAL_STORAGE_CHARS) {
+          throw new DOMException("Draft exceeds localStorage safety limit", "QuotaExceededError");
+        }
+        localStorage.setItem(STORAGE_KEY, serialized);
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        setSaveWarning(null);
+      } catch (storageError) {
+        localStorage.removeItem(STORAGE_KEY);
+        try {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, serialized);
+          setSaveWarning(
+            "사진 용량이 커서 임시 저장소에만 저장했어요. 브라우저 탭을 닫기 전 주문/다운로드를 완료해주세요.",
+          );
+        } catch {
+          setSaveWarning(
+            "사진 용량이 커서 자동 저장을 건너뛰었어요. 주문/다운로드는 계속 사용할 수 있습니다.",
+          );
+          console.warn("Draft storage skipped:", storageError);
+        }
+      }
       const now = new Date();
       setSavedAt(now);
       setIsDirty(false);
@@ -51,8 +75,10 @@ export function useSaveDesign(
   // 드래프트 삭제
   const clearDraft = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
     setSavedAt(null);
     setIsDirty(false);
+    setSaveWarning(null);
   }, []);
 
   // 변경 감지 — dirty 표시
@@ -79,5 +105,5 @@ export function useSaveDesign(
     return () => window.removeEventListener("keydown", handler);
   }, [save]);
 
-  return { save, loadDraft, clearDraft, markDirty, savedAt, isDirty };
+  return { save, loadDraft, clearDraft, markDirty, savedAt, isDirty, saveWarning };
 }

@@ -64,7 +64,7 @@ export default function EditorLayout() {
     setZoom,
   } = useCanvas(productType);
 
-  const { save, loadDraft, markDirty, savedAt, isDirty } = useSaveDesign(
+  const { save, loadDraft, markDirty, savedAt, isDirty, saveWarning } = useSaveDesign(
     toJSON,
     toDataURL,
     productType
@@ -250,6 +250,11 @@ export default function EditorLayout() {
         </div>
 
         <main className="flex-1 flex flex-col min-h-0">
+          {saveWarning && (
+            <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-700">
+              {saveWarning}
+            </div>
+          )}
           <div className="flex-1 overflow-auto p-2 md:p-8">
             <DesignCanvas
               canvasRef={canvasRef}
