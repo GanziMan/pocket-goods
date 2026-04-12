@@ -14,11 +14,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
+OutputSize = Literal["A4", "A5", "A6"]
+
 SHIPPING_FEE_KRW = 4000
 PRINT_PRICE_KRW = {
     "A6": 4000,
-    "A5": 5000,
-    "A4": 6000,
+    "A5": 4000,
+    "A4": 4000,
 }
 ORDER_OWNER_EMAIL = "kju7859@gmail.com"
 
@@ -40,7 +42,7 @@ class CompletePaymentRequest(BaseModel):
     amount: int
     currency: Literal["KRW"] = "KRW"
     productType: Literal["keyring", "sticker"]
-    outputSize: Literal["A4", "A5", "A6"]
+    outputSize: OutputSize
     items: list[dict[str, int | str]] | None = None
     orderItems: list[dict[str, Any]] | None = None
     canvasJSON: dict[str, Any] | None = None
@@ -157,8 +159,10 @@ def _send_owner_order_email(
     owner_email = os.getenv("ORDER_OWNER_EMAIL", ORDER_OWNER_EMAIL)
     smtp_host = os.getenv("ORDER_EMAIL_SMTP_HOST") or os.getenv("SMTP_HOST")
     if not smtp_host:
-        logger.warning("[payments] owner email skipped: ORDER_EMAIL_SMTP_HOST/SMTP_HOST is not configured")
-        return False
+        logger.error("[payments] owner email failed: ORDER_EMAIL_SMTP_HOST/SMTP_HOST is not configured")
+        if os.getenv("ORDER_EMAIL_ALLOW_SKIP", "").lower() in ("1", "true", "yes"):
+            return False
+        raise HTTPException(status_code=500, detail="주문 이메일 발송 설정이 필요합니다.")
 
     smtp_port = int(os.getenv("ORDER_EMAIL_SMTP_PORT") or os.getenv("SMTP_PORT") or "587")
     smtp_user = os.getenv("ORDER_EMAIL_SMTP_USER") or os.getenv("SMTP_USER")

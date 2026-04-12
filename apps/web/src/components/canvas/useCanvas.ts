@@ -469,7 +469,19 @@ export function useCanvas(
     (size: { width: number; height: number }) => {
       const canvas = fabricRef.current;
       if (!canvas) return;
+      const previousSize = originalSizeRef.current;
+      if (previousSize.width === size.width && previousSize.height === size.height) return;
+      const dx = (size.width - previousSize.width) / 2;
+      const dy = (size.height - previousSize.height) / 2;
+
       originalSizeRef.current = size;
+      canvas.forEachObject((obj: FabricObject) => {
+        obj.set({
+          left: Number(obj.left ?? 0) + dx,
+          top: Number(obj.top ?? 0) + dy,
+        });
+        obj.setCoords();
+      });
       applyZoom(canvas, canvas.getZoom());
       saveHistory();
     },

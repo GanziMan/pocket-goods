@@ -151,6 +151,9 @@ export default function OrderDialog({
             : "주문 접수에 실패했습니다. 입력 정보를 확인해주세요.";
         throw new Error(detail);
       }
+      if (verificationBody?.emailSent === false) {
+        throw new Error("주문은 접수됐지만 이메일 발송이 비활성화되어 있습니다. 이메일 설정을 확인해주세요.");
+      }
 
       setMessage("주문 확인 완료. 인쇄 파일을 저장하는 중입니다…");
 

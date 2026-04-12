@@ -13,18 +13,13 @@ import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import PreviewDialog from "@/components/editor/PreviewDialog";
 import OrderCartDialog from "@/components/editor/OrderCartDialog";
-import { SHEET_CANVAS_SIZE, type ProductType } from "@/lib/assets";
+import type { ProductType } from "@/lib/assets";
+import { OUTPUT_CANVAS_SIZE, OUTPUT_SIZE_MM } from "@/lib/output-size";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale, tpl } from "@/lib/i18n/client";
 
-type OutputSize = "A4" | "A5" | "A6";
-
-const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
-  A4: { width: 210, height: 297 },
-  A5: { width: 148, height: 210 },
-  A6: { width: 105, height: 148 },
-};
+type OutputSize = keyof typeof OUTPUT_SIZE_MM;
 
 export default function EditorLayout() {
   const { locale, t } = useLocale();
@@ -83,7 +78,7 @@ export default function EditorLayout() {
   }, [onChangeCb, markDirty]);
 
   useEffect(() => {
-    setCanvasSize(SHEET_CANVAS_SIZE[outputSize]);
+    setCanvasSize(OUTPUT_CANVAS_SIZE[outputSize]);
   }, [outputSize, setCanvasSize]);
 
   // 키보드 단축키

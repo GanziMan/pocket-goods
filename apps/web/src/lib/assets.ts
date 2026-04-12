@@ -100,8 +100,3 @@ export const PRODUCT_CANVAS_SIZE: Record<
   sticker: { width: 420, height: 595 }, // A5 (148×210mm)
 };
 
-export const SHEET_CANVAS_SIZE = {
-  A4: { width: 595, height: 842 },
-  A5: { width: 420, height: 595 },
-  A6: { width: 298, height: 420 },
-} as const;

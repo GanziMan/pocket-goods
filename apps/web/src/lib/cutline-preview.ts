@@ -1,12 +1,7 @@
 import type { OutputSize } from "@/lib/order-pricing";
+import { OUTPUT_SIZE_MM } from "@/lib/output-size";
 
 const CUTLINE_OFFSET_MM = 2;
-
-const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
-  A4: { width: 210, height: 297 },
-  A5: { width: 148, height: 210 },
-  A6: { width: 105, height: 148 },
-};
 
 export type Point = { x: number; y: number };
 export type MaskBounds = { minX: number; minY: number; maxX: number; maxY: number };
