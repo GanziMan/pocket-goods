@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Undo2, Redo2, Trash2, BringToFront, SendToBack, Download, ShoppingCart, Save, CheckCheck, Loader2,
+  Undo2, Redo2, Trash2, BringToFront, SendToBack, Eye, ShoppingCart, Save, CheckCheck, Loader2,
 } from "lucide-react";
 import UserMenu from "@/components/auth/UserMenu";
 import { useLocale, tpl } from "@/lib/i18n/client";
@@ -67,7 +67,7 @@ export default function Toolbar({
         <Separator orientation="vertical" className="h-6" />
 
         <Button variant="outline" size="sm" onClick={onExportPreview} disabled={isExporting}>
-          {isExporting ? (<><Loader2 className="w-4 h-4 mr-1 animate-spin" />{tb.downloading}</>) : (<><Download className="w-4 h-4 mr-1" />{t.common.download}</>)}
+          {isExporting ? (<><Loader2 className="w-4 h-4 mr-1 animate-spin" />준비 중</>) : (<><Eye className="w-4 h-4 mr-1" />미리보기</>)}
         </Button>
         <Button size="sm" onClick={onOrder} title={tb.order}>
           <ShoppingCart className="w-4 h-4 mr-1" />{tb.order}

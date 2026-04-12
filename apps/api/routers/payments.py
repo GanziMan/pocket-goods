@@ -11,7 +11,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
-ORDER_AMOUNT_KRW = 7000
+SHIPPING_FEE_KRW = 4000
+PRINT_PRICE_KRW = {
+    "A6": 4000,
+    "A5": 5000,
+    "A4": 6000,
+}
 PORTONE_API_BASE = "https://api.portone.io"
 
 
@@ -29,7 +34,7 @@ class CompletePaymentRequest(BaseModel):
     paymentId: str = Field(min_length=1, max_length=120)
     txId: str = Field(min_length=1, max_length=120)
     orderName: str = Field(min_length=1, max_length=120)
-    amount: int = ORDER_AMOUNT_KRW
+    amount: int
     currency: Literal["KRW"] = "KRW"
     productType: Literal["keyring", "sticker"]
     outputSize: Literal["A4", "A5", "A6"]
@@ -75,7 +80,8 @@ async def complete_payment(req: CompletePaymentRequest):
     PortOne V2 결제 단건 조회로 결제 상태와 금액을 서버에서 검증합니다.
     실제 주문 저장소가 붙기 전까지는 검증 완료 응답만 반환합니다.
     """
-    if req.amount != ORDER_AMOUNT_KRW:
+    expected_amount = PRINT_PRICE_KRW[req.outputSize] + SHIPPING_FEE_KRW
+    if req.amount != expected_amount:
         raise HTTPException(status_code=400, detail="주문 금액이 올바르지 않습니다.")
 
     api_secret = os.getenv("PORTONE_API_SECRET")
@@ -109,11 +115,11 @@ async def complete_payment(req: CompletePaymentRequest):
     status = str(payment.get("status", "")).upper()
     paid_amount = _extract_total_amount(payment)
 
-    if paid_amount != ORDER_AMOUNT_KRW:
+    if paid_amount != expected_amount:
         logger.warning(
             "[payments] amount mismatch paymentId=%s expected=%s actual=%s",
             req.paymentId,
-            ORDER_AMOUNT_KRW,
+            expected_amount,
             paid_amount,
         )
         raise HTTPException(status_code=400, detail="결제 금액이 주문 금액과 일치하지 않습니다.")

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Plus, Trash2, Download, ShoppingCart } from "lucide-react";
+import { Undo2, Redo2, Plus, Trash2, Eye, ShoppingCart } from "lucide-react";
 import { useLocale } from "@/lib/i18n/client";
 
 interface MobileActionBarProps {
@@ -31,7 +31,7 @@ export default function MobileActionBar({
       </div>
       <ActionButton icon={<Plus className="w-4 h-4" />} label={tb.assets} onClick={onOpenAssets} />
       <ActionButton icon={<Trash2 className="w-4 h-4" />} label={tb.delete} onClick={onDelete} disabled={!hasSelection} destructive />
-      <ActionButton icon={<Download className="w-4 h-4" />} label={isExporting ? tb.exporting : tb.exportLabel} onClick={onExportPreview} disabled={isExporting} />
+      <ActionButton icon={<Eye className="w-4 h-4" />} label={isExporting ? "준비중" : "미리보기"} onClick={onExportPreview} disabled={isExporting} />
       <ActionButton icon={<ShoppingCart className="w-4 h-4" />} label={tb.order} onClick={onOrder} />
     </div>
   );

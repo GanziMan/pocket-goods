@@ -28,7 +28,7 @@ export default function AssetPanel({
   const isMobile = className?.includes("border-0");
 
   return (
-    <aside className={cn("flex flex-col shrink-0 bg-white", className ?? "w-64 border-r")}>
+    <aside className={cn("flex flex-col shrink-0 bg-white/95 shadow-[8px_0_30px_rgba(15,23,42,0.04)] backdrop-blur", className ?? "w-64 border-r border-zinc-200/80")}>
       <Tabs defaultValue="ai" className="flex flex-col h-full">
         <TabsList variant={isMobile ? "line" : "default"}
           className={cn("w-full shrink-0", isMobile ? "h-11 px-4 border-b border-zinc-200" : "rounded h-10 px-2")}>

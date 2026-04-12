@@ -11,11 +11,10 @@ import PropertiesPanel from "@/components/editor/PropertiesPanel";
 import MobileHeader from "@/components/editor/MobileHeader";
 import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
-import OrderDialog from "@/components/editor/OrderDialog";
+import PreviewDialog from "@/components/editor/PreviewDialog";
 import type { ProductType } from "@/lib/assets";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLocale, tpl } from "@/lib/i18n/client";
 
 type OutputSize = "A4" | "A5" | "A6";
@@ -31,8 +30,15 @@ export default function EditorLayout() {
   const [productType] = useState<ProductType>("sticker");
   const [mobilePanel, setMobilePanel] = useState<"assets" | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [orderOpen, setOrderOpen] = useState(false);
   const [outputSize, setOutputSize] = useState<OutputSize>("A5");
+  const [previewTab, setPreviewTab] = useState<"preview" | "order">("preview");
+  const [previewPayload, setPreviewPayload] = useState<{
+    imageSrc: string;
+    canvasJSON: object;
+    productType: ProductType;
+    outputSize: OutputSize;
+    revokeOnClose?: boolean;
+  } | null>(null);
 
   const {
     canvasRef,
@@ -155,7 +161,7 @@ export default function EditorLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCanvasReady]);
 
-  const handleExportPreview = useCallback(async () => {
+  const handleOpenPreview = useCallback(async (initialTab: "preview" | "order" = "preview") => {
     if (isExporting) return;
     setIsExporting(true);
     try {
@@ -174,19 +180,28 @@ export default function EditorLayout() {
       );
       if (!res.ok) throw new Error(t.toolbar.exportFailed);
       const pngBlob = await res.blob();
-      const pngUrl = URL.createObjectURL(pngBlob);
-      const link = document.createElement("a");
-      link.href = pngUrl;
-      link.download = `pocketgoods-${productType}-${outputSize}-${Date.now()}.png`;
-      link.click();
-      URL.revokeObjectURL(pngUrl);
+      setPreviewTab(initialTab);
+      setPreviewPayload((current) => {
+        if (current?.revokeOnClose) URL.revokeObjectURL(current.imageSrc);
+        return {
+          imageSrc: URL.createObjectURL(pngBlob),
+          canvasJSON: toJSON(),
+          productType,
+          outputSize,
+          revokeOnClose: true,
+        };
+      });
     } catch {
-      // 서버 미실행 시 클라이언트 PNG로 fallback
-      const dataURL = toDataURL();
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = `pocketgoods-preview-${Date.now()}.png`;
-      link.click();
+      setPreviewTab(initialTab);
+      setPreviewPayload((current) => {
+        if (current?.revokeOnClose) URL.revokeObjectURL(current.imageSrc);
+        return {
+          imageSrc: toDataURL(),
+          canvasJSON: toJSON(),
+          productType,
+          outputSize,
+        };
+      });
     } finally {
       setIsExporting(false);
     }
@@ -208,8 +223,8 @@ export default function EditorLayout() {
           onBringForward={bringForward}
           onSendBackward={sendBackward}
           onSave={save}
-          onExportPreview={handleExportPreview}
-          onOrder={() => setOrderOpen(true)}
+          onExportPreview={() => handleOpenPreview("preview")}
+          onOrder={() => handleOpenPreview("order")}
           isExporting={isExporting}
         />
       </div>
@@ -247,17 +262,8 @@ export default function EditorLayout() {
           </div>
 
           {/* 모바일 용지 크기 선택 */}
-          <div className="flex md:hidden items-center justify-center gap-2 border-t border-zinc-200/70 bg-white/85 py-2 shadow-[0_-12px_30px_rgba(15,23,42,0.04)] backdrop-blur shrink-0">
-            {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
-              <Badge
-                key={size}
-                variant={outputSize === size ? "default" : "outline"}
-                className="cursor-pointer select-none rounded-full px-3 py-1"
-                onClick={() => setOutputSize(size)}
-              >
-                {size}
-              </Badge>
-            ))}
+          <div className="flex md:hidden items-center justify-center border-t border-zinc-200/70 bg-white/85 py-2 shadow-[0_-12px_30px_rgba(15,23,42,0.04)] backdrop-blur shrink-0">
+            <SizeSelector value={outputSize} onChange={setOutputSize} />
           </div>
 
           {/* 줌 컨트롤 — 캔버스 바로 아래 (데스크탑 전용) */}
@@ -288,18 +294,8 @@ export default function EditorLayout() {
               </Button>
             </div>
 
-            <div className="ml-3 flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-2 py-1 shadow-sm">
-              {(["A4", "A5", "A6"] as OutputSize[]).map((size) => (
-                <Badge
-                  key={size}
-                  variant={outputSize === size ? "default" : "outline"}
-                  className="cursor-pointer select-none rounded-full px-3 py-1"
-                  onClick={() => setOutputSize(size)}
-                >
-                  {size}
-                </Badge>
-              ))}
-
+            <div className="ml-3">
+              <SizeSelector value={outputSize} onChange={setOutputSize} />
             </div>
           </div>
         </main>
@@ -325,8 +321,8 @@ export default function EditorLayout() {
           hasSelection={!!selectedInfo}
           onDelete={deleteSelected}
           onOpenAssets={() => setMobilePanel("assets")}
-          onExportPreview={handleExportPreview}
-          onOrder={() => setOrderOpen(true)}
+          onExportPreview={() => handleOpenPreview("preview")}
+          onOrder={() => handleOpenPreview("order")}
           isExporting={isExporting}
         />
       </div>
@@ -346,13 +342,52 @@ export default function EditorLayout() {
         />
       </MobileDrawer>
 
-      <OrderDialog
-        open={orderOpen}
-        onClose={() => setOrderOpen(false)}
-        productType={productType}
-        outputSize={outputSize}
-        canvasJSON={toJSON}
+      <PreviewDialog
+        open={!!previewPayload}
+        payload={previewPayload}
+        initialTab={previewTab}
+        onClose={() =>
+          setPreviewPayload((current) => {
+            if (current?.revokeOnClose) URL.revokeObjectURL(current.imageSrc);
+            return null;
+          })
+        }
       />
+    </div>
+  );
+}
+
+const SIZE_OPTIONS: OutputSize[] = ["A6", "A5", "A4"];
+
+function SizeSelector({
+  value,
+  onChange,
+}: {
+  value: OutputSize;
+  onChange: (value: OutputSize) => void;
+}) {
+  const index = SIZE_OPTIONS.indexOf(value);
+  return (
+    <div className="relative grid w-[174px] grid-cols-3 rounded-full border border-zinc-200 bg-white p-1 shadow-sm">
+      <div
+        className="absolute bottom-1 top-1 rounded-full bg-zinc-950 shadow-md transition-transform duration-300 ease-out"
+        style={{
+          width: "calc((100% - 0.5rem) / 3)",
+          transform: `translateX(calc(${index} * 100%))`,
+        }}
+      />
+      {SIZE_OPTIONS.map((size) => (
+        <button
+          key={size}
+          type="button"
+          onClick={() => onChange(size)}
+          className={`relative z-10 rounded-full py-1.5 text-xs font-extrabold transition-colors ${
+            value === size ? "text-white" : "text-zinc-500 hover:text-zinc-950"
+          }`}
+        >
+          {size}
+        </button>
+      ))}
     </div>
   );
 }

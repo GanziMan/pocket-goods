@@ -50,8 +50,8 @@ export default function PropertiesPanel({
   const isEmpty = !selectedInfo;
 
   return (
-    <aside className={cn("flex flex-col shrink-0 bg-white", className ?? "w-56 border-l")}>
-      <div className="px-4 py-3 border-b">
+    <aside className={cn("flex flex-col shrink-0 bg-white/95 shadow-[-8px_0_30px_rgba(15,23,42,0.04)] backdrop-blur", className ?? "w-56 border-l border-zinc-200/80")}>
+      <div className="px-4 py-3 border-b border-zinc-200/80 bg-gradient-to-b from-white to-zinc-50/60">
         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{pr.title}</p>
       </div>
 
