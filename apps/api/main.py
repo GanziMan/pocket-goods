@@ -20,6 +20,7 @@ app = FastAPI(title="Pocket Goods API", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://pocket-goods.com", "https://www.pocket-goods.com", "https://pocketgoods.kr", "https://www.pocketgoods.kr", "http://localhost:3000"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_methods=["*"],
     allow_headers=["*"],
 )

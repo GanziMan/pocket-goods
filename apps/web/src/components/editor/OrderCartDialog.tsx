@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import * as PortOne from "@portone/browser-sdk/v2";
 import Image from "next/image";
 import { Loader2, ShoppingBag, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { API_BASE_URL, readApiError } from "@/lib/api";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
 import { clearOrderCart, readOrderCart, writeOrderCart, type OrderCartItem } from "@/lib/order-cart";
 
@@ -125,16 +125,9 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
       return;
     }
 
-    const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-    const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY;
-    if (!storeId || !channelKey) {
-      setError("PortOne 설정이 필요합니다. NEXT_PUBLIC_PORTONE_STORE_ID / NEXT_PUBLIC_PORTONE_CHANNEL_KEY를 설정해주세요.");
-      return;
-    }
-
     setSubmitting(true);
     setError(null);
-    setMessage("결제창을 여는 중입니다…");
+    setMessage("묶음 주문을 접수하는 중입니다…");
 
     const paymentId = `pocket_bundle_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const orderName = `투명 스티커 ${items.length}개 디자인 ${totalQuantity}장 묶음 주문`;
@@ -150,57 +143,18 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
     const orderItems = items.map((item) => ({
       designId: item.id,
       quantities: item.quantities,
+      productType: item.productType,
+      canvasJSON: item.canvasJSON,
     }));
 
     try {
-      const products = items.flatMap((item, index) =>
-        (["A6", "A5", "A4"] as OutputSize[])
-          .filter((size) => item.quantities[size] > 0)
-          .map((size) => ({
-            id: `${item.id}-${size}`,
-            name: `디자인 ${index + 1} · 투명 스티커 ${size}`,
-            amount: PRINT_PRICE_KRW[size],
-            quantity: item.quantities[size],
-          })),
-      );
-
-      const response = await PortOne.requestPayment({
-        storeId,
-        channelKey,
-        paymentId,
-        orderName,
-        totalAmount: amount,
-        currency: "KRW",
-        payMethod: "CARD",
-        customer: {
-          fullName: shipping.buyerName,
-          phoneNumber: shipping.buyerPhone,
-          email: shipping.buyerEmail,
-          zipcode: shipping.zipcode,
-          address: {
-            country: "KR",
-            addressLine1: shipping.addressLine1,
-            addressLine2: shipping.addressLine2,
-          },
-        },
-        products: [...products, { id: "shipping", name: "택배비", amount: SHIPPING_FEE_KRW, quantity: 1 }],
-        productType: "REAL",
-        redirectUrl: `${window.location.origin}/design?paymentId=${paymentId}`,
-        customData: { orderItems, shipping },
-      });
-
-      if (!response || response.code) {
-        setError(response?.message ?? "결제가 취소되었거나 실패했습니다.");
-        return;
-      }
-
-      setMessage("결제 결과를 서버에서 검증하는 중입니다…");
-      const verification = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/payments/complete`, {
+      setMessage("주문 정보를 서버로 보내는 중입니다…");
+      const verification = await fetch(`${API_BASE_URL}/api/payments/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paymentId: response.paymentId,
-          txId: response.txId,
+          paymentId,
+          txId: "portone-disabled",
           orderName,
           amount,
           currency: "KRW",
@@ -210,18 +164,24 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
           shipping,
         }),
       });
-      if (!verification.ok) throw new Error("결제 검증에 실패했습니다.");
+      if (!verification.ok) {
+        throw new Error(await readApiError(verification, "묶음 주문 접수에 실패했습니다."));
+      }
+      const verificationBody = await verification.json().catch(() => null);
+      if (verificationBody?.emailSent === false) {
+        throw new Error("주문은 접수됐지만 이메일 발송이 비활성화되어 있습니다. 이메일 설정을 확인해주세요.");
+      }
 
       await Promise.all(
         items.map((item) =>
-          fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`, {
+          fetch(`${API_BASE_URL}/api/export`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               canvas_json: item.canvasJSON,
               product_type: "sticker",
               output_size: firstSelectedSize(item) ?? "A5",
-              order_id: `${response.paymentId}-${item.id}`,
+              order_id: `${paymentId}-${item.id}`,
               save_to_storage: true,
             }),
           }).catch(() => null),
@@ -230,7 +190,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
 
       clearOrderCart();
       setItems([]);
-      setMessage("묶음 주문 접수가 완료되었습니다.");
+      setMessage("묶음 주문 접수가 완료되었습니다. 결제는 일시적으로 비활성화되어 있습니다.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "주문 처리 중 오류가 발생했습니다.");
     } finally {
@@ -311,7 +271,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
               {(message || error) && <p className={`rounded-xl p-3 text-sm ${error ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>{error ?? message}</p>}
               <Button className="w-full" onClick={handlePayment} disabled={submitting || !isFormReady}>
                 {submitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <ShoppingBag className="mr-2 size-4" />}
-                묶음 주문 결제
+                묶음 주문 접수
               </Button>
             </div>
           </aside>

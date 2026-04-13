@@ -32,10 +32,12 @@ OUTPUT_SIZES_PX: dict[OutputSize, tuple[int, int]] = {
     "A6": (1125, 1633),
 }
 
-# 캔버스 표시 크기 (px) — assets.ts와 동기화
-CANVAS_DISPLAY_PX: dict[str, tuple[int, int]] = {
-    "keyring": (420, 595),
-    "sticker": (420, 595),
+# 에디터 캔버스 표시 크기(px) — apps/web/src/lib/output-size.ts와 동기화
+# A5는 기존 420×595를 유지하고 A4/A6은 바깥 시트만 비율대로 변경한다.
+CANVAS_DISPLAY_SIZES_PX: dict[OutputSize, tuple[int, int]] = {
+    "A4": (595, 842),
+    "A5": (420, 595),
+    "A6": (298, 420),
 }
 
 
@@ -353,7 +355,7 @@ def render_canvas(
     Fabric.js JSON → PIL Image (지정 DPI + 3mm 재단선 포함)
     """
     final_w, final_h = OUTPUT_SIZES_PX.get(output_size, OUTPUT_SIZES_PX["A5"])
-    canvas_w, canvas_h = CANVAS_DISPLAY_PX.get(product_type, (480, 480))
+    canvas_w, canvas_h = CANVAS_DISPLAY_SIZES_PX.get(output_size, CANVAS_DISPLAY_SIZES_PX["A5"])
 
     # 출력 해상도(px) 자체를 기준으로 오브젝트 스케일 계산
     print_w = final_w

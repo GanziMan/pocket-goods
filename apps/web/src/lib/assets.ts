@@ -99,3 +99,4 @@ export const PRODUCT_CANVAS_SIZE: Record<
   keyring: { width: 420, height: 595 }, // A5 (148×210mm)
   sticker: { width: 420, height: 595 }, // A5 (148×210mm)
 };
+

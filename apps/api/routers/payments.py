@@ -1,23 +1,32 @@
 import logging
 import os
+import smtplib
+from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 from typing import Any, Literal
-from urllib.parse import quote
 
-import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+
+from services.renderer import render_canvas, to_png_bytes
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
+OutputSize = Literal["A4", "A5", "A6"]
+
 SHIPPING_FEE_KRW = 4000
 PRINT_PRICE_KRW = {
     "A6": 4000,
-    "A5": 5000,
-    "A4": 6000,
+    "A5": 4000,
+    "A4": 4000,
 }
-PORTONE_API_BASE = "https://api.portone.io"
+ORDER_OWNER_EMAIL = "kju7859@gmail.com"
+
+
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").lower() in ("1", "true", "yes")
 
 
 class ShippingInfo(BaseModel):
@@ -37,9 +46,10 @@ class CompletePaymentRequest(BaseModel):
     amount: int
     currency: Literal["KRW"] = "KRW"
     productType: Literal["keyring", "sticker"]
-    outputSize: Literal["A4", "A5", "A6"]
+    outputSize: OutputSize
     items: list[dict[str, int | str]] | None = None
-    orderItems: list[dict] | None = None
+    orderItems: list[dict[str, Any]] | None = None
+    canvasJSON: dict[str, Any] | None = None
     shipping: ShippingInfo
 
 
@@ -49,38 +59,181 @@ class CompletePaymentResponse(BaseModel):
     txId: str | None = None
     status: str
     amount: int
-    orderStatus: Literal["paid"]
+    orderStatus: Literal["received"]
+    emailSent: bool
 
 
-def _extract_total_amount(payment: dict[str, Any]) -> int | None:
-    amount = payment.get("amount")
+def _selected_sizes_from_quantities(quantities: dict[str, Any]) -> list[tuple[OutputSize, int]]:
+    selected: list[tuple[OutputSize, int]] = []
+    for size in ("A6", "A5", "A4"):
+        quantity = quantities.get(size, 0)
+        if isinstance(quantity, int) and quantity > 0:
+            selected.append((size, quantity))
+    return selected
 
-    if isinstance(amount, int):
-        return amount
 
-    if isinstance(amount, dict):
-        for key in ("total", "totalAmount", "paid", "paidAmount"):
-            value = amount.get(key)
-            if isinstance(value, int):
-                return value
-            if isinstance(value, float):
-                return int(value)
+def _format_shipping(shipping: ShippingInfo) -> str:
+    return "\n".join(
+        [
+            f"주문자: {shipping.buyerName}",
+            f"연락처: {shipping.buyerPhone}",
+            f"이메일: {shipping.buyerEmail}",
+            f"우편번호: {shipping.zipcode}",
+            f"주소: {shipping.addressLine1} {shipping.addressLine2}",
+            f"배송 메모: {shipping.memo or '-'}",
+        ]
+    )
 
-    for key in ("totalAmount", "paidAmount", "amount"):
-        value = payment.get(key)
-        if isinstance(value, int):
-            return value
-        if isinstance(value, float):
-            return int(value)
 
-    return None
+def _format_order_items(req: CompletePaymentRequest) -> str:
+    if req.orderItems:
+        lines: list[str] = []
+        for index, design in enumerate(req.orderItems, start=1):
+            quantities = design.get("quantities")
+            if not isinstance(quantities, dict):
+                continue
+            selected = _selected_sizes_from_quantities(quantities)
+            if not selected:
+                continue
+            quantities_text = ", ".join(f"{size} × {quantity}" for size, quantity in selected)
+            lines.append(f"디자인 {index}: {quantities_text}")
+        return "\n".join(lines) or "-"
+
+    if req.items:
+        lines = []
+        for item in req.items:
+            size = item.get("size")
+            quantity = item.get("quantity")
+            lines.append(f"{size} × {quantity}")
+        return "\n".join(lines)
+
+    return f"{req.outputSize} × 1"
+
+
+def _render_order_attachments(req: CompletePaymentRequest) -> list[tuple[str, bytes]]:
+    attachments: list[tuple[str, bytes]] = []
+
+    if req.orderItems:
+        for index, design in enumerate(req.orderItems, start=1):
+            canvas_json = design.get("canvasJSON")
+            quantities = design.get("quantities")
+            if not isinstance(canvas_json, dict) or not isinstance(quantities, dict):
+                continue
+            product_type = design.get("productType")
+            if product_type not in ("keyring", "sticker"):
+                product_type = req.productType
+            for size, _quantity in _selected_sizes_from_quantities(quantities):
+                image = render_canvas(
+                    canvas_json,
+                    str(product_type),
+                    transparent_bg=True,
+                    with_cutting_line=False,
+                    output_size=size,
+                )
+                attachments.append((f"{req.paymentId}-design{index}-{size}.png", to_png_bytes(image)))
+        return attachments
+
+    if not req.canvasJSON:
+        return attachments
+
+    sizes: list[OutputSize]
+    if req.items:
+        sizes = [size for size, _quantity in _selected_sizes_from_quantities({str(item.get("size")): item.get("quantity") for item in req.items})]
+    else:
+        sizes = [req.outputSize]
+
+    for size in sizes:
+        image = render_canvas(
+            req.canvasJSON,
+            req.productType,
+            transparent_bg=True,
+            with_cutting_line=False,
+            output_size=size,
+        )
+        attachments.append((f"{req.paymentId}-{size}.png", to_png_bytes(image)))
+    return attachments
+
+
+def _send_owner_order_email(
+    req: CompletePaymentRequest,
+    amount: int,
+    order_time: datetime,
+    attachments: list[tuple[str, bytes]],
+) -> bool:
+    owner_email = os.getenv("ORDER_EMAIL_TO") or os.getenv("ORDER_OWNER_EMAIL", ORDER_OWNER_EMAIL)
+    smtp_host = os.getenv("ORDER_EMAIL_SMTP_HOST") or os.getenv("SMTP_HOST")
+    if not smtp_host:
+        logger.error(
+            "[payments] owner email failed: ORDER_EMAIL_SMTP_HOST/SMTP_HOST is not configured; "
+            "set ORDER_EMAIL_SMTP_HOST, ORDER_EMAIL_SMTP_PORT, ORDER_EMAIL_SMTP_USER, "
+            "ORDER_EMAIL_SMTP_PASSWORD, and ORDER_EMAIL_FROM on the API server."
+        )
+        if _env_flag("ORDER_EMAIL_ALLOW_SKIP"):
+            return False
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "주문 이메일 SMTP 설정이 없어 메일을 보낼 수 없습니다. "
+                "API 서버 환경변수 ORDER_EMAIL_SMTP_HOST, ORDER_EMAIL_SMTP_PORT, "
+                "ORDER_EMAIL_SMTP_USER, ORDER_EMAIL_SMTP_PASSWORD, ORDER_EMAIL_FROM을 설정해주세요."
+            ),
+        )
+
+    smtp_port = int(os.getenv("ORDER_EMAIL_SMTP_PORT") or os.getenv("SMTP_PORT") or "587")
+    smtp_user = os.getenv("ORDER_EMAIL_SMTP_USER") or os.getenv("SMTP_USER")
+    smtp_password = os.getenv("ORDER_EMAIL_SMTP_PASSWORD") or os.getenv("SMTP_PASSWORD")
+    from_email = os.getenv("ORDER_EMAIL_FROM") or smtp_user or owner_email
+    use_ssl = _env_flag("ORDER_EMAIL_SMTP_SSL") or smtp_port == 465
+    use_starttls = (os.getenv("ORDER_EMAIL_SMTP_STARTTLS") or "true").lower() not in ("0", "false", "no")
+
+    message = EmailMessage()
+    message["Subject"] = f"[포켓굿즈] 새 주문 접수 {req.paymentId}"
+    message["From"] = from_email
+    message["To"] = owner_email
+    message.set_content(
+        "\n\n".join(
+            [
+                "새 주문이 접수되었습니다.",
+                f"주문번호: {req.paymentId}",
+                f"주문시간: {order_time.strftime('%Y-%m-%d %H:%M:%S %Z')}",
+                f"주문명: {req.orderName}",
+                f"금액: {amount:,}원",
+                "주문 수량:\n" + _format_order_items(req),
+                "주문자/배송 정보:\n" + _format_shipping(req.shipping),
+                "첨부 이미지는 칼선, 주문자 정보, 주문시간, 주문번호를 합성하지 않은 출력 이미지입니다.",
+            ]
+        )
+    )
+    for filename, content in attachments:
+        message.add_attachment(content, maintype="image", subtype="png", filename=filename)
+
+    try:
+        if use_ssl:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30) as smtp:
+                if smtp_user and smtp_password:
+                    smtp.login(smtp_user, smtp_password)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as smtp:
+                if use_starttls:
+                    smtp.starttls()
+                if smtp_user and smtp_password:
+                    smtp.login(smtp_user, smtp_password)
+                smtp.send_message(message)
+    except Exception as exc:
+        logger.exception("[payments] owner email failed: %s", exc)
+        if _env_flag("ORDER_EMAIL_REQUIRED"):
+            raise HTTPException(status_code=502, detail="주문 이메일 발송에 실패했습니다.") from exc
+        return False
+
+    return True
 
 
 @router.post("/complete", response_model=CompletePaymentResponse)
 async def complete_payment(req: CompletePaymentRequest):
     """
-    PortOne V2 결제 단건 조회로 결제 상태와 금액을 서버에서 검증합니다.
-    실제 주문 저장소가 붙기 전까지는 검증 완료 응답만 반환합니다.
+    PortOne 결제를 임시 비활성화한 주문 접수 엔드포인트입니다.
+    주문 금액을 서버에서 계산하고, 소유자에게 주문 정보와 출력 이미지를 이메일로 보냅니다.
     """
     if req.orderItems:
         print_total = 0
@@ -113,64 +266,31 @@ async def complete_payment(req: CompletePaymentRequest):
     if req.amount != expected_amount:
         raise HTTPException(status_code=400, detail="주문 금액이 올바르지 않습니다.")
 
-    api_secret = os.getenv("PORTONE_API_SECRET")
-    if not api_secret:
-        raise HTTPException(
-            status_code=503,
-            detail="PORTONE_API_SECRET이 설정되지 않아 결제 검증을 완료할 수 없습니다.",
-        )
-
-    payment_id = quote(req.paymentId, safe="")
-
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.get(
-                f"{PORTONE_API_BASE}/payments/{payment_id}",
-                headers={"Authorization": f"PortOne {api_secret}"},
-            )
-    except httpx.HTTPError as exc:
-        logger.exception("[payments] PortOne payment lookup failed: %s", exc)
-        raise HTTPException(status_code=502, detail="포트원 결제 조회에 실패했습니다.") from exc
+        attachments = _render_order_attachments(req)
+    except Exception as exc:
+        logger.exception("[payments] order image render failed: %s", exc)
+        raise HTTPException(status_code=500, detail="주문 이미지 생성에 실패했습니다.") from exc
 
-    if response.status_code >= 400:
-        logger.warning(
-            "[payments] PortOne lookup error status=%s body=%s",
-            response.status_code,
-            response.text[:500],
-        )
-        raise HTTPException(status_code=502, detail="포트원 결제 조회 응답이 올바르지 않습니다.")
-
-    payment = response.json()
-    status = str(payment.get("status", "")).upper()
-    paid_amount = _extract_total_amount(payment)
-
-    if paid_amount != expected_amount:
-        logger.warning(
-            "[payments] amount mismatch paymentId=%s expected=%s actual=%s",
-            req.paymentId,
-            expected_amount,
-            paid_amount,
-        )
-        raise HTTPException(status_code=400, detail="결제 금액이 주문 금액과 일치하지 않습니다.")
-
-    if status != "PAID":
-        logger.warning("[payments] payment not paid paymentId=%s status=%s", req.paymentId, status)
-        raise HTTPException(status_code=400, detail=f"결제가 완료 상태가 아닙니다: {status or 'UNKNOWN'}")
+    order_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=9), "KST"))
+    email_sent = _send_owner_order_email(req, expected_amount, order_time, attachments)
 
     logger.info(
-        "[payments] paid paymentId=%s txId=%s product=%s output=%s receiver=%s",
+        "[payments] received paymentId=%s txId=%s product=%s output=%s receiver=%s emailSent=%s",
         req.paymentId,
         req.txId,
         req.productType,
         req.outputSize,
         req.shipping.buyerName,
+        email_sent,
     )
 
     return CompletePaymentResponse(
         ok=True,
         paymentId=req.paymentId,
         txId=req.txId,
-        status=status,
-        amount=paid_amount,
-        orderStatus="paid",
+        status="ORDER_RECEIVED",
+        amount=expected_amount,
+        orderStatus="received",
+        emailSent=email_sent,
     )

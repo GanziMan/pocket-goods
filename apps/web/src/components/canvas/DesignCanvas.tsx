@@ -20,7 +20,7 @@ export default function DesignCanvas({
 
       <div className="relative flex min-h-full min-w-full items-center justify-center px-5 py-8 md:px-16 md:py-16">
         <div className="relative mx-auto shrink-0">
-          <div className="relative overflow-hidden bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)] ring-1 ring-zinc-900/15">
+          <div className="relative overflow-hidden border-2 border-zinc-950 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)]">
             <canvas ref={canvasRef} />
             {showGuide && (
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -39,18 +39,18 @@ export default function DesignCanvas({
           </div>
 
           <div className="md:hidden flex justify-center mt-2 pointer-events-none">
-            <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-bold text-zinc-700 shadow-sm tabular-nums">
+            <span className="rounded-full border border-zinc-900 bg-white px-3 py-1 text-[11px] font-bold text-zinc-900 shadow-sm tabular-nums">
               {outputSizeMm.width} × {outputSizeMm.height} mm
             </span>
           </div>
 
           <div className="hidden md:block absolute -left-28 inset-y-0 pointer-events-none">
             <div className="relative h-full w-24">
-              <div className="absolute left-14 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-zinc-500/55 to-transparent" />
-              <div className="absolute left-10 top-0 h-px w-8 bg-zinc-500/45" />
-              <div className="absolute left-10 bottom-0 h-px w-8 bg-zinc-500/45" />
+              <div className="absolute bottom-0 left-14 top-0 w-0.5 bg-zinc-900" />
+              <div className="absolute left-10 top-0 h-0.5 w-8 bg-zinc-900" />
+              <div className="absolute left-10 bottom-0 h-0.5 w-8 bg-zinc-900" />
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
-                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-800 shadow-sm tabular-nums">
+                <span className="rounded-full border border-zinc-900 bg-white px-3 py-1.5 text-xs font-bold text-zinc-950 shadow-sm tabular-nums">
                   {outputSizeMm.height} mm
                 </span>
               </div>
@@ -59,11 +59,11 @@ export default function DesignCanvas({
 
           <div className="hidden md:block absolute -bottom-14 inset-x-0 pointer-events-none">
             <div className="relative h-12 w-full">
-              <div className="absolute inset-x-0 top-4 h-px bg-gradient-to-r from-transparent via-zinc-500/55 to-transparent" />
-              <div className="absolute left-0 top-0 h-8 w-px bg-zinc-500/45" />
-              <div className="absolute right-0 top-0 h-8 w-px bg-zinc-500/45" />
+              <div className="absolute inset-x-0 top-4 h-0.5 bg-zinc-900" />
+              <div className="absolute left-0 top-0 h-8 w-0.5 bg-zinc-900" />
+              <div className="absolute right-0 top-0 h-8 w-0.5 bg-zinc-900" />
               <div className="absolute inset-x-0 top-0 flex justify-center">
-                <span className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-800 shadow-sm tabular-nums">
+                <span className="rounded-full border border-zinc-900 bg-white px-3 py-1.5 text-xs font-bold text-zinc-950 shadow-sm tabular-nums">
                   {outputSizeMm.width} mm
                 </span>
               </div>

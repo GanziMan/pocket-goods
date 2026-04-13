@@ -13,18 +13,14 @@ import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import PreviewDialog from "@/components/editor/PreviewDialog";
 import OrderCartDialog from "@/components/editor/OrderCartDialog";
+import { API_BASE_URL } from "@/lib/api";
 import type { ProductType } from "@/lib/assets";
+import { OUTPUT_CANVAS_SIZE, OUTPUT_SIZE_MM } from "@/lib/output-size";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale, tpl } from "@/lib/i18n/client";
 
-type OutputSize = "A4" | "A5" | "A6";
-
-const OUTPUT_SIZE_MM: Record<OutputSize, { width: number; height: number }> = {
-  A4: { width: 210, height: 297 },
-  A5: { width: 148, height: 210 },
-  A6: { width: 105, height: 148 },
-};
+type OutputSize = keyof typeof OUTPUT_SIZE_MM;
 
 export default function EditorLayout() {
   const { locale, t } = useLocale();
@@ -68,6 +64,7 @@ export default function EditorLayout() {
     zoomIn,
     zoomOut,
     setZoom,
+    setCanvasSize,
   } = useCanvas(productType);
 
   const { save, loadDraft, markDirty, savedAt, isDirty, saveWarning } = useSaveDesign(
@@ -80,6 +77,11 @@ export default function EditorLayout() {
   useEffect(() => {
     onChangeCb.current = markDirty;
   }, [onChangeCb, markDirty]);
+
+  useEffect(() => {
+    if (!isCanvasReady) return;
+    setCanvasSize(OUTPUT_CANVAS_SIZE[outputSize]);
+  }, [isCanvasReady, outputSize, setCanvasSize]);
 
   // 키보드 단축키
   useEffect(() => {
@@ -168,7 +170,7 @@ export default function EditorLayout() {
     setIsExporting(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`,
+        `${API_BASE_URL}/api/export`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -207,7 +209,7 @@ export default function EditorLayout() {
     } finally {
       setIsExporting(false);
     }
-  }, [toJSON, toDataURL, productType, outputSize, isExporting]);
+  }, [toJSON, toDataURL, productType, outputSize, isExporting, t.toolbar.exportFailed]);
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden bg-zinc-50">
