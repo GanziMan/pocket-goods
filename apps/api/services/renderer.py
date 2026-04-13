@@ -424,15 +424,15 @@ def _render_name_tag_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, o
     origin_x = obj.get("originX", "left")
     origin_y = obj.get("originY", "top")
 
-    fill = _parse_color(obj.get("labelFill") or (rect_child or {}).get("fill"), "#fff0f6")
-    stroke = _parse_color(obj.get("labelStroke") or (rect_child or {}).get("stroke"), "#f472b6")
+    fill = _parse_color(obj.get("labelFill") or (rect_child or {}).get("fill"), "#fff7ed")
+    stroke = _parse_color(obj.get("labelStroke") or (rect_child or {}).get("stroke"), "#fb923c")
     stroke_width = max(0, float(obj.get("labelStrokeWidth", (rect_child or {}).get("strokeWidth", 3))))
     radius = max(0, float(obj.get("labelRadius", (rect_child or {}).get("rx", 28))))
     padding_x = max(0, float(obj.get("labelPaddingX", 34)))
     padding_y = max(0, float(obj.get("labelPaddingY", 14)))
     font_size_disp = max(1, float(obj.get("labelFontSize", (text_child or {}).get("fontSize", 32))))
     font_family = str(obj.get("labelFontFamily", (text_child or {}).get("fontFamily", "Geist, Arial, sans-serif")))
-    text_fill = _parse_color(obj.get("labelTextFill") or (text_child or {}).get("fill"), "#831843")
+    text_fill = _parse_color(obj.get("labelTextFill") or (text_child or {}).get("fill"), "#1f2937")
 
     font_size_print = max(1, round(font_size_disp * scale_x * sx))
     font = get_pil_font(font_family, font_size_print)
@@ -468,7 +468,7 @@ def _render_name_tag_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, o
     try:
         draw.multiline_text((tx, ty), text, font=font, fill=text_fill, spacing=4, align="center")
     except Exception:
-        draw.multiline_text((tx, ty), text, font=font, fill="#831843", spacing=4, align="center")
+        draw.multiline_text((tx, ty), text, font=font, fill="#1f2937", spacing=4, align="center")
 
     tag_img = _apply_opacity(tag_img, opacity)
 

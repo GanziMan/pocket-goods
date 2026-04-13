@@ -221,7 +221,7 @@ export function useCanvas(
           ? Number(textObj?.fontSize ?? 24)
           : undefined,
       fill: isNameTag
-        ? getStringProp(customObj, "labelTextFill", String(textObj?.fill ?? "#831843"))
+        ? getStringProp(customObj, "labelTextFill", String(textObj?.fill ?? "#1f2937"))
         : isText
           ? String(textObj?.fill ?? "#000000")
           : undefined,
@@ -231,10 +231,10 @@ export function useCanvas(
           ? String(textObj?.fontFamily ?? "Arial")
           : undefined,
       labelFill: isNameTag
-        ? getStringProp(customObj, "labelFill", "#fff0f6")
+        ? getStringProp(customObj, "labelFill", "#fff7ed")
         : undefined,
       labelStroke: isNameTag
-        ? getStringProp(customObj, "labelStroke", "#f472b6")
+        ? getStringProp(customObj, "labelStroke", "#fb923c")
         : undefined,
       labelStrokeWidth: isNameTag
         ? getNumberProp(customObj, "labelStrokeWidth", 3)
@@ -364,12 +364,12 @@ export function useCanvas(
       const fontSize = 32;
       const paddingX = 34;
       const paddingY = 14;
-      const labelFill = "#fff0f6";
-      const labelStroke = "#f472b6";
+      const labelFill = "#fff7ed";
+      const labelStroke = "#fb923c";
       const labelStrokeWidth = 3;
       const labelRadius = 28;
       const fontFamily = "Geist, Arial, sans-serif";
-      const textFill = "#831843";
+      const textFill = "#1f2937";
 
       const textObj = new IText(labelText, {
         originX: "center",
@@ -466,10 +466,10 @@ export function useCanvas(
 
         const nextText = props.text ?? getStringProp(customObj, "labelText", String(textObj?.text ?? "이름"));
         const nextFontSize = props.fontSize ?? getNumberProp(customObj, "labelFontSize", Number(textObj?.fontSize ?? 32));
-        const nextTextFill = props.fill ?? getStringProp(customObj, "labelTextFill", String(textObj?.fill ?? "#831843"));
+        const nextTextFill = props.fill ?? getStringProp(customObj, "labelTextFill", String(textObj?.fill ?? "#1f2937"));
         const nextFontFamily = props.fontFamily ?? getStringProp(customObj, "labelFontFamily", String(textObj?.fontFamily ?? "Geist, Arial, sans-serif"));
-        const nextFill = props.labelFill ?? getStringProp(customObj, "labelFill", "#fff0f6");
-        const nextStroke = props.labelStroke ?? getStringProp(customObj, "labelStroke", "#f472b6");
+        const nextFill = props.labelFill ?? getStringProp(customObj, "labelFill", "#fff7ed");
+        const nextStroke = props.labelStroke ?? getStringProp(customObj, "labelStroke", "#fb923c");
         const nextStrokeWidth = props.labelStrokeWidth ?? getNumberProp(customObj, "labelStrokeWidth", 3);
         const nextRadius = props.labelRadius ?? getNumberProp(customObj, "labelRadius", 28);
         const nextPaddingX = props.labelPaddingX ?? getNumberProp(customObj, "labelPaddingX", 34);
