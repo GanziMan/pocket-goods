@@ -262,6 +262,7 @@ export default function PreviewDialog({
         thumbnailSrc,
         canvasJSON: payload.canvasJSON,
         productType: "sticker",
+        outputSize: payload.outputSize,
         quantities: form.quantities,
       });
       setMessage("주문함에 담았습니다. 다른 디자인도 추가한 뒤 한 번에 결제할 수 있어요.");

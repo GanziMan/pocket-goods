@@ -30,7 +30,7 @@ export default async function Home() {
         <article className="rounded-lg border p-5 text-sm leading-relaxed">
           <h3 className="text-base font-semibold">투명 스티커</h3>
           <ul className="mt-3 space-y-1">
-            <li><strong>상품 가격:</strong> 4,000원</li>
+            <li><strong>상품 가격:</strong> A6 4,000원 · A5 5,000원 · A4 6,000원</li>
             <li><strong>배송비:</strong> 4,000원 별도 · 묶음 주문 시 1회 부과</li>
             <li><strong>상품 설명:</strong> 직접 디자인한 이미지를 투명 스티커로 제작해드립니다.</li>
             <li><strong>제공 방식:</strong> 실물 제작 및 바로 배송</li>
@@ -49,7 +49,7 @@ export default async function Home() {
         <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["재질", "투명 PET 소재와 방수 코팅으로 제작합니다."],
-            ["가격", "상품 가격은 장당 4,000원이며 배송비는 별도입니다."],
+            ["가격", "A6 4,000원, A5 5,000원, A4 6,000원이며 배송비는 별도입니다."],
             ["배송", "주문 확인 후 제작을 시작해 준비되는 대로 발송합니다."],
             ["취소", "제작 전에는 취소 가능, 제작 시작 후에는 제한될 수 있습니다."],
           ].map(([title, description]) => (

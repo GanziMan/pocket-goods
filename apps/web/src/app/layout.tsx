@@ -144,6 +144,7 @@ export default async function RootLayout({
               offers: {
                 "@type": "Offer",
                 price: "4000",
+                maxPrice: "6000",
                 priceCurrency: "KRW",
                 description: dictionary.metadata.jsonLdOffer,
               },

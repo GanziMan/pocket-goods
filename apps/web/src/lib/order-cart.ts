@@ -10,6 +10,7 @@ export type OrderCartItem = {
   thumbnailSrc: string;
   canvasJSON: object;
   productType: ProductType;
+  outputSize: OutputSize;
   quantities: CartQuantities;
 };
 

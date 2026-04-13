@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW } from "@/lib/order-pricing";
 
-const STICKER_PRICE_KRW = PRINT_PRICE_KRW.A6;
-const TOTAL_KRW = STICKER_PRICE_KRW + SHIPPING_FEE_KRW;
+const MIN_TOTAL_KRW = PRINT_PRICE_KRW.A6 + SHIPPING_FEE_KRW;
+const MAX_TOTAL_KRW = PRINT_PRICE_KRW.A4 + SHIPPING_FEE_KRW;
 
 export const metadata: Metadata = {
   title: "결제 - 투명 스티커",
@@ -20,9 +20,15 @@ export default function StickerCheckoutPage() {
         <h2 className="mb-4 text-lg font-semibold">주문 상품</h2>
         <ul className="space-y-2">
           <li><strong>상품명:</strong> 투명 스티커</li>
-          <li><strong>상품 가격:</strong> {STICKER_PRICE_KRW.toLocaleString("ko-KR")}원</li>
+          <li>
+            <strong>상품 가격:</strong> A6 {PRINT_PRICE_KRW.A6.toLocaleString("ko-KR")}원 · A5{" "}
+            {PRINT_PRICE_KRW.A5.toLocaleString("ko-KR")}원 · A4 {PRINT_PRICE_KRW.A4.toLocaleString("ko-KR")}원
+          </li>
           <li><strong>배송비:</strong> {SHIPPING_FEE_KRW.toLocaleString("ko-KR")}원 별도</li>
-          <li><strong>예상 총 결제금액:</strong> {TOTAL_KRW.toLocaleString("ko-KR")}원</li>
+          <li>
+            <strong>예상 총 결제금액:</strong> {MIN_TOTAL_KRW.toLocaleString("ko-KR")}원~
+            {MAX_TOTAL_KRW.toLocaleString("ko-KR")}원
+          </li>
           <li><strong>상품 설명:</strong> 직접 디자인한 이미지를 투명 스티커로 제작해드립니다.</li>
           <li><strong>제공 방식:</strong> 실물 제작 및 바로 배송</li>
           <li><strong>제공 시점:</strong> 주문 확인 후 제작을 시작해 배송합니다.</li>

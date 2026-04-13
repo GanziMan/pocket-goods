@@ -19,8 +19,8 @@ OutputSize = Literal["A4", "A5", "A6"]
 SHIPPING_FEE_KRW = 4000
 PRINT_PRICE_KRW = {
     "A6": 4000,
-    "A5": 4000,
-    "A4": 4000,
+    "A5": 5000,
+    "A4": 6000,
 }
 ORDER_OWNER_EMAIL = "kju7859@gmail.com"
 
@@ -232,7 +232,8 @@ def _send_owner_order_email(
 @router.post("/complete", response_model=CompletePaymentResponse)
 async def complete_payment(req: CompletePaymentRequest):
     """
-    PortOne 결제를 임시 비활성화한 주문 접수 엔드포인트입니다.
+    PortOne 결제를 임시 비활성화한 수동 주문 접수 엔드포인트입니다.
+    결제 검증은 의도적으로 타지 않고, 버튼 클릭을 주문 완료 분기로 간주합니다.
     주문 금액을 서버에서 계산하고, 소유자에게 주문 정보와 출력 이미지를 이메일로 보냅니다.
     """
     if req.orderItems:

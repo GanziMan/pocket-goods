@@ -2,8 +2,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW } from "@/lib/order-pricing";
 
-const STICKER_PRICE_KRW = PRINT_PRICE_KRW.A6;
-
 export const metadata: Metadata = {
   title: "투명 스티커",
   description: "투명 스티커 상품 안내",
@@ -23,7 +21,11 @@ export default function StickerProductPage() {
           </div>
           <div>
             <dt className="font-semibold">상품 가격</dt>
-            <dd>{STICKER_PRICE_KRW.toLocaleString("ko-KR")}원 (VAT 포함)</dd>
+            <dd>
+              A6 {PRINT_PRICE_KRW.A6.toLocaleString("ko-KR")}원 · A5{" "}
+              {PRINT_PRICE_KRW.A5.toLocaleString("ko-KR")}원 · A4{" "}
+              {PRINT_PRICE_KRW.A4.toLocaleString("ko-KR")}원 (VAT 포함)
+            </dd>
           </div>
           <div>
             <dt className="font-semibold">배송비</dt>

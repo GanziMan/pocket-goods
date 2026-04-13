@@ -143,10 +143,12 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
     };
     const orderItems = items.map((item) => ({
       designId: item.id,
+      outputSize: getPreferredSize(item),
       quantities: item.quantities,
       productType: item.productType,
       canvasJSON: item.canvasJSON,
     }));
+    const primaryOutputSize = firstSelectedSize(items[0]) ?? "A5";
 
     try {
       setMessage("주문 정보를 서버로 보내는 중입니다…");
@@ -160,7 +162,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
           amount,
           currency: "KRW",
           productType: "sticker",
-          outputSize: "A5",
+          outputSize: primaryOutputSize,
           orderItems,
           shipping,
         }),
@@ -234,9 +236,12 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
                           </button>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
-                          {(["A6", "A5", "A4"] as OutputSize[]).map((size) => (
+                          {getItemSizeOrder(item).map((size) => (
                             <div key={size} className="rounded-lg bg-zinc-50 p-2">
                               <p className="text-xs font-bold">{size}</p>
+                              {getPreferredSize(item) === size && (
+                                <p className="text-[10px] font-semibold text-primary">처음 선택한 사이즈</p>
+                              )}
                               <div className="mt-1 flex items-center gap-1">
                                 <button className="grid size-6 place-items-center rounded-full border text-xs" onClick={() => updateQuantity(item.id, size, item.quantities[size] - 1)}>-</button>
                                 <Input className="h-7 text-center" value={item.quantities[size]} onChange={(event) => updateQuantity(item.id, size, Number(event.target.value) || 0)} />
@@ -288,7 +293,26 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
 }
 
 function firstSelectedSize(item: OrderCartItem): OutputSize | null {
-  return (["A6", "A5", "A4"] as OutputSize[]).find((size) => item.quantities[size] > 0) ?? null;
+  const preferredSize = getPreferredSize(item);
+  if (item.quantities[preferredSize] > 0) {
+    return preferredSize;
+  }
+  return SIZE_OPTIONS.find((size) => item.quantities[size] > 0) ?? null;
+}
+
+const SIZE_OPTIONS: OutputSize[] = ["A6", "A5", "A4"];
+
+function getPreferredSize(item: OrderCartItem): OutputSize {
+  return item.outputSize ?? firstQuantitySize(item) ?? "A5";
+}
+
+function firstQuantitySize(item: OrderCartItem): OutputSize | null {
+  return SIZE_OPTIONS.find((size) => item.quantities[size] > 0) ?? null;
+}
+
+function getItemSizeOrder(item: OrderCartItem): OutputSize[] {
+  const preferredSize = getPreferredSize(item);
+  return [preferredSize, ...SIZE_OPTIONS.filter((size) => size !== preferredSize)];
 }
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
