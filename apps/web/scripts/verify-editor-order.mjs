@@ -16,6 +16,9 @@ const orderProfile = read("src/lib/order-profile.ts");
 const useOrderProfile = read("src/hooks/useOrderProfile.ts");
 const useSaveDesign = read("src/hooks/useSaveDesign.ts");
 const useCanvas = read("src/components/canvas/useCanvas.ts");
+const aiPanel = read("src/components/editor/AIPanel.tsx");
+const aiStyleFeed = read("src/lib/ai-style-feed.ts");
+const aiStyleAdmin = read("src/app/admin/ai-styles/style-admin-client.tsx");
 const cutlinePreview = read("src/lib/cutline-preview.ts");
 const outputSize = read("src/lib/output-size.ts");
 const orderPricing = read("src/lib/order-pricing.ts");
@@ -163,4 +166,16 @@ test("print renderer keeps Fabric text and pill name tags in exports", () => {
   assert.match(useCanvas, /FABRIC_EXPORT_PROPS/);
   assert.match(useCanvas, /pocketGoodsKind/);
   assert.match(useCanvas, /addNameTag/);
+});
+
+test("AI style feed copy is collection-oriented and presets are centrally maintainable", () => {
+  assert.equal(aiPanel.includes("최대 4개"), false);
+  assert.match(aiPanel, /인기 스타일을 모아뒀어요/);
+  assert.match(aiPanel, /STYLE_FEED_ITEMS/);
+  assert.match(aiStyleFeed, /export const STYLE_FEED_ITEMS/);
+  assert.match(aiStyleFeed, /preview:\s*"\/ai-feed-previews\//);
+  assert.match(aiStyleFeed, /serializeStyleFeedItems/);
+  assert.match(aiStyleAdmin, /AI 스타일 카드 관리/);
+  assert.match(aiStyleAdmin, /기본값 복원/);
+  assert.match(aiStyleAdmin, /다운로드/);
 });
