@@ -10,12 +10,18 @@ type FabricObject = import("fabric").FabricObject;
 type FabricText = import("fabric").FabricText;
 
 export interface SelectedObjectInfo {
-  type: "text" | "image" | "other";
+  type: "text" | "image" | "nameTag" | "other";
   text?: string;
   fontSize?: number;
   fill?: string;
   fontFamily?: string;
   opacity?: number;
+  labelFill?: string;
+  labelStroke?: string;
+  labelStrokeWidth?: number;
+  labelRadius?: number;
+  labelPaddingX?: number;
+  labelPaddingY?: number;
 }
 
 export interface UseCanvasReturn {
@@ -27,6 +33,7 @@ export interface UseCanvasReturn {
   selectedInfo: SelectedObjectInfo | null;
   addCharacter: (src: string) => Promise<void>;
   addText: (text: string) => void;
+  addNameTag: (text: string) => void;
   addSticker: (emoji: string) => void;
   updateSelectedText: (props: Partial<TextUpdateProps>) => void;
   updateSelectedOpacity: (opacity: number) => void;
@@ -54,6 +61,12 @@ export interface TextUpdateProps {
   fontSize: number;
   fill: string;
   fontFamily: string;
+  labelFill: string;
+  labelStroke: string;
+  labelStrokeWidth: number;
+  labelRadius: number;
+  labelPaddingX: number;
+  labelPaddingY: number;
 }
 
 const MAX_HISTORY = 30;
@@ -63,6 +76,66 @@ const ZOOM_STEP = 0.25;
 const BASE_CORNER_SIZE = 13;
 const BASE_BORDER_WIDTH = 1;
 const BASE_TOUCH_CORNER_SIZE = 24;
+const FABRIC_EXPORT_PROPS = [
+  "pocketGoodsKind",
+  "pocketGoodsRole",
+  "labelText",
+  "labelFill",
+  "labelStroke",
+  "labelStrokeWidth",
+  "labelRadius",
+  "labelPaddingX",
+  "labelPaddingY",
+  "labelFontSize",
+  "labelFontFamily",
+  "labelTextFill",
+] as const;
+
+type CustomFabricObject = FabricObject & Record<string, unknown> & {
+  getObjects?: () => FabricObject[];
+};
+type FabricCanvasWithCustomJson = FabricCanvas & {
+  toJSON: (propertiesToInclude?: readonly string[]) => object;
+};
+
+function isTextObject(obj: FabricObject): boolean {
+  return ["i-text", "itext", "text", "textbox"].includes(String(obj.type ?? "").toLowerCase());
+}
+
+function isNameTagObject(obj: FabricObject): boolean {
+  return (obj as CustomFabricObject).pocketGoodsKind === "name-tag";
+}
+
+function getGroupObjects(obj: FabricObject): FabricObject[] {
+  return (obj as CustomFabricObject).getObjects?.() ?? [];
+}
+
+function findNameTagText(obj: FabricObject): FabricText | null {
+  const textObj = getGroupObjects(obj).find((child) => {
+    const custom = child as CustomFabricObject;
+    return custom.pocketGoodsRole === "label-text" || isTextObject(child);
+  });
+  return (textObj as FabricText | undefined) ?? null;
+}
+
+function findNameTagPill(obj: FabricObject): FabricObject | null {
+  return (
+    getGroupObjects(obj).find((child) => {
+      const custom = child as CustomFabricObject;
+      return custom.pocketGoodsRole === "label-pill" || String(child.type ?? "").toLowerCase() === "rect";
+    }) ?? null
+  );
+}
+
+function getNumberProp(obj: Record<string, unknown>, key: string, fallback: number): number {
+  const value = obj[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function getStringProp(obj: Record<string, unknown>, key: string, fallback: string): string {
+  const value = obj[key];
+  return typeof value === "string" ? value : fallback;
+}
 
 /** blob: URL → data URL 변환 (백엔드 전송 가능하도록) */
 async function toDataURLFromSrc(src: string): Promise<string> {
@@ -111,7 +184,7 @@ export function useCanvas(
   const saveHistory = useCallback(() => {
     if (isRestoringRef.current || !fabricRef.current) return;
     onChangeCb.current?.();
-    const json = JSON.stringify(fabricRef.current.toJSON());
+    const json = JSON.stringify((fabricRef.current as FabricCanvasWithCustomJson).toJSON(FABRIC_EXPORT_PROPS));
     // 현재 포인터 이후 미래 히스토리 제거
     historyRef.current = historyRef.current.slice(
       0,
@@ -131,15 +204,49 @@ export function useCanvas(
       setSelectedInfo(null);
       return;
     }
-    const isText = obj.type === "i-text" || obj.type === "text";
-    const textObj = obj as FabricText;
+    const customObj = obj as CustomFabricObject;
+    const isNameTag = isNameTagObject(obj);
+    const isText = isTextObject(obj);
+    const textObj = isNameTag ? findNameTagText(obj) : (obj as FabricText);
     setSelectedInfo({
-      type: isText ? "text" : obj.type === "image" ? "image" : "other",
-      text: isText ? String(textObj.text ?? "") : undefined,
-      fontSize: isText ? Number(textObj.fontSize ?? 24) : undefined,
-      fill: isText ? String(textObj.fill ?? "#000000") : undefined,
-      fontFamily: isText
-        ? String(textObj.fontFamily ?? "Arial")
+      type: isNameTag ? "nameTag" : isText ? "text" : obj.type === "image" ? "image" : "other",
+      text: isNameTag
+        ? getStringProp(customObj, "labelText", String(textObj?.text ?? ""))
+        : isText
+          ? String(textObj?.text ?? "")
+          : undefined,
+      fontSize: isNameTag
+        ? getNumberProp(customObj, "labelFontSize", Number(textObj?.fontSize ?? 28))
+        : isText
+          ? Number(textObj?.fontSize ?? 24)
+          : undefined,
+      fill: isNameTag
+        ? getStringProp(customObj, "labelTextFill", String(textObj?.fill ?? "#1f2937"))
+        : isText
+          ? String(textObj?.fill ?? "#000000")
+          : undefined,
+      fontFamily: isNameTag
+        ? getStringProp(customObj, "labelFontFamily", String(textObj?.fontFamily ?? "Geist, Arial, sans-serif"))
+        : isText
+          ? String(textObj?.fontFamily ?? "Arial")
+          : undefined,
+      labelFill: isNameTag
+        ? getStringProp(customObj, "labelFill", "#fff7ed")
+        : undefined,
+      labelStroke: isNameTag
+        ? getStringProp(customObj, "labelStroke", "#fb923c")
+        : undefined,
+      labelStrokeWidth: isNameTag
+        ? getNumberProp(customObj, "labelStrokeWidth", 3)
+        : undefined,
+      labelRadius: isNameTag
+        ? getNumberProp(customObj, "labelRadius", 26)
+        : undefined,
+      labelPaddingX: isNameTag
+        ? getNumberProp(customObj, "labelPaddingX", 32)
+        : undefined,
+      labelPaddingY: isNameTag
+        ? getNumberProp(customObj, "labelPaddingY", 14)
         : undefined,
       opacity: Number(obj.opacity ?? 1),
     });
@@ -249,6 +356,84 @@ export function useCanvas(
     });
   }, []);
 
+  const addNameTag = useCallback((text: string) => {
+    if (!fabricRef.current) return;
+    import("fabric").then(({ Group, IText, Rect }) => {
+      const canvas = fabricRef.current!;
+      const labelText = text.trim() || "이름";
+      const fontSize = 32;
+      const paddingX = 34;
+      const paddingY = 14;
+      const labelFill = "#fff7ed";
+      const labelStroke = "#fb923c";
+      const labelStrokeWidth = 3;
+      const labelRadius = 28;
+      const fontFamily = "Geist, Arial, sans-serif";
+      const textFill = "#1f2937";
+
+      const textObj = new IText(labelText, {
+        originX: "center",
+        originY: "center",
+        left: 0,
+        top: 0,
+        fontSize,
+        fontFamily,
+        fontWeight: "bold",
+        fill: textFill,
+        selectable: false,
+        evented: false,
+      });
+      (textObj as unknown as CustomFabricObject).pocketGoodsRole = "label-text";
+
+      const textWidth = Math.max(textObj.width ?? labelText.length * fontSize * 0.62, fontSize);
+      const textHeight = Math.max(textObj.height ?? fontSize, fontSize);
+      const pillWidth = Math.max(140, textWidth + paddingX * 2);
+      const pillHeight = Math.max(58, textHeight + paddingY * 2);
+
+      const pill = new Rect({
+        originX: "center",
+        originY: "center",
+        left: 0,
+        top: 0,
+        width: pillWidth,
+        height: pillHeight,
+        rx: labelRadius,
+        ry: labelRadius,
+        fill: labelFill,
+        stroke: labelStroke,
+        strokeWidth: labelStrokeWidth,
+        selectable: false,
+        evented: false,
+      });
+      (pill as unknown as CustomFabricObject).pocketGoodsRole = "label-pill";
+
+      const group = new Group([pill, textObj], {
+        left: canvas.width! / 2,
+        top: canvas.height! / 2,
+        originX: "center",
+        originY: "center",
+        subTargetCheck: false,
+      });
+      const customGroup = group as unknown as CustomFabricObject;
+      customGroup.pocketGoodsKind = "name-tag";
+      customGroup.labelText = labelText;
+      customGroup.labelFill = labelFill;
+      customGroup.labelStroke = labelStroke;
+      customGroup.labelStrokeWidth = labelStrokeWidth;
+      customGroup.labelRadius = labelRadius;
+      customGroup.labelPaddingX = paddingX;
+      customGroup.labelPaddingY = paddingY;
+      customGroup.labelFontSize = fontSize;
+      customGroup.labelFontFamily = fontFamily;
+      customGroup.labelTextFill = textFill;
+
+      canvas.add(group);
+      canvas.setActiveObject(group);
+      canvas.renderAll();
+      updateSelectedInfo(group);
+    });
+  }, [updateSelectedInfo]);
+
   const addSticker = useCallback((emoji: string) => {
     if (!fabricRef.current) return;
     import("fabric").then(({ IText }) => {
@@ -271,15 +456,72 @@ export function useCanvas(
     (props: Partial<TextUpdateProps>) => {
       const canvas = fabricRef.current;
       if (!canvas) return;
-      const obj = canvas.getActiveObject() as FabricText;
+      const obj = canvas.getActiveObject() as FabricObject | null;
       if (!obj) return;
-      if (props.text !== undefined) obj.set("text", props.text);
-      if (props.fontSize !== undefined) obj.set("fontSize", props.fontSize);
-      if (props.fill !== undefined) obj.set("fill", props.fill);
-      if (props.fontFamily !== undefined)
-        obj.set("fontFamily", props.fontFamily);
+
+      if (isNameTagObject(obj)) {
+        const customObj = obj as CustomFabricObject;
+        const textObj = findNameTagText(obj);
+        const pill = findNameTagPill(obj);
+
+        const nextText = props.text ?? getStringProp(customObj, "labelText", String(textObj?.text ?? "이름"));
+        const nextFontSize = props.fontSize ?? getNumberProp(customObj, "labelFontSize", Number(textObj?.fontSize ?? 32));
+        const nextTextFill = props.fill ?? getStringProp(customObj, "labelTextFill", String(textObj?.fill ?? "#1f2937"));
+        const nextFontFamily = props.fontFamily ?? getStringProp(customObj, "labelFontFamily", String(textObj?.fontFamily ?? "Geist, Arial, sans-serif"));
+        const nextFill = props.labelFill ?? getStringProp(customObj, "labelFill", "#fff7ed");
+        const nextStroke = props.labelStroke ?? getStringProp(customObj, "labelStroke", "#fb923c");
+        const nextStrokeWidth = props.labelStrokeWidth ?? getNumberProp(customObj, "labelStrokeWidth", 3);
+        const nextRadius = props.labelRadius ?? getNumberProp(customObj, "labelRadius", 28);
+        const nextPaddingX = props.labelPaddingX ?? getNumberProp(customObj, "labelPaddingX", 34);
+        const nextPaddingY = props.labelPaddingY ?? getNumberProp(customObj, "labelPaddingY", 14);
+
+        textObj?.set({
+          text: nextText,
+          fontSize: nextFontSize,
+          fill: nextTextFill,
+          fontFamily: nextFontFamily,
+        });
+
+        const textWidth = Math.max(textObj?.width ?? nextText.length * nextFontSize * 0.62, nextFontSize);
+        const textHeight = Math.max(textObj?.height ?? nextFontSize, nextFontSize);
+        const pillWidth = Math.max(120, textWidth + nextPaddingX * 2);
+        const pillHeight = Math.max(48, textHeight + nextPaddingY * 2);
+
+        pill?.set({
+          width: pillWidth,
+          height: pillHeight,
+          rx: Math.min(nextRadius, pillHeight / 2),
+          ry: Math.min(nextRadius, pillHeight / 2),
+          fill: nextFill,
+          stroke: nextStroke,
+          strokeWidth: nextStrokeWidth,
+        });
+
+        customObj.labelText = nextText;
+        customObj.labelFill = nextFill;
+        customObj.labelStroke = nextStroke;
+        customObj.labelStrokeWidth = nextStrokeWidth;
+        customObj.labelRadius = nextRadius;
+        customObj.labelPaddingX = nextPaddingX;
+        customObj.labelPaddingY = nextPaddingY;
+        customObj.labelFontSize = nextFontSize;
+        customObj.labelFontFamily = nextFontFamily;
+        customObj.labelTextFill = nextTextFill;
+        obj.setCoords();
+      } else if (isTextObject(obj)) {
+        const textObj = obj as FabricText;
+        if (props.text !== undefined) textObj.set("text", props.text);
+        if (props.fontSize !== undefined) textObj.set("fontSize", props.fontSize);
+        if (props.fill !== undefined) textObj.set("fill", props.fill);
+        if (props.fontFamily !== undefined)
+          textObj.set("fontFamily", props.fontFamily);
+      } else {
+        return;
+      }
+
       canvas.renderAll();
       updateSelectedInfo(obj);
+      onChangeCb.current?.();
     },
     [updateSelectedInfo]
   );
@@ -374,7 +616,7 @@ export function useCanvas(
   }, []);
 
   const toJSON = useCallback(() => {
-    return withOriginalSize((canvas) => canvas.toJSON()) ?? {};
+    return withOriginalSize((canvas) => (canvas as FabricCanvasWithCustomJson).toJSON(FABRIC_EXPORT_PROPS)) ?? {};
   }, [withOriginalSize]);
 
   const toDataURL = useCallback(() => {
@@ -524,6 +766,7 @@ export function useCanvas(
     selectedInfo,
     addCharacter,
     addText,
+    addNameTag,
     addSticker,
     updateSelectedText,
     updateSelectedOpacity,

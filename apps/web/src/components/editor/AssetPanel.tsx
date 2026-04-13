@@ -15,12 +15,13 @@ import { useLocale } from "@/lib/i18n/client";
 interface AssetPanelProps {
   onAddCharacter: (src: string) => void;
   onAddText: (text: string) => void;
+  onAddNameTag: (text: string) => void;
   onGetCanvasImage: () => string;
   className?: string;
 }
 
 export default function AssetPanel({
-  onAddCharacter, onAddText, onGetCanvasImage, className,
+  onAddCharacter, onAddText, onAddNameTag, onGetCanvasImage, className,
 }: AssetPanelProps) {
   const { t } = useLocale();
   const ap = t.assetPanel;
@@ -58,11 +59,24 @@ export default function AssetPanel({
               <Input id="text-input" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={ap.textInputPlaceholder} maxLength={30} />
               <p className="text-xs text-muted-foreground text-right">{inputText.length}/30</p>
             </div>
-            <Button className="w-full" onClick={() => onAddText(inputText || ap.fallbackText)} disabled={!inputText.trim()}>
-              {ap.addToCanvas}
-            </Button>
+            <div className="grid gap-2">
+              <Button className="w-full" onClick={() => onAddText(inputText || ap.fallbackText)} disabled={!inputText.trim()}>
+                {ap.addToCanvas}
+              </Button>
+              <Button
+                className="w-full border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                variant="outline"
+                onClick={() => onAddNameTag(inputText || ap.nameTagFallbackText)}
+                disabled={!inputText.trim()}
+              >
+                {ap.addNameTag}
+              </Button>
+            </div>
             <Separator />
-            <p className="text-xs text-muted-foreground">{ap.textHint}</p>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>{ap.textHint}</p>
+              <p>{ap.nameTagHint}</p>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

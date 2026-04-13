@@ -15,7 +15,7 @@ from typing import Literal
 
 import cv2
 import numpy as np
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 from services.fonts import get_pil_font
 
@@ -40,6 +40,8 @@ CANVAS_DISPLAY_SIZES_PX: dict[OutputSize, tuple[int, int]] = {
     "A6": (298, 420),
 }
 
+TEXT_OBJECT_TYPES = {"i-text", "itext", "text", "textbox", "fabrictext"}
+
 
 def mm_to_px(mm: float, dpi: int = DPI) -> int:
     return round(mm * dpi / 25.4)
@@ -61,6 +63,34 @@ def _apply_opacity(img: Image.Image, opacity: float) -> Image.Image:
     r, g, b, a = img.split()
     a = a.point(lambda x: int(x * opacity))
     return Image.merge("RGBA", (r, g, b, a))
+
+
+def _obj_type(obj: dict) -> str:
+    return str(obj.get("type", "")).lower()
+
+
+def _is_text_obj(obj: dict) -> bool:
+    return _obj_type(obj) in TEXT_OBJECT_TYPES
+
+
+def _is_name_tag_obj(obj: dict) -> bool:
+    return obj.get("pocketGoodsKind") == "name-tag"
+
+
+def _parse_color(value: object, fallback: str = "#000000") -> object:
+    if isinstance(value, str) and value:
+        return value
+    if isinstance(value, dict):
+        source = value.get("source")
+        if isinstance(source, str) and source:
+            return source
+    return fallback
+
+
+def _text_bbox(text: str, font: ImageFont.ImageFont) -> tuple[int, int, int, int]:
+    tmp_img = Image.new("RGBA", (1, 1))
+    tmp_draw = ImageDraw.Draw(tmp_img)
+    return tmp_draw.multiline_textbbox((0, 0), text, font=font, spacing=4)
 
 
 def _paste_rotated(
@@ -301,7 +331,7 @@ def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, offse
     font_size_disp = obj.get("fontSize", 36)
     scale_x = obj.get("scaleX", 1.0)
     font_family = obj.get("fontFamily", "Arial")
-    fill = obj.get("fill", "#000000")
+    fill = _parse_color(obj.get("fill"), "#000000")
     angle = obj.get("angle", 0.0)
     opacity = obj.get("opacity", 1.0)
     origin_x = obj.get("originX", "left")
@@ -311,36 +341,117 @@ def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, offse
     font_size_print = round(font_size_disp * scale_x * sx)
     font = get_pil_font(font_family, font_size_print)
 
-    # 텍스트 크기 측정
-    tmp_img = Image.new("RGBA", (1, 1))
-    tmp_draw = ImageDraw.Draw(tmp_img)
-    bbox = tmp_draw.textbbox((0, 0), text, font=font)
+    # 텍스트 크기 측정. Fabric v7은 IText/Textbox 타입명을 대문자 없이 직렬화할 수
+    # 있어서 타입 판별은 호출부에서 정규화하고, 여기서는 multiline까지 안전하게 렌더링한다.
+    bbox = _text_bbox(text, font)
     txt_w = bbox[2] - bbox[0]
     txt_h = bbox[3] - bbox[1]
 
     # 텍스트를 별도 이미지에 그린 후 합성 (회전 + 불투명도 처리)
-    txt_img = Image.new("RGBA", (txt_w + 4, txt_h + 4), (0, 0, 0, 0))
+    pad = max(4, round(font_size_print * 0.12))
+    txt_img = Image.new("RGBA", (txt_w + pad * 2, txt_h + pad * 2), (0, 0, 0, 0))
     draw = ImageDraw.Draw(txt_img)
 
     # fill이 문자열이면 그대로, rgba tuple 처리
     try:
-        draw.text((2, 2), text, font=font, fill=fill)
+        draw.multiline_text((pad - bbox[0], pad - bbox[1]), text, font=font, fill=fill, spacing=4)
     except Exception:
-        draw.text((2, 2), text, font=font, fill="#000000")
+        draw.multiline_text((pad - bbox[0], pad - bbox[1]), text, font=font, fill="#000000", spacing=4)
 
     txt_img = _apply_opacity(txt_img, opacity)
 
     # 중심 좌표 계산 (origin 반영)
-    disp_w = font_size_disp * scale_x * len(text) * 0.6  # 근사치
-    disp_h = font_size_disp * scale_x
-
-    cx_disp, cy_disp = _origin_to_center(left, top, txt_w / sx, txt_h / sy, origin_x, origin_y)
+    cx_disp, cy_disp = _origin_to_center(
+        left,
+        top,
+        txt_img.width / sx,
+        txt_img.height / sy,
+        origin_x,
+        origin_y,
+    )
     cx = round(cx_disp * sx) + offset_x
     cy = round(cy_disp * sy) + offset_y
 
     if with_cutting_line:
         _render_cutting_line(canvas, txt_img, cx, cy, angle)
     _paste_rotated(canvas, txt_img, cx, cy, angle)
+
+
+def _render_name_tag_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, offset_x: int, offset_y: int) -> None:
+    """Render Pocket Goods' custom pill-shaped editable name tag."""
+    text = str(obj.get("labelText") or "")
+    if not text:
+        # Older drafts may only have the inner text object.
+        for child in obj.get("objects", []) or []:
+            if isinstance(child, dict) and _is_text_obj(child):
+                text = str(child.get("text") or "")
+                break
+    if not text:
+        return
+
+    left = float(obj.get("left", 0.0))
+    top = float(obj.get("top", 0.0))
+    width = float(obj.get("width", 140.0))
+    height = float(obj.get("height", 58.0))
+    scale_x = float(obj.get("scaleX", 1.0))
+    scale_y = float(obj.get("scaleY", 1.0))
+    angle = float(obj.get("angle", 0.0))
+    opacity = float(obj.get("opacity", 1.0))
+    origin_x = obj.get("originX", "left")
+    origin_y = obj.get("originY", "top")
+
+    fill = _parse_color(obj.get("labelFill"), "#fff7ed")
+    stroke = _parse_color(obj.get("labelStroke"), "#fb923c")
+    stroke_width = max(0, float(obj.get("labelStrokeWidth", 3)))
+    radius = max(0, float(obj.get("labelRadius", 28)))
+    padding_x = max(0, float(obj.get("labelPaddingX", 34)))
+    padding_y = max(0, float(obj.get("labelPaddingY", 14)))
+    font_size_disp = max(1, float(obj.get("labelFontSize", 32)))
+    font_family = str(obj.get("labelFontFamily", "Geist, Arial, sans-serif"))
+    text_fill = _parse_color(obj.get("labelTextFill"), "#1f2937")
+
+    font_size_print = max(1, round(font_size_disp * scale_x * sx))
+    font = get_pil_font(font_family, font_size_print)
+    text_bbox = _text_bbox(text, font)
+    text_w = text_bbox[2] - text_bbox[0]
+    text_h = text_bbox[3] - text_bbox[1]
+
+    print_w = max(1, round(width * scale_x * sx))
+    print_h = max(1, round(height * scale_y * sy))
+
+    # If the Fabric group did not refresh dimensions after an edit, keep the
+    # printed pill large enough for the latest metadata.
+    min_w = round(text_w + padding_x * 2 * scale_x * sx)
+    min_h = round(text_h + padding_y * 2 * scale_y * sy)
+    print_w = max(print_w, min_w)
+    print_h = max(print_h, min_h)
+
+    tag_img = Image.new("RGBA", (print_w, print_h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(tag_img)
+    sw = max(0, round(stroke_width * ((sx + sy) / 2)))
+    rr = min(round(radius * ((sx + sy) / 2)), print_h // 2, print_w // 2)
+    inset = sw // 2
+    draw.rounded_rectangle(
+        (inset, inset, print_w - inset - 1, print_h - inset - 1),
+        radius=rr,
+        fill=fill,
+        outline=stroke if sw > 0 else None,
+        width=sw,
+    )
+
+    tx = (print_w - text_w) / 2 - text_bbox[0]
+    ty = (print_h - text_h) / 2 - text_bbox[1]
+    try:
+        draw.multiline_text((tx, ty), text, font=font, fill=text_fill, spacing=4, align="center")
+    except Exception:
+        draw.multiline_text((tx, ty), text, font=font, fill="#1f2937", spacing=4, align="center")
+
+    tag_img = _apply_opacity(tag_img, opacity)
+
+    cx_disp, cy_disp = _origin_to_center(left, top, width * scale_x, height * scale_y, str(origin_x), str(origin_y))
+    cx = round(cx_disp * sx) + offset_x
+    cy = round(cy_disp * sy) + offset_y
+    _paste_rotated(canvas, tag_img, cx, cy, angle)
 
 
 def render_canvas(
@@ -383,9 +494,11 @@ def render_canvas(
     for obj in objects:
         obj_type = obj.get("type", "")
         logger.info("[renderer] obj type=%r keys=%s", obj_type, list(obj.keys()))
-        if obj_type.lower() == "image":
+        if _is_name_tag_obj(obj):
+            _render_name_tag_obj(result, obj, sx, sy, offset_x, offset_y)
+        elif _obj_type(obj) == "image":
             _render_image_obj(result, obj, sx, sy, offset_x, offset_y, with_cutting_line=False)
-        elif obj_type.lower() in ("i-text", "text"):
+        elif _is_text_obj(obj):
             _render_text_obj(result, obj, sx, sy, offset_x, offset_y, with_cutting_line=False)
         else:
             logger.warning("[renderer] unknown type=%r — skipped", obj_type)

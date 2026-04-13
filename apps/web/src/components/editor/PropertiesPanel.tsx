@@ -82,7 +82,7 @@ export default function PropertiesPanel({
               </>
             )}
 
-            {selectedInfo.type === "text" && (
+            {(selectedInfo.type === "text" || selectedInfo.type === "nameTag") && (
               <>
                 <Separator />
                 <div className="space-y-2">
@@ -111,6 +111,42 @@ export default function PropertiesPanel({
                     <Input value={selectedInfo.fill ?? "#1a1a1a"} onChange={(e) => onUpdateText({ fill: e.target.value })} className="h-8 text-xs font-mono" maxLength={7} />
                   </div>
                 </div>
+                {selectedInfo.type === "nameTag" && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label className="text-xs">{pr.nameTagFill}</Label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={typeof selectedInfo.labelFill === "string" && selectedInfo.labelFill.startsWith("#") ? selectedInfo.labelFill : "#fff7ed"}
+                          onChange={(e) => onUpdateText({ labelFill: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-zinc-200" />
+                        <Input value={selectedInfo.labelFill ?? "#fff7ed"} onChange={(e) => onUpdateText({ labelFill: e.target.value })} className="h-8 text-xs font-mono" maxLength={7} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">{pr.nameTagStroke}</Label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={typeof selectedInfo.labelStroke === "string" && selectedInfo.labelStroke.startsWith("#") ? selectedInfo.labelStroke : "#fb923c"}
+                          onChange={(e) => onUpdateText({ labelStroke: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-zinc-200" />
+                        <Input value={selectedInfo.labelStroke ?? "#fb923c"} onChange={(e) => onUpdateText({ labelStroke: e.target.value })} className="h-8 text-xs font-mono" maxLength={7} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">{pr.nameTagStrokeWidth} <span className="text-muted-foreground">{selectedInfo.labelStrokeWidth ?? 3}px</span></Label>
+                      <Slider min={0} max={12} step={1} value={[selectedInfo.labelStrokeWidth ?? 3]}
+                        onValueChange={(val) => { const v = typeof val === "number" ? val : (val as number[])[0] ?? 3; onUpdateText({ labelStrokeWidth: v }); }} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">{pr.nameTagRadius} <span className="text-muted-foreground">{selectedInfo.labelRadius ?? 28}px</span></Label>
+                      <Slider min={0} max={48} step={1} value={[selectedInfo.labelRadius ?? 28]}
+                        onValueChange={(val) => { const v = typeof val === "number" ? val : (val as number[])[0] ?? 28; onUpdateText({ labelRadius: v }); }} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">{pr.nameTagPadding} <span className="text-muted-foreground">{selectedInfo.labelPaddingX ?? 34}px</span></Label>
+                      <Slider min={12} max={80} step={1} value={[selectedInfo.labelPaddingX ?? 34]}
+                        onValueChange={(val) => { const v = typeof val === "number" ? val : (val as number[])[0] ?? 34; onUpdateText({ labelPaddingX: v }); }} />
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>

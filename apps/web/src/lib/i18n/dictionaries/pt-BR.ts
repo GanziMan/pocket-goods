@@ -318,6 +318,9 @@ const ptBR = {
     defaultText: "Meu texto",
     fallbackText: "Texto",
     textHint: "Após adicionar texto, selecione-o para alterar fonte, tamanho e cor no painel direito.",
+    addNameTag: "Adicionar etiqueta",
+    nameTagFallbackText: "Nome",
+    nameTagHint: "Etiquetas colocam o texto em formato de pílula. Selecione para editar fundo, borda e arredondamento.",
     mobileAssetTitle: "Recursos",
   },
   properties: {
@@ -332,6 +335,11 @@ const ptBR = {
     font: "Fonte",
     size: "Tamanho",
     color: "Cor",
+    nameTagFill: "Fundo da etiqueta",
+    nameTagStroke: "Borda da etiqueta",
+    nameTagStrokeWidth: "Espessura da borda",
+    nameTagRadius: "Arredondamento",
+    nameTagPadding: "Espaçamento horizontal",
   },
   canvas: {
     emptyTitle: "Canvas está vazio",

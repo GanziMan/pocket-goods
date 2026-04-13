@@ -316,6 +316,9 @@ const ko = {
     defaultText: "나만의 문구",
     fallbackText: "텍스트",
     textHint: "텍스트를 추가한 뒤 선택하면 오른쪽 패널에서 폰트, 크기, 색상을 변경할 수 있어요.",
+    addNameTag: "이름표로 추가",
+    nameTagFallbackText: "이름",
+    nameTagHint: "이름표는 알약 모양 안에 문구를 넣고, 선택 후 배경/테두리/둥근 정도를 꾸밀 수 있어요.",
     mobileAssetTitle: "에셋",
   },
   properties: {
@@ -330,6 +333,11 @@ const ko = {
     font: "폰트",
     size: "크기",
     color: "색상",
+    nameTagFill: "이름표 배경",
+    nameTagStroke: "이름표 테두리",
+    nameTagStrokeWidth: "테두리 두께",
+    nameTagRadius: "둥근 정도",
+    nameTagPadding: "좌우 여백",
   },
   canvas: {
     emptyTitle: "캔버스가 비어있어요",

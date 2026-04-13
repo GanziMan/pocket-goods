@@ -318,6 +318,9 @@ const ja = {
     defaultText: "マイテキスト",
     fallbackText: "テキスト",
     textHint: "テキストを追加して選択すると、右パネルでフォント、サイズ、色を変更できます。",
+    addNameTag: "名前タグを追加",
+    nameTagFallbackText: "名前",
+    nameTagHint: "名前タグは丸いラベル内に文字を入れ、選択後に背景・枠線・丸みを編集できます。",
     mobileAssetTitle: "アセット",
   },
   properties: {
@@ -332,6 +335,11 @@ const ja = {
     font: "フォント",
     size: "サイズ",
     color: "カラー",
+    nameTagFill: "名前タグの背景",
+    nameTagStroke: "名前タグの枠線",
+    nameTagStrokeWidth: "枠線の太さ",
+    nameTagRadius: "丸み",
+    nameTagPadding: "左右余白",
   },
   canvas: {
     emptyTitle: "キャンバスが空です",

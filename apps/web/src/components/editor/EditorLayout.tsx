@@ -47,6 +47,7 @@ export default function EditorLayout() {
     selectedInfo,
     addCharacter,
     addText,
+    addNameTag,
     updateSelectedText,
     updateSelectedOpacity,
     getSelectedImageDataURL,
@@ -252,6 +253,7 @@ export default function EditorLayout() {
           <AssetPanel
             onAddCharacter={addCharacter}
             onAddText={addText}
+            onAddNameTag={addNameTag}
 
             onGetCanvasImage={toDataURL}
           />
@@ -348,6 +350,7 @@ export default function EditorLayout() {
         <AssetPanel
           onAddCharacter={addCharacter}
           onAddText={addText}
+          onAddNameTag={addNameTag}
           onGetCanvasImage={toDataURL}
           className="w-full border-0"
         />

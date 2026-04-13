@@ -318,6 +318,9 @@ const en = {
     defaultText: "My text",
     fallbackText: "Text",
     textHint: "After adding text, select it to change font, size, and color in the right panel.",
+    addNameTag: "Add name tag",
+    nameTagFallbackText: "Name",
+    nameTagHint: "Name tags place text inside a pill shape. Select one to edit its background, border, and roundness.",
     mobileAssetTitle: "Assets",
   },
   properties: {
@@ -332,6 +335,11 @@ const en = {
     font: "Font",
     size: "Size",
     color: "Color",
+    nameTagFill: "Name tag fill",
+    nameTagStroke: "Name tag border",
+    nameTagStrokeWidth: "Border width",
+    nameTagRadius: "Roundness",
+    nameTagPadding: "Horizontal padding",
   },
   canvas: {
     emptyTitle: "Canvas is empty",

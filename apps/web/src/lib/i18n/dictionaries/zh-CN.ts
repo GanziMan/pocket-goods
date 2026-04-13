@@ -318,6 +318,9 @@ const zhCN = {
     defaultText: "我的文字",
     fallbackText: "文字",
     textHint: "添加文字后选中它，即可在右侧面板更改字体、大小和颜色。",
+    addNameTag: "添加姓名标签",
+    nameTagFallbackText: "姓名",
+    nameTagHint: "姓名标签会把文字放进胶囊形标签中，选中后可编辑背景、边框和圆角。",
     mobileAssetTitle: "素材",
   },
   properties: {
@@ -332,6 +335,11 @@ const zhCN = {
     font: "字体",
     size: "大小",
     color: "颜色",
+    nameTagFill: "姓名标签背景",
+    nameTagStroke: "姓名标签边框",
+    nameTagStrokeWidth: "边框粗细",
+    nameTagRadius: "圆角",
+    nameTagPadding: "左右留白",
   },
   canvas: {
     emptyTitle: "画布为空",
