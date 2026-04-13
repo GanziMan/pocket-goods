@@ -84,7 +84,10 @@ export default function PreviewDialog({
   useEffect(() => {
     if (!open || !payload) return;
     setTab(initialTab);
-      setForm((current) => ({
+    setMessage(null);
+    setError(null);
+    setSubmitting(false);
+    setForm((current) => ({
       ...current,
       quantities: createDefaultQuantities(payload.outputSize),
     }));
@@ -178,9 +181,8 @@ export default function PreviewDialog({
       return;
     }
 
-    setSubmitting(true);
     setError(null);
-    setMessage("주문을 접수하는 중입니다…");
+    setSubmitting(true);
 
     const paymentId = `pocket_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const selectedItems = [{ size: payload.outputSize, quantity: form.quantities[payload.outputSize] }];
@@ -195,54 +197,54 @@ export default function PreviewDialog({
       memo: form.memo.trim(),
     };
     rememberProfile(shipping);
+    setMessage("주문 접수가 완료되었습니다. 제작자가 주문 정보를 확인할 예정입니다.");
+    setSubmitting(false);
 
-    try {
-      setMessage("주문 정보를 서버로 보내는 중입니다…");
-      const verification = await fetch(
-        `${API_BASE_URL}/api/payments/complete-noverify`,
-        {
+    void (async () => {
+      try {
+        const verification = await fetch(
+          `${API_BASE_URL}/api/payments/complete-noverify`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              paymentId,
+              txId: "portone-disabled",
+              orderName,
+              amount,
+              currency: "KRW",
+              productType: "sticker",
+              outputSize: payload.outputSize,
+              items: selectedItems,
+              canvasJSON: payload.canvasJSON,
+              shipping,
+            }),
+          },
+        );
+        if (!verification.ok) {
+          throw new Error(await readApiError(verification, "주문 접수에 실패했습니다."));
+        }
+        const verificationBody = await verification.json().catch(() => null);
+        if (verificationBody?.emailSent === false) {
+          throw new Error("주문은 접수됐지만 이메일 발송이 비활성화되어 있습니다. 이메일 설정을 확인해주세요.");
+        }
+
+        await fetch(`${API_BASE_URL}/api/export`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            paymentId,
-            txId: "portone-disabled",
-            orderName,
-            amount,
-            currency: "KRW",
-            productType: "sticker",
-            outputSize: payload.outputSize,
-            items: selectedItems,
-            canvasJSON: payload.canvasJSON,
-            shipping,
+            canvas_json: payload.canvasJSON,
+            product_type: "sticker",
+            output_size: payload.outputSize,
+            order_id: paymentId,
+            save_to_storage: true,
           }),
-        },
-      );
-      if (!verification.ok) {
-        throw new Error(await readApiError(verification, "주문 접수에 실패했습니다."));
+        }).catch(() => null);
+      } catch (err) {
+        setMessage(null);
+        setError(err instanceof Error ? err.message : "주문 처리 중 오류가 발생했습니다.");
       }
-      const verificationBody = await verification.json().catch(() => null);
-      if (verificationBody?.emailSent === false) {
-        throw new Error("주문은 접수됐지만 이메일 발송이 비활성화되어 있습니다. 이메일 설정을 확인해주세요.");
-      }
-
-      await fetch(`${API_BASE_URL}/api/export`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          canvas_json: payload.canvasJSON,
-          product_type: "sticker",
-          output_size: payload.outputSize,
-          order_id: paymentId,
-          save_to_storage: true,
-        }),
-      }).catch(() => null);
-
-      setMessage("주문 접수가 완료되었습니다. 결제는 일시적으로 비활성화되어 있습니다.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "주문 처리 중 오류가 발생했습니다.");
-    } finally {
-      setSubmitting(false);
-    }
+    })();
   };
 
   const handleAddToCart = async () => {

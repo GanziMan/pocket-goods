@@ -108,6 +108,19 @@ test("cart and order preview use one selected size per design", () => {
   assert.match(orderCart, /ctx\.fillStyle = "#ffffff"/);
 });
 
+test("order submit shows immediate completion and clears stale dialog messages", () => {
+  assert.equal(previewDialog.includes("주문 정보를 서버로 보내는 중입니다"), false);
+  assert.equal(cartDialog.includes("주문 정보를 서버로 보내는 중입니다"), false);
+  assert.equal(previewDialog.includes("주문을 접수하는 중입니다"), false);
+  assert.equal(cartDialog.includes("묶음 주문을 접수하는 중입니다"), false);
+  assert.match(previewDialog, /setMessage\("주문 접수가 완료되었습니다\. 제작자가 주문 정보를 확인할 예정입니다\."\)/);
+  assert.match(cartDialog, /setMessage\("묶음 주문 접수가 완료되었습니다\. 제작자가 주문 정보를 확인할 예정입니다\."\)/);
+  assert.match(previewDialog, /void \(async \(\) =>/);
+  assert.match(cartDialog, /void \(async \(\) =>/);
+  assert.match(previewDialog, /setMessage\(null\);\s*setError\(null\);\s*setSubmitting\(false\);/);
+  assert.match(cartDialog, /setMessage\(null\);\s*setError\(null\);\s*setSubmitting\(false\);/);
+});
+
 test("production order calls do not fall back to browser localhost", () => {
   assert.match(api, /PRODUCTION_API_URL\s*=\s*"https:\/\/pocket-goods-production\.up\.railway\.app"/);
   assert.match(api, /hostname === "pocket-goods\.com"/);
