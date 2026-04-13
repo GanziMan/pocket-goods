@@ -277,7 +277,7 @@ export default function AIPanel({
               </span>
             </Label>
             <p className="text-[10px] text-muted-foreground">
-              {activeFeed ? "선택된 스타일을 다시 누르면 해제돼요" : "인기 스타일을 모아뒀어요. 원하는 분위기를 골라보세요"}
+              {activeFeed ? "선택된 스타일을 다시 누르면 해제돼요" : "인기 스타일을 모아뒀어요."}
             </p>
           </div>
           {!activeFeed && (

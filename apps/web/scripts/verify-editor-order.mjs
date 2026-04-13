@@ -170,6 +170,7 @@ test("print renderer keeps Fabric text and pill name tags in exports", () => {
 
 test("AI style feed copy is collection-oriented and presets are centrally maintainable", () => {
   assert.equal(aiPanel.includes("최대 4개"), false);
+  assert.equal(aiPanel.includes("원하는 분위기를 골라보세요"), false);
   assert.match(aiPanel, /인기 스타일을 모아뒀어요/);
   assert.match(aiPanel, /STYLE_FEED_ITEMS/);
   assert.match(aiStyleFeed, /export const STYLE_FEED_ITEMS/);

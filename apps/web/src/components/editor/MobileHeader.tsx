@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Save, CheckCheck } from "lucide-react";
 import UserMenu from "@/components/auth/UserMenu";
@@ -20,9 +21,8 @@ export default function MobileHeader({
 
   return (
     <header className="flex items-center gap-2 px-3 h-14 border-b bg-white shrink-0">
-      <Link href="/" className="flex items-center gap-1.5 select-none">
-        <img src="/logo.png" alt="Logo" width={24} height={24} className="rounded" />
-        <span className="font-bold text-sm tracking-tight">{t.common.brandName}</span>
+      <Link href="/" className="flex items-center select-none" aria-label={`${t.common.brandName} 홈으로 이동`}>
+        <Image src="/logo.png" alt={t.common.brandName} width={98} height={41} priority className="h-7 w-auto" />
       </Link>
 
       <div className="ml-auto flex items-center gap-1.5">

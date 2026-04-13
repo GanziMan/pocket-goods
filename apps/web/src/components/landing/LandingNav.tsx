@@ -56,11 +56,8 @@ export function LandingNav() {
     <>
       {/* Mobile Header */}
       <nav className="fixed top-0 z-50 flex h-14 w-full items-center justify-between border-b bg-white px-4 md:hidden">
-        <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Logo" width={28} height={28} className="rounded" />
-          <span className="text-sm font-bold tracking-tight">
-            {t.common.brandName}
-          </span>
+        <Link href="/" className="flex items-center" aria-label={`${t.common.brandName} 홈으로 이동`}>
+          <Image src="/logo.png" alt={t.common.brandName} width={104} height={43} priority className="h-7 w-auto" />
         </Link>
         <div className="flex items-center gap-2">
           <UserMenu compact />
@@ -80,11 +77,13 @@ export function LandingNav() {
           <DrawerTitle className="sr-only">Menu</DrawerTitle>
           {/* Drawer Header */}
           <div className="flex items-center justify-between border-b px-4 py-4">
-            <Link href="/" className="flex items-center gap-2" onClick={() => setDrawerOpen(false)}>
-              <Image src="/logo.png" alt="Logo" width={24} height={24} className="rounded" />
-              <span className="text-sm font-bold tracking-tight">
-                {t.common.brandName}
-              </span>
+            <Link
+              href="/"
+              className="flex items-center"
+              onClick={() => setDrawerOpen(false)}
+              aria-label={`${t.common.brandName} 홈으로 이동`}
+            >
+              <Image src="/logo.png" alt={t.common.brandName} width={104} height={43} className="h-7 w-auto" />
             </Link>
             <DrawerClose asChild>
               <button className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-zinc-100 hover:text-foreground">
@@ -154,10 +153,8 @@ export function LandingNav() {
 
       {/* Desktop Header */}
       <nav className="fixed top-0 z-50 hidden w-full items-center justify-between bg-background/80 px-8 py-3 backdrop-blur-md md:flex">
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="text-sm font-semibold">
-            {t.common.brandName}
-          </span>
+        <Link href="/" className="flex shrink-0 items-center" aria-label={`${t.common.brandName} 홈으로 이동`}>
+          <Image src="/logo.png" alt={t.common.brandName} width={116} height={48} priority className="h-8 w-auto" />
         </Link>
         <div className="flex items-center gap-4">
           {navLinks.map(({ href, label }) => (

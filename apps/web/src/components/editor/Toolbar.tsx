@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -36,7 +37,9 @@ export default function Toolbar({
 
   return (
     <header className="flex items-center gap-2 px-4 h-14 border-b bg-white shrink-0">
-      <Link href="/" className="font-bold text-lg tracking-tight mr-2 select-none">{t.common.brandName}</Link>
+      <Link href="/" className="mr-2 flex items-center select-none" aria-label={`${t.common.brandName} 홈으로 이동`}>
+        <Image src="/logo.png" alt={t.common.brandName} width={116} height={48} priority className="h-8 w-auto" />
+      </Link>
 
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" disabled={!canUndo} onClick={onUndo} title={`${tb.undo} (${tb.undoShortcut})`}><Undo2 className="w-4 h-4" /></Button>

@@ -28,7 +28,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
   {
     id: "sylvanian",
     kicker: "포근한 인형",
-    title: "실바니안 만들기",
+    title: "실바니안",
     description: "보송한 인형 질감과 순한 표정",
     style: "sylvanian",
     preview: "/ai-feed-previews/sylvanian.svg",
@@ -68,7 +68,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
   {
     id: "maplestory",
     kicker: "픽셀 RPG",
-    title: "메이플 만들기",
+    title: "메이플",
     description: "스티커에 잘 어울리는 귀여운 픽셀 캐릭터",
     style: "maplestory",
     preview: "/ai-feed-previews/maplestory.svg",
