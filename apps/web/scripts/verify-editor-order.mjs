@@ -22,6 +22,7 @@ const orderPricing = read("src/lib/order-pricing.ts");
 const api = read("src/lib/api.ts");
 const paymentsApi = read("../api/routers/payments.py");
 const apiMain = read("../api/main.py");
+const rendererApi = read("../api/services/renderer.py");
 
 test("PortOne browser checkout is disabled on all editor order entry points", () => {
   for (const [name, source] of [
@@ -148,4 +149,18 @@ test("logged-in users persist shipping defaults and large drafts in Supabase", (
   assert.match(useSaveDesign, /from\(DRAFT_TABLE\)\.upsert/);
   assert.match(useSaveDesign, /loadDraft = useCallback\(async/);
   assert.match(editorLayout, /void loadDraft\(\)\.then/);
+});
+
+test("print renderer keeps Fabric text and pill name tags in exports", () => {
+  assert.match(rendererApi, /TEXT_OBJECT_TYPES\s*=\s*\{[^}]*"itext"[^}]*"textbox"/s);
+  assert.match(rendererApi, /def _is_text_obj/);
+  assert.match(rendererApi, /elif _is_text_obj\(obj\):/);
+  assert.match(rendererApi, /def _is_name_tag_obj/);
+  assert.match(rendererApi, /_obj_type\(obj\) == "group"/);
+  assert.match(rendererApi, /def _render_name_tag_obj/);
+  assert.match(rendererApi, /_find_group_rect_child/);
+  assert.match(rendererApi, /_find_group_text_child/);
+  assert.match(useCanvas, /FABRIC_EXPORT_PROPS/);
+  assert.match(useCanvas, /pocketGoodsKind/);
+  assert.match(useCanvas, /addNameTag/);
 });

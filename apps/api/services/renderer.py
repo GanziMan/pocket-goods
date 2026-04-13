@@ -73,8 +73,33 @@ def _is_text_obj(obj: dict) -> bool:
     return _obj_type(obj) in TEXT_OBJECT_TYPES
 
 
+def _group_children(obj: dict) -> list[dict]:
+    children = obj.get("objects", [])
+    if not isinstance(children, list):
+        return []
+    return [child for child in children if isinstance(child, dict)]
+
+
+def _find_group_text_child(obj: dict) -> dict | None:
+    for child in _group_children(obj):
+        if child.get("pocketGoodsRole") == "label-text" or _is_text_obj(child):
+            return child
+    return None
+
+
+def _find_group_rect_child(obj: dict) -> dict | None:
+    for child in _group_children(obj):
+        if child.get("pocketGoodsRole") == "label-pill" or _obj_type(child) == "rect":
+            return child
+    return None
+
+
 def _is_name_tag_obj(obj: dict) -> bool:
-    return obj.get("pocketGoodsKind") == "name-tag"
+    return obj.get("pocketGoodsKind") == "name-tag" or (
+        _obj_type(obj) == "group"
+        and _find_group_rect_child(obj) is not None
+        and _find_group_text_child(obj) is not None
+    )
 
 
 def _parse_color(value: object, fallback: str = "#000000") -> object:
@@ -379,20 +404,19 @@ def _render_text_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, offse
 
 def _render_name_tag_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, offset_x: int, offset_y: int) -> None:
     """Render Pocket Goods' custom pill-shaped editable name tag."""
+    rect_child = _find_group_rect_child(obj)
+    text_child = _find_group_text_child(obj)
     text = str(obj.get("labelText") or "")
     if not text:
         # Older drafts may only have the inner text object.
-        for child in obj.get("objects", []) or []:
-            if isinstance(child, dict) and _is_text_obj(child):
-                text = str(child.get("text") or "")
-                break
+        text = str(text_child.get("text") or "") if text_child else ""
     if not text:
         return
 
     left = float(obj.get("left", 0.0))
     top = float(obj.get("top", 0.0))
-    width = float(obj.get("width", 140.0))
-    height = float(obj.get("height", 58.0))
+    width = float(rect_child.get("width", obj.get("width", 140.0)) if rect_child else obj.get("width", 140.0))
+    height = float(rect_child.get("height", obj.get("height", 58.0)) if rect_child else obj.get("height", 58.0))
     scale_x = float(obj.get("scaleX", 1.0))
     scale_y = float(obj.get("scaleY", 1.0))
     angle = float(obj.get("angle", 0.0))
@@ -400,15 +424,15 @@ def _render_name_tag_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, o
     origin_x = obj.get("originX", "left")
     origin_y = obj.get("originY", "top")
 
-    fill = _parse_color(obj.get("labelFill"), "#fff7ed")
-    stroke = _parse_color(obj.get("labelStroke"), "#fb923c")
-    stroke_width = max(0, float(obj.get("labelStrokeWidth", 3)))
-    radius = max(0, float(obj.get("labelRadius", 28)))
+    fill = _parse_color(obj.get("labelFill") or (rect_child or {}).get("fill"), "#fff0f6")
+    stroke = _parse_color(obj.get("labelStroke") or (rect_child or {}).get("stroke"), "#f472b6")
+    stroke_width = max(0, float(obj.get("labelStrokeWidth", (rect_child or {}).get("strokeWidth", 3))))
+    radius = max(0, float(obj.get("labelRadius", (rect_child or {}).get("rx", 28))))
     padding_x = max(0, float(obj.get("labelPaddingX", 34)))
     padding_y = max(0, float(obj.get("labelPaddingY", 14)))
-    font_size_disp = max(1, float(obj.get("labelFontSize", 32)))
-    font_family = str(obj.get("labelFontFamily", "Geist, Arial, sans-serif"))
-    text_fill = _parse_color(obj.get("labelTextFill"), "#1f2937")
+    font_size_disp = max(1, float(obj.get("labelFontSize", (text_child or {}).get("fontSize", 32))))
+    font_family = str(obj.get("labelFontFamily", (text_child or {}).get("fontFamily", "Geist, Arial, sans-serif")))
+    text_fill = _parse_color(obj.get("labelTextFill") or (text_child or {}).get("fill"), "#831843")
 
     font_size_print = max(1, round(font_size_disp * scale_x * sx))
     font = get_pil_font(font_family, font_size_print)
@@ -444,7 +468,7 @@ def _render_name_tag_obj(canvas: Image.Image, obj: dict, sx: float, sy: float, o
     try:
         draw.multiline_text((tx, ty), text, font=font, fill=text_fill, spacing=4, align="center")
     except Exception:
-        draw.multiline_text((tx, ty), text, font=font, fill="#1f2937", spacing=4, align="center")
+        draw.multiline_text((tx, ty), text, font=font, fill="#831843", spacing=4, align="center")
 
     tag_img = _apply_opacity(tag_img, opacity)
 

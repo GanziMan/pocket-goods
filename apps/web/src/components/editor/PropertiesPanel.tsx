@@ -117,17 +117,17 @@ export default function PropertiesPanel({
                     <div className="space-y-2">
                       <Label className="text-xs">{pr.nameTagFill}</Label>
                       <div className="flex items-center gap-2">
-                        <input type="color" value={typeof selectedInfo.labelFill === "string" && selectedInfo.labelFill.startsWith("#") ? selectedInfo.labelFill : "#fff7ed"}
+                        <input type="color" value={typeof selectedInfo.labelFill === "string" && selectedInfo.labelFill.startsWith("#") ? selectedInfo.labelFill : "#fff0f6"}
                           onChange={(e) => onUpdateText({ labelFill: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-zinc-200" />
-                        <Input value={selectedInfo.labelFill ?? "#fff7ed"} onChange={(e) => onUpdateText({ labelFill: e.target.value })} className="h-8 text-xs font-mono" maxLength={7} />
+                        <Input value={selectedInfo.labelFill ?? "#fff0f6"} onChange={(e) => onUpdateText({ labelFill: e.target.value })} className="h-8 text-xs font-mono" maxLength={7} />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs">{pr.nameTagStroke}</Label>
                       <div className="flex items-center gap-2">
-                        <input type="color" value={typeof selectedInfo.labelStroke === "string" && selectedInfo.labelStroke.startsWith("#") ? selectedInfo.labelStroke : "#fb923c"}
+                        <input type="color" value={typeof selectedInfo.labelStroke === "string" && selectedInfo.labelStroke.startsWith("#") ? selectedInfo.labelStroke : "#f472b6"}
                           onChange={(e) => onUpdateText({ labelStroke: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-zinc-200" />
-                        <Input value={selectedInfo.labelStroke ?? "#fb923c"} onChange={(e) => onUpdateText({ labelStroke: e.target.value })} className="h-8 text-xs font-mono" maxLength={7} />
+                        <Input value={selectedInfo.labelStroke ?? "#f472b6"} onChange={(e) => onUpdateText({ labelStroke: e.target.value })} className="h-8 text-xs font-mono" maxLength={7} />
                       </div>
                     </div>
                     <div className="space-y-2">
