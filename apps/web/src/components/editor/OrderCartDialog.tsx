@@ -152,7 +152,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
 
     try {
       setMessage("주문 정보를 서버로 보내는 중입니다…");
-      const verification = await fetch(`${API_BASE_URL}/api/payments/complete`, {
+      const verification = await fetch(`${API_BASE_URL}/api/payments/complete-noverify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

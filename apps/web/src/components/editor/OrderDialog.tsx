@@ -136,7 +136,7 @@ export default function OrderDialog({
       };
 
       const verification = await fetch(
-        `${API_BASE_URL}/api/payments/complete`,
+        `${API_BASE_URL}/api/payments/complete-noverify`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
