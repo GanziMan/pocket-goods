@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AddressSearchFields from "@/components/editor/AddressSearchFields";
+import { useOrderProfile } from "@/hooks/useOrderProfile";
 import { API_BASE_URL, readApiError } from "@/lib/api";
 import type { ProductType } from "@/lib/assets";
 import { getOrderAmount, PRINT_PRICE_KRW, SHIPPING_FEE_KRW } from "@/lib/order-pricing";
@@ -71,6 +72,7 @@ export default function OrderDialog({
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { rememberProfile } = useOrderProfile(open, setForm);
 
   const productName = PRODUCT_LABELS[productType];
   const orderName = `${productName} 주문`;
@@ -119,6 +121,7 @@ export default function OrderDialog({
       addressLine2: form.addressLine2.trim(),
       memo: form.memo.trim(),
     };
+    rememberProfile(shipping);
 
     try {
       setMessage("주문 정보를 서버로 보내는 중입니다…");

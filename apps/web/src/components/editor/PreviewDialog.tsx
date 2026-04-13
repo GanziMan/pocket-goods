@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AddressSearchFields from "@/components/editor/AddressSearchFields";
+import { useOrderProfile } from "@/hooks/useOrderProfile";
 import type { ProductType } from "@/lib/assets";
 import { API_BASE_URL, readApiError } from "@/lib/api";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
@@ -78,6 +79,7 @@ export default function PreviewDialog({
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { rememberProfile } = useOrderProfile(open, setForm);
 
   useEffect(() => {
     if (!open || !payload) return;
@@ -201,6 +203,7 @@ export default function PreviewDialog({
       addressLine2: form.addressLine2.trim(),
       memo: form.memo.trim(),
     };
+    rememberProfile(shipping);
 
     try {
       setMessage("주문 정보를 서버로 보내는 중입니다…");

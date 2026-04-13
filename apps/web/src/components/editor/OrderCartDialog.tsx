@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AddressSearchFields from "@/components/editor/AddressSearchFields";
+import { useOrderProfile } from "@/hooks/useOrderProfile";
 import { API_BASE_URL, readApiError } from "@/lib/api";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
 import { clearOrderCart, readOrderCart, writeOrderCart, type OrderCartItem } from "@/lib/order-cart";
@@ -45,6 +46,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { rememberProfile } = useOrderProfile(open, setForm);
 
   const refresh = () => setItems(readOrderCart());
 
@@ -141,6 +143,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
       addressLine2: form.addressLine2.trim(),
       memo: form.memo.trim(),
     };
+    rememberProfile(shipping);
     const orderItems = items.map((item) => ({
       designId: item.id,
       outputSize: getPreferredSize(item),

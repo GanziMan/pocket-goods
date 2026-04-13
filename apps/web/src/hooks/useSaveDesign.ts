@@ -1,16 +1,34 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const STORAGE_KEY = "pocketgoods-design-draft";
 const SESSION_STORAGE_KEY = "pocketgoods-design-draft-session";
 const MAX_LOCAL_STORAGE_CHARS = 4_000_000;
+const DRAFT_TABLE = "user_design_drafts";
 
 export interface SavedDraft {
   canvasJSON: object;
   thumbnail: string;
   productType: string;
   savedAt: string; // ISO string
+}
+
+type DraftRow = {
+  canvas_json: object;
+  thumbnail: string | null;
+  product_type: string;
+  updated_at: string;
+};
+
+function rowToDraft(row: DraftRow): SavedDraft {
+  return {
+    canvasJSON: row.canvas_json,
+    thumbnail: row.thumbnail ?? "",
+    productType: row.product_type,
+    savedAt: row.updated_at,
+  };
 }
 
 export function useSaveDesign(
@@ -23,7 +41,7 @@ export function useSaveDesign(
   const [saveWarning, setSaveWarning] = useState<string | null>(null);
 
   // 저장된 드래프트 로드
-  const loadDraft = useCallback((): SavedDraft | null => {
+  const loadLocalDraft = useCallback((): SavedDraft | null => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY) ?? sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (!raw) return null;
@@ -33,8 +51,67 @@ export function useSaveDesign(
     }
   }, []);
 
+  // 저장된 드래프트 로드. 로그인 사용자는 Supabase DB를 우선 사용해 기기 간 복원합니다.
+  const loadDraft = useCallback(async (): Promise<SavedDraft | null> => {
+    const localDraft = loadLocalDraft();
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return localDraft;
+
+      const { data, error } = await supabase
+        .from(DRAFT_TABLE)
+        .select("canvas_json,thumbnail,product_type,updated_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("Remote draft load skipped:", error.message);
+        return localDraft;
+      }
+
+      return data ? rowToDraft(data as DraftRow) : localDraft;
+    } catch (error) {
+      console.warn("Remote draft load skipped:", error);
+      return localDraft;
+    }
+  }, [loadLocalDraft]);
+
+  const saveRemoteDraft = useCallback(async (draft: SavedDraft): Promise<boolean> => {
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { error } = await supabase.from(DRAFT_TABLE).upsert(
+        {
+          user_id: user.id,
+          canvas_json: draft.canvasJSON,
+          thumbnail: draft.thumbnail,
+          product_type: draft.productType,
+          updated_at: draft.savedAt,
+        },
+        { onConflict: "user_id" },
+      );
+
+      if (error) {
+        console.warn("Remote draft save skipped:", error.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn("Remote draft save skipped:", error);
+      return false;
+    }
+  }, []);
+
   // 수동 저장
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
     try {
       const draft: SavedDraft = {
         canvasJSON: getJSON(),
@@ -42,6 +119,17 @@ export function useSaveDesign(
         productType,
         savedAt: new Date().toISOString(),
       };
+      const remoteSaved = await saveRemoteDraft(draft);
+      if (remoteSaved) {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        setSaveWarning(null);
+        const now = new Date();
+        setSavedAt(now);
+        setIsDirty(false);
+        return;
+      }
+
       const serialized = JSON.stringify(draft);
       try {
         if (serialized.length > MAX_LOCAL_STORAGE_CHARS) {
@@ -55,11 +143,11 @@ export function useSaveDesign(
         try {
           sessionStorage.setItem(SESSION_STORAGE_KEY, serialized);
           setSaveWarning(
-            "사진 용량이 커서 임시 저장소에만 저장했어요. 브라우저 탭을 닫기 전 주문/배송 진행을 완료해주세요.",
+            "사진 용량이 커서 이 브라우저 탭에만 임시 저장했어요. 로그인 후 DB 저장 테이블을 적용하면 다른 기기에서도 복원할 수 있습니다.",
           );
         } catch {
           setSaveWarning(
-            "사진 용량이 커서 자동 저장을 건너뛰었어요. 주문/배송 진행은 계속 사용할 수 있습니다.",
+            "사진 용량이 커서 자동 저장을 건너뛰었어요. 로그인 후 DB 저장 테이블을 적용하면 용량 제한을 줄일 수 있습니다.",
           );
           console.warn("Draft storage skipped:", storageError);
         }
@@ -70,12 +158,24 @@ export function useSaveDesign(
     } catch (e) {
       console.error("저장 실패:", e);
     }
-  }, [getJSON, getDataURL, productType]);
+  }, [getJSON, getDataURL, productType, saveRemoteDraft]);
 
   // 드래프트 삭제
   const clearDraft = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    void (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+        await supabase.from(DRAFT_TABLE).delete().eq("user_id", user.id);
+      } catch {
+        // Remote delete is best-effort only.
+      }
+    })();
     setSavedAt(null);
     setIsDirty(false);
     setSaveWarning(null);

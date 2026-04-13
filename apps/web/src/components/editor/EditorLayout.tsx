@@ -154,14 +154,19 @@ export default function EditorLayout() {
   // 캔버스 준비 완료 후 저장된 드래프트 복원 여부 확인
   useEffect(() => {
     if (!isCanvasReady) return;
-    const draft = loadDraft();
-    if (!draft) return;
-    const savedDate = new Date(draft.savedAt);
-    const timeStr = savedDate.toLocaleString(locale);
-    const restore = window.confirm(tpl(t.toolbar.restorePrompt, { timeStr }));
-    if (restore) {
-      loadDesign(draft.canvasJSON);
-    }
+    let cancelled = false;
+    void loadDraft().then((draft) => {
+      if (cancelled || !draft) return;
+      const savedDate = new Date(draft.savedAt);
+      const timeStr = savedDate.toLocaleString(locale);
+      const restore = window.confirm(tpl(t.toolbar.restorePrompt, { timeStr }));
+      if (restore) {
+        loadDesign(draft.canvasJSON);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCanvasReady]);
 

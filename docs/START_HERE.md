@@ -30,6 +30,8 @@
 - 주문 완료 메일/결제 검증 관련 변경은 PortOne 임시 비활성화 상태와 충돌하지 않도록 `/api/payments`, `/api/export`,
   프론트 주문 다이얼로그의 계약을 함께 확인합니다.
 - 서버 시작 시 폰트 보장(`ensure_fonts`) 로직 실행.
+- 로그인 사용자의 배송 기본값과 디자인 드래프트는 Supabase DB에 저장합니다. 운영 DB에
+  `docs/supabase-user-persistence.sql`을 적용해야 기기 간 복원이 활성화됩니다.
 
 ### 연동 포인트
 - 프론트는 `NEXT_PUBLIC_API_URL`을 우선 사용합니다. 로컬에서는 기본값 `http://localhost:8000`, 배포 도메인에서는
@@ -117,6 +119,7 @@ npm run dev
    - `apps/web/src/components/canvas/useCanvas.ts`
 4. **미리보기/주문 흐름**
    - `apps/web/src/components/editor/PreviewDialog.tsx`
+   - `apps/web/src/lib/order-profile.ts`
    - `apps/web/src/lib/order-cart.ts`
    - `apps/web/src/lib/order-pricing.ts`
 5. **AI 생성 API**

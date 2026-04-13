@@ -12,6 +12,9 @@ const orderDialog = read("src/components/editor/OrderDialog.tsx");
 const previewPage = read("src/app/design/preview/preview-client.tsx");
 const editorLayout = read("src/components/editor/EditorLayout.tsx");
 const addressSearchFields = read("src/components/editor/AddressSearchFields.tsx");
+const orderProfile = read("src/lib/order-profile.ts");
+const useOrderProfile = read("src/hooks/useOrderProfile.ts");
+const useSaveDesign = read("src/hooks/useSaveDesign.ts");
 const useCanvas = read("src/components/canvas/useCanvas.ts");
 const cutlinePreview = read("src/lib/cutline-preview.ts");
 const outputSize = read("src/lib/output-size.ts");
@@ -121,4 +124,28 @@ test("order shipping address uses searchable postcode flow with detail-only manu
   ]) {
     assert.match(source, /AddressSearchFields/, `${name} must use the shared address search component`);
   }
+});
+
+test("logged-in users persist shipping defaults and large drafts in Supabase", () => {
+  assert.match(orderProfile, /user_order_profiles/);
+  assert.match(orderProfile, /saveOrderProfile/);
+  assert.match(orderProfile, /loadOrderProfile/);
+  assert.match(orderProfile, /localStorage/);
+  assert.match(useOrderProfile, /loadOrderProfile/);
+  assert.match(useOrderProfile, /saveOrderProfile/);
+  for (const [name, source] of [
+    ["PreviewDialog", previewDialog],
+    ["OrderCartDialog", cartDialog],
+    ["OrderDialog", orderDialog],
+    ["preview-client", previewPage],
+  ]) {
+    assert.match(source, /useOrderProfile/, `${name} must load remembered shipping fields`);
+    assert.match(source, /rememberProfile\(shipping\)/, `${name} must save shipping fields before order submit`);
+  }
+
+  assert.match(useSaveDesign, /user_design_drafts/);
+  assert.match(useSaveDesign, /saveRemoteDraft/);
+  assert.match(useSaveDesign, /from\(DRAFT_TABLE\)\.upsert/);
+  assert.match(useSaveDesign, /loadDraft = useCallback\(async/);
+  assert.match(editorLayout, /void loadDraft\(\)\.then/);
 });
