@@ -25,6 +25,10 @@ PRINT_PRICE_KRW = {
 ORDER_OWNER_EMAIL = "kju7859@gmail.com"
 
 
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").lower() in ("1", "true", "yes")
+
+
 class ShippingInfo(BaseModel):
     buyerName: str = Field(min_length=1, max_length=80)
     buyerPhone: str = Field(min_length=6, max_length=30)
@@ -156,19 +160,30 @@ def _send_owner_order_email(
     order_time: datetime,
     attachments: list[tuple[str, bytes]],
 ) -> bool:
-    owner_email = os.getenv("ORDER_OWNER_EMAIL", ORDER_OWNER_EMAIL)
+    owner_email = os.getenv("ORDER_EMAIL_TO") or os.getenv("ORDER_OWNER_EMAIL", ORDER_OWNER_EMAIL)
     smtp_host = os.getenv("ORDER_EMAIL_SMTP_HOST") or os.getenv("SMTP_HOST")
     if not smtp_host:
-        logger.error("[payments] owner email failed: ORDER_EMAIL_SMTP_HOST/SMTP_HOST is not configured")
-        if os.getenv("ORDER_EMAIL_ALLOW_SKIP", "").lower() in ("1", "true", "yes"):
+        logger.error(
+            "[payments] owner email failed: ORDER_EMAIL_SMTP_HOST/SMTP_HOST is not configured; "
+            "set ORDER_EMAIL_SMTP_HOST, ORDER_EMAIL_SMTP_PORT, ORDER_EMAIL_SMTP_USER, "
+            "ORDER_EMAIL_SMTP_PASSWORD, and ORDER_EMAIL_FROM on the API server."
+        )
+        if _env_flag("ORDER_EMAIL_ALLOW_SKIP"):
             return False
-        raise HTTPException(status_code=500, detail="주문 이메일 발송 설정이 필요합니다.")
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "주문 이메일 SMTP 설정이 없어 메일을 보낼 수 없습니다. "
+                "API 서버 환경변수 ORDER_EMAIL_SMTP_HOST, ORDER_EMAIL_SMTP_PORT, "
+                "ORDER_EMAIL_SMTP_USER, ORDER_EMAIL_SMTP_PASSWORD, ORDER_EMAIL_FROM을 설정해주세요."
+            ),
+        )
 
     smtp_port = int(os.getenv("ORDER_EMAIL_SMTP_PORT") or os.getenv("SMTP_PORT") or "587")
     smtp_user = os.getenv("ORDER_EMAIL_SMTP_USER") or os.getenv("SMTP_USER")
     smtp_password = os.getenv("ORDER_EMAIL_SMTP_PASSWORD") or os.getenv("SMTP_PASSWORD")
     from_email = os.getenv("ORDER_EMAIL_FROM") or smtp_user or owner_email
-    use_ssl = (os.getenv("ORDER_EMAIL_SMTP_SSL") or "").lower() in ("1", "true", "yes") or smtp_port == 465
+    use_ssl = _env_flag("ORDER_EMAIL_SMTP_SSL") or smtp_port == 465
     use_starttls = (os.getenv("ORDER_EMAIL_SMTP_STARTTLS") or "true").lower() not in ("0", "false", "no")
 
     message = EmailMessage()
@@ -207,7 +222,7 @@ def _send_owner_order_email(
                 smtp.send_message(message)
     except Exception as exc:
         logger.exception("[payments] owner email failed: %s", exc)
-        if os.getenv("ORDER_EMAIL_REQUIRED", "").lower() in ("1", "true", "yes"):
+        if _env_flag("ORDER_EMAIL_REQUIRED"):
             raise HTTPException(status_code=502, detail="주문 이메일 발송에 실패했습니다.") from exc
         return False
 

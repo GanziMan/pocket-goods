@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { API_BASE_URL, readApiError } from "@/lib/api";
 import type { ProductType } from "@/lib/assets";
 import { getOrderAmount, PRINT_PRICE_KRW, SHIPPING_FEE_KRW } from "@/lib/order-pricing";
 
@@ -134,7 +135,7 @@ export default function OrderDialog({
       };
 
       const verification = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/payments/complete`,
+        `${API_BASE_URL}/api/payments/complete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -142,22 +143,17 @@ export default function OrderDialog({
         },
       );
 
-      const verificationBody = await verification.json().catch(() => null);
-
       if (!verification.ok) {
-        const detail =
-          typeof verificationBody?.detail === "string"
-            ? verificationBody.detail
-            : "주문 접수에 실패했습니다. 입력 정보를 확인해주세요.";
-        throw new Error(detail);
+        throw new Error(await readApiError(verification, "주문 접수에 실패했습니다. 입력 정보를 확인해주세요."));
       }
+      const verificationBody = await verification.json().catch(() => null);
       if (verificationBody?.emailSent === false) {
         throw new Error("주문은 접수됐지만 이메일 발송이 비활성화되어 있습니다. 이메일 설정을 확인해주세요.");
       }
 
       setMessage("주문 확인 완료. 인쇄 파일을 저장하는 중입니다…");
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`, {
+      await fetch(`${API_BASE_URL}/api/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

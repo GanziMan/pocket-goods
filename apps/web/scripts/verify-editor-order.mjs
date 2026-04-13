@@ -14,7 +14,9 @@ const editorLayout = read("src/components/editor/EditorLayout.tsx");
 const useCanvas = read("src/components/canvas/useCanvas.ts");
 const cutlinePreview = read("src/lib/cutline-preview.ts");
 const outputSize = read("src/lib/output-size.ts");
+const api = read("src/lib/api.ts");
 const paymentsApi = read("../api/routers/payments.py");
+const apiMain = read("../api/main.py");
 
 test("PortOne browser checkout is disabled on all editor order entry points", () => {
   for (const [name, source] of [
@@ -72,4 +74,16 @@ test("manual order intake keeps web and API sticker prices aligned", () => {
   assert.match(paymentsApi, /"A4": 4000/);
   assert.match(paymentsApi, /orderStatus:\s*Literal\["received"\]/);
   assert.match(paymentsApi, /status="ORDER_RECEIVED"/);
+});
+
+test("production order calls do not fall back to browser localhost", () => {
+  assert.match(api, /PRODUCTION_API_URL\s*=\s*"https:\/\/pocket-goods-production\.up\.railway\.app"/);
+  assert.match(api, /hostname === "pocket-goods\.com"/);
+  assert.match(api, /hostname\.endsWith\("\.vercel\.app"\)/);
+  assert.match(api, /readApiError/);
+  assert.equal(previewDialog.includes("localhost:8000"), false);
+  assert.equal(cartDialog.includes("localhost:8000"), false);
+  assert.equal(orderDialog.includes("localhost:8000"), false);
+  assert.equal(previewPage.includes("localhost:8000"), false);
+  assert.match(apiMain, /allow_origin_regex=r"https:\/\/\.\*\\\.vercel\\\.app"/);
 });

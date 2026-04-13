@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import { useLocale, tpl } from "@/lib/i18n/client";
 import { useImagePreprocessor } from "@/hooks/useImagePreprocessor";
@@ -280,7 +281,7 @@ export default function AIPanel({
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/generate-image`,
+        `${API_BASE_URL}/api/generate-image`,
         {
           method: "POST",
           body: formData,

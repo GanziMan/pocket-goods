@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ProductType } from "@/lib/assets";
+import { API_BASE_URL, readApiError } from "@/lib/api";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
 import { addOrderCartItem, compactCartPreviewImage, createDefaultQuantities } from "@/lib/order-cart";
 import { buildCutlinePreview, drawSmoothClosedPath } from "@/lib/cutline-preview";
@@ -203,7 +204,7 @@ export default function PreviewDialog({
     try {
       setMessage("주문 정보를 서버로 보내는 중입니다…");
       const verification = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/payments/complete`,
+        `${API_BASE_URL}/api/payments/complete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -221,17 +222,15 @@ export default function PreviewDialog({
           }),
         },
       );
-      const verificationBody = await verification.json().catch(() => null);
       if (!verification.ok) {
-        throw new Error(
-          typeof verificationBody?.detail === "string" ? verificationBody.detail : "주문 접수에 실패했습니다.",
-        );
+        throw new Error(await readApiError(verification, "주문 접수에 실패했습니다."));
       }
+      const verificationBody = await verification.json().catch(() => null);
       if (verificationBody?.emailSent === false) {
         throw new Error("주문은 접수됐지만 이메일 발송이 비활성화되어 있습니다. 이메일 설정을 확인해주세요.");
       }
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`, {
+      await fetch(`${API_BASE_URL}/api/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

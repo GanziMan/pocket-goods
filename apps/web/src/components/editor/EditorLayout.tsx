@@ -13,6 +13,7 @@ import MobileActionBar from "@/components/editor/MobileActionBar";
 import MobileDrawer from "@/components/editor/MobileDrawer";
 import PreviewDialog from "@/components/editor/PreviewDialog";
 import OrderCartDialog from "@/components/editor/OrderCartDialog";
+import { API_BASE_URL } from "@/lib/api";
 import type { ProductType } from "@/lib/assets";
 import { OUTPUT_CANVAS_SIZE, OUTPUT_SIZE_MM } from "@/lib/output-size";
 import { ZoomIn, ZoomOut } from "lucide-react";
@@ -169,7 +170,7 @@ export default function EditorLayout() {
     setIsExporting(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/export`,
+        `${API_BASE_URL}/api/export`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

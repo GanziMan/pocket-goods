@@ -32,7 +32,8 @@
 - 서버 시작 시 폰트 보장(`ensure_fonts`) 로직 실행.
 
 ### 연동 포인트
-- 프론트는 `NEXT_PUBLIC_API_URL` 또는 기본값 `http://localhost:8000`으로 API 호출.
+- 프론트는 `NEXT_PUBLIC_API_URL`을 우선 사용합니다. 로컬에서는 기본값 `http://localhost:8000`, 배포 도메인에서는
+  `NEXT_PUBLIC_API_URL` 누락 시 Railway API로 fallback합니다.
 - Docker Compose에서는 웹 컨테이너가 `NEXT_PUBLIC_API_URL=http://api:8000`을 사용.
 
 ---
@@ -92,9 +93,12 @@ npm run dev
 - `GEMINI_API_KEY` (AI 생성 필수)
 - `SUPABASE_URL` (인증/스토리지 연동 시)
 - `SUPABASE_SERVICE_ROLE_KEY` (인증 검증/업로드 시)
+- `ORDER_EMAIL_SMTP_HOST`, `ORDER_EMAIL_SMTP_PORT`, `ORDER_EMAIL_SMTP_USER`, `ORDER_EMAIL_SMTP_PASSWORD`,
+  `ORDER_EMAIL_FROM` (주문 완료 메일 필수)
+- `ORDER_EMAIL_TO` 또는 `ORDER_OWNER_EMAIL` (기본 수신자 `kju7859@gmail.com`을 바꿀 때)
 
 ### `apps/web/.env.local`
-- `NEXT_PUBLIC_API_URL` (기본: `http://localhost:8000`)
+- `NEXT_PUBLIC_API_URL` (로컬 기본: `http://localhost:8000`, 배포 fallback: Railway API)
 - `NEXT_PUBLIC_SUPABASE_URL` (로그인 기능 사용할 때)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (로그인 기능 사용할 때)
 - PortOne 공개 키는 현재 수동 주문 접수 모드에서는 필수값이 아닙니다. 다시 활성화할 때는 결제 완료 후에도

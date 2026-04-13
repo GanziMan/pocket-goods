@@ -19,6 +19,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { LandingNav } from "@/components/landing/LandingNav";
+import { API_BASE_URL } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import { profileEvents } from "@/lib/gtag";
 import { addWatermark, resultToBlob } from "@/lib/image-utils";
@@ -129,7 +130,7 @@ export default function ProfileGenerator() {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/generate-profile`,
+        `${API_BASE_URL}/api/generate-profile`,
         { method: "POST", body: formData, headers }
       );
 
