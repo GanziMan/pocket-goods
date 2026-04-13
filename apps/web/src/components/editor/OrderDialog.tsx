@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import AddressSearchFields from "@/components/editor/AddressSearchFields";
 import { API_BASE_URL, readApiError } from "@/lib/api";
 import type { ProductType } from "@/lib/assets";
 import { getOrderAmount, PRINT_PRICE_KRW, SHIPPING_FEE_KRW } from "@/lib/order-pricing";
@@ -232,33 +233,14 @@ export default function OrderDialog({
             />
           </Field>
 
-          <div className="grid grid-cols-[110px_1fr] gap-3">
-            <Field label="우편번호" required>
-              <Input
-                value={form.zipcode}
-                onChange={(event) => updateField("zipcode")(event.target.value)}
-                placeholder="12345"
-                autoComplete="postal-code"
-              />
-            </Field>
-            <Field label="주소" required>
-              <Input
-                value={form.addressLine1}
-                onChange={(event) => updateField("addressLine1")(event.target.value)}
-                placeholder="서울특별시 강남구 ..."
-                autoComplete="address-line1"
-              />
-            </Field>
-          </div>
-
-          <Field label="상세 주소" required>
-            <Input
-              value={form.addressLine2}
-              onChange={(event) => updateField("addressLine2")(event.target.value)}
-              placeholder="동/호수, 건물명 등"
-              autoComplete="address-line2"
-            />
-          </Field>
+          <AddressSearchFields
+            value={{
+              zipcode: form.zipcode,
+              addressLine1: form.addressLine1,
+              addressLine2: form.addressLine2,
+            }}
+            onChange={(key, value) => updateField(key)(value)}
+          />
 
           <Field label="배송 메모">
             <Textarea

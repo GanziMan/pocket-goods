@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import AddressSearchFields from "@/components/editor/AddressSearchFields";
 import { API_BASE_URL, readApiError } from "@/lib/api";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
 import { clearOrderCart, readOrderCart, writeOrderCart, type OrderCartItem } from "@/lib/order-cart";
@@ -263,9 +264,14 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
               <Field label="주문자 이름" required><Input value={form.buyerName} onChange={(e) => updateField("buyerName")(e.target.value)} /></Field>
               <Field label="연락처" required><Input value={form.buyerPhone} onChange={(e) => updateField("buyerPhone")(e.target.value)} /></Field>
               <Field label="이메일" required><Input type="email" value={form.buyerEmail} onChange={(e) => updateField("buyerEmail")(e.target.value)} /></Field>
-              <Field label="우편번호" required><Input value={form.zipcode} onChange={(e) => updateField("zipcode")(e.target.value)} /></Field>
-              <Field label="주소" required><Input value={form.addressLine1} onChange={(e) => updateField("addressLine1")(e.target.value)} /></Field>
-              <Field label="상세 주소" required><Input value={form.addressLine2} onChange={(e) => updateField("addressLine2")(e.target.value)} /></Field>
+              <AddressSearchFields
+                value={{
+                  zipcode: form.zipcode,
+                  addressLine1: form.addressLine1,
+                  addressLine2: form.addressLine2,
+                }}
+                onChange={(key, value) => updateField(key)(value)}
+              />
               <Field label="배송 메모"><Textarea rows={3} className="resize-none" value={form.memo} onChange={(e) => updateField("memo")(e.target.value)} /></Field>
               <label className="flex gap-2 rounded-xl border p-3 text-xs"><input type="checkbox" checked={form.agree} onChange={(e) => updateField("agree")(e.target.checked)} /> 개인정보를 결제/배송 처리에 사용하는 데 동의합니다.</label>
               {(message || error) && <p className={`rounded-xl p-3 text-sm ${error ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>{error ?? message}</p>}

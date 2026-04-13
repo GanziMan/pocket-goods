@@ -11,6 +11,7 @@ const cartDialog = read("src/components/editor/OrderCartDialog.tsx");
 const orderDialog = read("src/components/editor/OrderDialog.tsx");
 const previewPage = read("src/app/design/preview/preview-client.tsx");
 const editorLayout = read("src/components/editor/EditorLayout.tsx");
+const addressSearchFields = read("src/components/editor/AddressSearchFields.tsx");
 const useCanvas = read("src/components/canvas/useCanvas.ts");
 const cutlinePreview = read("src/lib/cutline-preview.ts");
 const outputSize = read("src/lib/output-size.ts");
@@ -86,4 +87,22 @@ test("production order calls do not fall back to browser localhost", () => {
   assert.equal(orderDialog.includes("localhost:8000"), false);
   assert.equal(previewPage.includes("localhost:8000"), false);
   assert.match(apiMain, /allow_origin_regex=r"https:\/\/\.\*\\\.vercel\\\.app"/);
+});
+
+test("order shipping address uses searchable postcode flow with detail-only manual entry", () => {
+  assert.match(addressSearchFields, /POSTCODE_SCRIPT_SRC/);
+  assert.match(addressSearchFields, /window\.kakao\?\.Postcode/);
+  assert.match(addressSearchFields, /zonecode/);
+  assert.match(addressSearchFields, /roadAddress/);
+  assert.match(addressSearchFields, /detailRef\.current\?\.focus/);
+  assert.match(addressSearchFields, /readOnly placeholder="주소 검색으로 입력"/);
+  assert.match(addressSearchFields, /readOnly placeholder="도로명\/지번 주소"/);
+  for (const [name, source] of [
+    ["PreviewDialog", previewDialog],
+    ["OrderCartDialog", cartDialog],
+    ["OrderDialog", orderDialog],
+    ["preview-client", previewPage],
+  ]) {
+    assert.match(source, /AddressSearchFields/, `${name} must use the shared address search component`);
+  }
 });
