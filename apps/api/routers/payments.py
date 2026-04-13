@@ -230,6 +230,7 @@ def _send_owner_order_email(
 
 
 @router.post("/complete", response_model=CompletePaymentResponse)
+@router.post("/complete-noverify", response_model=CompletePaymentResponse)
 async def complete_payment(req: CompletePaymentRequest):
     """
     PortOne 결제를 임시 비활성화한 수동 주문 접수 엔드포인트입니다.
