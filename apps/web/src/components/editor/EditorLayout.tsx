@@ -19,6 +19,7 @@ import { OUTPUT_CANVAS_SIZE, OUTPUT_SIZE_MM } from "@/lib/output-size";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocale, tpl } from "@/lib/i18n/client";
+import type { OrderCartItem } from "@/lib/order-cart";
 
 type OutputSize = keyof typeof OUTPUT_SIZE_MM;
 
@@ -37,6 +38,10 @@ export default function EditorLayout() {
     revokeOnClose?: boolean;
   } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+  const [pendingCartEdit, setPendingCartEdit] = useState<{
+    canvasJSON: object;
+    outputSize: OutputSize;
+  } | null>(null);
 
   const {
     canvasRef,
@@ -83,6 +88,17 @@ export default function EditorLayout() {
     if (!isCanvasReady) return;
     setCanvasSize(OUTPUT_CANVAS_SIZE[outputSize]);
   }, [isCanvasReady, outputSize, setCanvasSize]);
+
+  useEffect(() => {
+    if (!isCanvasReady || !pendingCartEdit) return;
+    if (outputSize !== pendingCartEdit.outputSize) {
+      setOutputSize(pendingCartEdit.outputSize);
+      return;
+    }
+    void loadDesign(pendingCartEdit.canvasJSON);
+    markDirty();
+    setPendingCartEdit(null);
+  }, [isCanvasReady, loadDesign, markDirty, outputSize, pendingCartEdit]);
 
   // 키보드 단축키
   useEffect(() => {
@@ -216,6 +232,18 @@ export default function EditorLayout() {
       setIsExporting(false);
     }
   }, [toJSON, toDataURL, productType, outputSize, isExporting, t.toolbar.exportFailed]);
+
+  const handleEditCartItem = useCallback((item: OrderCartItem) => {
+    setPreviewPayload((current) => {
+      if (current?.revokeOnClose) URL.revokeObjectURL(current.imageSrc);
+      return null;
+    });
+    setCartOpen(false);
+    setPendingCartEdit({
+      canvasJSON: item.canvasJSON,
+      outputSize: item.outputSize,
+    });
+  }, []);
 
   return (
     <div className="flex flex-col h-dvh overflow-hidden bg-zinc-50">
@@ -367,7 +395,7 @@ export default function EditorLayout() {
           })
         }
       />
-      <OrderCartDialog open={cartOpen} onClose={() => setCartOpen(false)} />
+      <OrderCartDialog open={cartOpen} onClose={() => setCartOpen(false)} onEditItem={handleEditCartItem} />
     </div>
   );
 }

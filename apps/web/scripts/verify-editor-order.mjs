@@ -9,6 +9,7 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 const previewDialog = read("src/components/editor/PreviewDialog.tsx");
 const cartDialog = read("src/components/editor/OrderCartDialog.tsx");
 const orderDialog = read("src/components/editor/OrderDialog.tsx");
+const orderCart = read("src/lib/order-cart.ts");
 const previewPage = read("src/app/design/preview/preview-client.tsx");
 const editorLayout = read("src/components/editor/EditorLayout.tsx");
 const addressSearchFields = read("src/components/editor/AddressSearchFields.tsx");
@@ -90,14 +91,21 @@ test("manual order intake keeps web and API sticker prices aligned", () => {
   assert.match(paymentsApi, /status="ORDER_RECEIVED"/);
 });
 
-test("cart and order preview preserve the size that opened the order sheet", () => {
+test("cart and order preview use one selected size per design", () => {
   assert.match(previewDialog, /quantities:\s*createDefaultQuantities\(payload\.outputSize\)/);
   assert.match(previewDialog, /outputSize:\s*payload\.outputSize/);
+  assert.match(previewDialog, /PRINT_PRICE_KRW\[payload\.outputSize\] \* form\.quantities\[payload\.outputSize\]/);
+  assert.match(previewDialog, /const selectedItems = \[\{ size: payload\.outputSize/);
+  assert.match(previewDialog, /close\(\);/);
   assert.doesNotMatch(cartDialog, /outputSize:\s*"A5"/);
   assert.match(cartDialog, /outputSize:\s*primaryOutputSize/);
   assert.match(cartDialog, /output_size:\s*firstSelectedSize\(item\) \?\? "A5"/);
   assert.match(cartDialog, /getPreferredSize\(item\)/);
-  assert.match(cartDialog, /처음 선택한 사이즈/);
+  assert.match(cartDialog, /getPreferredQuantity\(item\)/);
+  assert.match(cartDialog, /선택한 사이즈/);
+  assert.match(cartDialog, /onEditItem/);
+  assert.match(cartDialog, /setZoomItem\(item\)/);
+  assert.match(orderCart, /ctx\.fillStyle = "#ffffff"/);
 });
 
 test("production order calls do not fall back to browser localhost", () => {

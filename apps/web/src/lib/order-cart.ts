@@ -58,7 +58,7 @@ export function clearOrderCart() {
   writeOrderCart([]);
 }
 
-export function compactCartPreviewImage(imageSrc: string, maxWidth = 220): Promise<string> {
+export function compactCartPreviewImage(imageSrc: string, maxWidth = 720): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -71,8 +71,10 @@ export function compactCartPreviewImage(imageSrc: string, maxWidth = 220): Promi
         reject(new Error("Canvas context unavailable"));
         return;
       }
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", 0.72));
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
     };
     img.onerror = () => reject(new Error("Failed to load cart preview image"));
     img.src = imageSrc;

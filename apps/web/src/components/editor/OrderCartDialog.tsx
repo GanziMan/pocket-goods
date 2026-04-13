@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Loader2, ShoppingBag, Trash2, X } from "lucide-react";
+import { Loader2, Pencil, ShoppingBag, Trash2, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { clearOrderCart, readOrderCart, writeOrderCart, type OrderCartItem } fro
 type OrderCartDialogProps = {
   open: boolean;
   onClose: () => void;
+  onEditItem: (item: OrderCartItem) => void;
 };
 
 type ShippingForm = {
@@ -40,12 +41,13 @@ const initialShippingForm: ShippingForm = {
   agree: false,
 };
 
-export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps) {
+export default function OrderCartDialog({ open, onClose, onEditItem }: OrderCartDialogProps) {
   const [items, setItems] = useState<OrderCartItem[]>([]);
   const [form, setForm] = useState<ShippingForm>(initialShippingForm);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [zoomItem, setZoomItem] = useState<OrderCartItem | null>(null);
   const { rememberProfile } = useOrderProfile(open, setForm);
 
   const refresh = () => setItems(readOrderCart());
@@ -65,11 +67,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
     () =>
       items.reduce(
         (sum, item) =>
-          sum +
-          (["A6", "A5", "A4"] as OutputSize[]).reduce(
-            (itemSum, size) => itemSum + PRINT_PRICE_KRW[size] * item.quantities[size],
-            0,
-          ),
+          sum + PRINT_PRICE_KRW[getPreferredSize(item)] * getPreferredQuantity(item),
         0,
       ),
     [items],
@@ -77,7 +75,7 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
   const totalQuantity = useMemo(
     () =>
       items.reduce(
-        (sum, item) => sum + (["A6", "A5", "A4"] as OutputSize[]).reduce((itemSum, size) => itemSum + item.quantities[size], 0),
+        (sum, item) => sum + getPreferredQuantity(item),
         0,
       ),
     [items],
@@ -103,12 +101,17 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
       setMessage(null);
     };
 
-  const updateQuantity = (itemId: string, size: OutputSize, quantity: number) => {
+  const updateQuantity = (itemId: string, quantity: number) => {
     const nextItems = items.map((item) =>
       item.id === itemId
         ? {
             ...item,
-            quantities: { ...item.quantities, [size]: Math.max(0, Math.min(99, quantity)) },
+            quantities: {
+              A6: 0,
+              A5: 0,
+              A4: 0,
+              [getPreferredSize(item)]: Math.max(0, Math.min(99, quantity)),
+            },
           }
         : item,
     );
@@ -147,7 +150,12 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
     const orderItems = items.map((item) => ({
       designId: item.id,
       outputSize: getPreferredSize(item),
-      quantities: item.quantities,
+      quantities: {
+        A6: 0,
+        A5: 0,
+        A4: 0,
+        [getPreferredSize(item)]: getPreferredQuantity(item),
+      },
       productType: item.productType,
       canvasJSON: item.canvasJSON,
     }));
@@ -228,30 +236,45 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
                 {items.map((item, index) => (
                   <div key={item.id} className="rounded-2xl border bg-white p-3 shadow-sm">
                     <div className="flex gap-3">
-                      <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100 ring-1 ring-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => setZoomItem(item)}
+                        className="group relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-zinc-200"
+                        aria-label={`디자인 ${index + 1} 이미지 크게 보기`}
+                      >
                         <Image src={item.thumbnailSrc} alt={item.title} fill className="object-contain" />
-                      </div>
+                        <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/35 group-hover:opacity-100">
+                          <ZoomIn className="size-5" />
+                        </span>
+                      </button>
                       <div className="min-w-0 flex-1">
                         <div className="mb-2 flex items-center justify-between">
                           <p className="font-bold">디자인 {index + 1}</p>
-                          <button onClick={() => removeItem(item.id)} className="text-red-500">
-                            <Trash2 className="size-4" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => onEditItem(item)}
+                              className="rounded-full p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"
+                              aria-label={`디자인 ${index + 1} 다시 편집`}
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                            <button onClick={() => removeItem(item.id)} className="rounded-full p-1 text-red-500 hover:bg-red-50" aria-label={`디자인 ${index + 1} 삭제`}>
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {getItemSizeOrder(item).map((size) => (
-                            <div key={size} className="rounded-lg bg-zinc-50 p-2">
-                              <p className="text-xs font-bold">{size}</p>
-                              {getPreferredSize(item) === size && (
-                                <p className="text-[10px] font-semibold text-primary">처음 선택한 사이즈</p>
-                              )}
-                              <div className="mt-1 flex items-center gap-1">
-                                <button className="grid size-6 place-items-center rounded-full border text-xs" onClick={() => updateQuantity(item.id, size, item.quantities[size] - 1)}>-</button>
-                                <Input className="h-7 text-center" value={item.quantities[size]} onChange={(event) => updateQuantity(item.id, size, Number(event.target.value) || 0)} />
-                                <button className="grid size-6 place-items-center rounded-full border text-xs" onClick={() => updateQuantity(item.id, size, item.quantities[size] + 1)}>+</button>
-                              </div>
+                        <div className="rounded-lg bg-zinc-50 p-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-bold">{getPreferredSize(item)}</p>
+                              <p className="text-[10px] font-semibold text-primary">선택한 사이즈</p>
                             </div>
-                          ))}
+                            <div className="flex items-center gap-1">
+                              <button className="grid size-6 place-items-center rounded-full border text-xs" onClick={() => updateQuantity(item.id, getPreferredQuantity(item) - 1)}>-</button>
+                              <Input className="h-7 w-12 text-center" value={getPreferredQuantity(item)} onChange={(event) => updateQuantity(item.id, Number(event.target.value) || 0)} />
+                              <button className="grid size-6 place-items-center rounded-full border text-xs" onClick={() => updateQuantity(item.id, getPreferredQuantity(item) + 1)}>+</button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -291,6 +314,37 @@ export default function OrderCartDialog({ open, onClose }: OrderCartDialogProps)
           </aside>
         </div>
       </div>
+      {zoomItem && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4" onClick={() => setZoomItem(null)}>
+          <div className="relative max-h-[88vh] max-w-4xl overflow-hidden rounded-3xl bg-white p-4 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setZoomItem(null)}
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-2 text-zinc-600 shadow hover:bg-white"
+              aria-label="확대 이미지 닫기"
+            >
+              <X className="size-5" />
+            </button>
+            <div className="relative h-[70vh] w-[min(80vw,760px)] rounded-2xl bg-white">
+              <Image src={zoomItem.thumbnailSrc} alt={zoomItem.title} fill className="object-contain" />
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-sm font-bold">{getPreferredSize(zoomItem)} × {getPreferredQuantity(zoomItem)}장</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onEditItem(zoomItem);
+                  setZoomItem(null);
+                }}
+              >
+                <Pencil className="mr-2 size-4" />
+                다시 편집
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -313,9 +367,8 @@ function firstQuantitySize(item: OrderCartItem): OutputSize | null {
   return SIZE_OPTIONS.find((size) => item.quantities[size] > 0) ?? null;
 }
 
-function getItemSizeOrder(item: OrderCartItem): OutputSize[] {
-  const preferredSize = getPreferredSize(item);
-  return [preferredSize, ...SIZE_OPTIONS.filter((size) => size !== preferredSize)];
+function getPreferredQuantity(item: OrderCartItem): number {
+  return item.quantities[getPreferredSize(item)] ?? 0;
 }
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {

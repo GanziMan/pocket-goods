@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Loader2, PackagePlus, ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { useOrderProfile } from "@/hooks/useOrderProfile";
 import type { ProductType } from "@/lib/assets";
 import { API_BASE_URL, readApiError } from "@/lib/api";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
-import { addOrderCartItem, compactCartPreviewImage, createDefaultQuantities } from "@/lib/order-cart";
+import { addOrderCartItem, compactCartPreviewImage, createDefaultQuantities, EMPTY_QUANTITIES } from "@/lib/order-cart";
 import { buildCutlinePreview, drawSmoothClosedPath } from "@/lib/cutline-preview";
 
 type PreviewPayload = {
@@ -91,16 +91,12 @@ export default function PreviewDialog({
   }, [initialTab, open, payload]);
 
   const printAmount = useMemo(
-    () =>
-      (["A6", "A5", "A4"] as OutputSize[]).reduce(
-        (sum, size) => sum + PRINT_PRICE_KRW[size] * form.quantities[size],
-        0,
-      ),
-    [form.quantities],
+    () => (payload ? PRINT_PRICE_KRW[payload.outputSize] * form.quantities[payload.outputSize] : 0),
+    [form.quantities, payload],
   );
   const totalQuantity = useMemo(
-    () => (["A6", "A5", "A4"] as OutputSize[]).reduce((sum, size) => sum + form.quantities[size], 0),
-    [form.quantities],
+    () => (payload ? form.quantities[payload.outputSize] : 0),
+    [form.quantities, payload],
   );
   const amount = totalQuantity > 0 ? printAmount + SHIPPING_FEE_KRW : 0;
   const isFormReady = useMemo(
@@ -187,13 +183,8 @@ export default function PreviewDialog({
     setMessage("주문을 접수하는 중입니다…");
 
     const paymentId = `pocket_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-    const selectedItems = (["A6", "A5", "A4"] as OutputSize[])
-      .filter((size) => form.quantities[size] > 0)
-      .map((size) => ({ size, quantity: form.quantities[size] }));
-    const orderName =
-      selectedItems.length === 1
-        ? `투명 스티커 ${selectedItems[0].size} ${selectedItems[0].quantity}장 주문`
-        : `투명 스티커 ${totalQuantity}장 묶음 주문`;
+    const selectedItems = [{ size: payload.outputSize, quantity: form.quantities[payload.outputSize] }];
+    const orderName = `투명 스티커 ${payload.outputSize} ${totalQuantity}장 주문`;
     const shipping = {
       buyerName: form.buyerName.trim(),
       buyerPhone: form.buyerPhone.trim(),
@@ -266,9 +257,12 @@ export default function PreviewDialog({
         canvasJSON: payload.canvasJSON,
         productType: "sticker",
         outputSize: payload.outputSize,
-        quantities: form.quantities,
+        quantities: {
+          ...EMPTY_QUANTITIES,
+          [payload.outputSize]: form.quantities[payload.outputSize],
+        },
       });
-      setMessage("주문함에 담았습니다. 다른 디자인도 추가한 뒤 한 번에 결제할 수 있어요.");
+      close();
     } catch {
       setError("주문함 미리보기 저장에 실패했습니다. 이미지를 다시 확인해주세요.");
     }
@@ -349,49 +343,39 @@ export default function PreviewDialog({
               <div className="space-y-3">
                 <div className="rounded-xl bg-zinc-50 p-3 text-sm">
                   <p className="mb-3 text-xs font-bold text-zinc-500">제작 수량</p>
-                  <div className="space-y-2">
-                    {(["A6", "A5", "A4"] as OutputSize[]).map((size) => (
-                      <div key={size} className="flex items-center justify-between gap-3 rounded-lg bg-white p-2 ring-1 ring-zinc-200">
-                        <div>
-                          <p className="font-bold">{size}</p>
-                          <p className="text-[11px] text-zinc-500">장당 {PRINT_PRICE_KRW[size].toLocaleString("ko-KR")}원</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            className="grid size-7 place-items-center rounded-full border text-sm font-bold"
-                            onClick={() => updateQuantity(size, form.quantities[size] - 1)}
-                          >
-                            -
-                          </button>
-                          <Input
-                            className="h-8 w-12 text-center"
-                            inputMode="numeric"
-                            value={form.quantities[size]}
-                            onChange={(event) => updateQuantity(size, Number(event.target.value) || 0)}
-                          />
-                          <button
-                            type="button"
-                            className="grid size-7 place-items-center rounded-full border text-sm font-bold"
-                            onClick={() => updateQuantity(size, form.quantities[size] + 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-white p-2 ring-1 ring-zinc-200">
+                    <div>
+                      <p className="font-bold">{payload.outputSize}</p>
+                      <p className="text-[11px] text-zinc-500">장당 {PRINT_PRICE_KRW[payload.outputSize].toLocaleString("ko-KR")}원</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="grid size-7 place-items-center rounded-full border text-sm font-bold"
+                        onClick={() => updateQuantity(payload.outputSize, form.quantities[payload.outputSize] - 1)}
+                      >
+                        -
+                      </button>
+                      <Input
+                        className="h-8 w-12 text-center"
+                        inputMode="numeric"
+                        value={form.quantities[payload.outputSize]}
+                        onChange={(event) => updateQuantity(payload.outputSize, Number(event.target.value) || 0)}
+                      />
+                      <button
+                        type="button"
+                        className="grid size-7 place-items-center rounded-full border text-sm font-bold"
+                        onClick={() => updateQuantity(payload.outputSize, form.quantities[payload.outputSize] + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-4 space-y-2 border-t pt-3">
-                    {(["A6", "A5", "A4"] as OutputSize[]).map((size) =>
-                      form.quantities[size] > 0 ? (
-                        <div key={size} className="flex justify-between">
-                          <span>인쇄비 {size} × {form.quantities[size]}</span>
-                          <b>{(PRINT_PRICE_KRW[size] * form.quantities[size]).toLocaleString("ko-KR")}원</b>
-                        </div>
-                      ) : (
-                        <Fragment key={size} />
-                      ),
-                    )}
+                    <div className="flex justify-between">
+                      <span>인쇄비 {payload.outputSize} × {form.quantities[payload.outputSize]}</span>
+                      <b>{printAmount.toLocaleString("ko-KR")}원</b>
+                    </div>
                   </div>
                   <div className="mt-2 flex justify-between"><span>택배비 <span className="text-[11px] text-zinc-400">(묶음 1회)</span></span><b>{totalQuantity > 0 ? SHIPPING_FEE_KRW.toLocaleString("ko-KR") : 0}원</b></div>
                   <div className="mt-3 flex justify-between border-t pt-3 text-base"><span className="font-bold">총 결제금액</span><b>{amount.toLocaleString("ko-KR")}원</b></div>

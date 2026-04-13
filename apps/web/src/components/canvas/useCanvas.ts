@@ -630,6 +630,7 @@ export function useCanvas(
     isRestoringRef.current = true;
     await fabricRef.current.loadFromJSON(json);
     fabricRef.current.renderAll();
+    setHasObjects((fabricRef.current.getObjects?.() ?? []).length > 0);
     isRestoringRef.current = false;
     updateHistoryState();
   }, [updateHistoryState]);
