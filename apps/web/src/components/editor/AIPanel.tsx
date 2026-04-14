@@ -33,6 +33,106 @@ interface AIPanelProps {
 
 type Mode = "prompt-only" | "from-canvas" | "from-upload";
 
+type AIPanelDraft = {
+  mode: Mode;
+  style: Style;
+  prompt: string;
+  activeFeedId: string | null;
+  feedPage: number;
+  promptExpanded: boolean;
+  uploadedPreview: string | null;
+  uploadedFileName: string;
+  uploadedFileType: string;
+  result: string | null;
+  fallbackMessage: string | null;
+  remaining: { count: number; limit: number } | null;
+  loading: boolean;
+  error: string | null;
+  validationHint: string | null;
+  showLoginPrompt: boolean;
+  showDailyLimitReached: boolean;
+};
+
+const AI_PANEL_DRAFT_STORAGE_KEY = "pocketgoods-ai-panel-draft-v1";
+
+const DEFAULT_AI_PANEL_DRAFT: AIPanelDraft = {
+  mode: "from-upload",
+  style: "custom",
+  prompt: "",
+  activeFeedId: null,
+  feedPage: 0,
+  promptExpanded: false,
+  uploadedPreview: null,
+  uploadedFileName: "upload.png",
+  uploadedFileType: "image/png",
+  result: null,
+  fallbackMessage: null,
+  remaining: null,
+  loading: false,
+  error: null,
+  validationHint: null,
+  showLoginPrompt: false,
+  showDailyLimitReached: false,
+};
+
+let aiPanelDraft: AIPanelDraft = { ...DEFAULT_AI_PANEL_DRAFT };
+let aiPanelDraftLoaded = false;
+let aiGenerationPromise: Promise<void> | null = null;
+const aiPanelSubscribers = new Set<(draft: AIPanelDraft) => void>();
+
+function readStoredAIPanelDraft(): AIPanelDraft {
+  if (typeof window === "undefined") return aiPanelDraft;
+  if (aiPanelDraftLoaded) return aiPanelDraft;
+  aiPanelDraftLoaded = true;
+  try {
+    const raw = sessionStorage.getItem(AI_PANEL_DRAFT_STORAGE_KEY);
+    if (raw) {
+      aiPanelDraft = {
+        ...DEFAULT_AI_PANEL_DRAFT,
+        ...JSON.parse(raw),
+        loading: aiGenerationPromise ? aiPanelDraft.loading : false,
+      };
+    }
+  } catch {
+    aiPanelDraft = { ...DEFAULT_AI_PANEL_DRAFT };
+  }
+  return aiPanelDraft;
+}
+
+function persistAIPanelDraft(draft: AIPanelDraft) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(AI_PANEL_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch {
+    // Large data URLs can exceed storage quota. In-memory state still protects
+    // drawer/tab transitions in the current session.
+  }
+}
+
+function updateAIPanelDraft(patch: Partial<AIPanelDraft>) {
+  aiPanelDraft = { ...readStoredAIPanelDraft(), ...patch };
+  persistAIPanelDraft(aiPanelDraft);
+  aiPanelSubscribers.forEach((subscriber) => subscriber(aiPanelDraft));
+}
+
+function subscribeAIPanelDraft(subscriber: (draft: AIPanelDraft) => void) {
+  aiPanelSubscribers.add(subscriber);
+  return () => {
+    aiPanelSubscribers.delete(subscriber);
+  };
+}
+
+function isAiGenerationRunning() {
+  return aiGenerationPromise !== null;
+}
+
+function startAiGeneration(promise: Promise<void>) {
+  aiGenerationPromise = promise.finally(() => {
+    aiGenerationPromise = null;
+    updateAIPanelDraft({ loading: false });
+  });
+}
+
 export default function AIPanel({
   onGetCanvasImage,
   onAddGeneratedImage,
@@ -50,29 +150,31 @@ export default function AIPanel({
     reset: resetPreprocess,
   } = useImagePreprocessor();
 
-  const [mode, setMode] = useState<Mode>("from-upload");
-  const [style, setStyle] = useState<Style>("custom");
-  const [prompt, setPrompt] = useState("");
-  const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
-  const [feedPage, setFeedPage] = useState(0);
-  const [promptExpanded, setPromptExpanded] = useState(false);
-
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
-
-  const [result, setResult] = useState<string | null>(null);
-  const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
-  const [remaining, setRemaining] = useState<{ count: number; limit: number } | null>(null);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [validationHint, setValidationHint] = useState<string | null>(null);
-
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
+  const [draft, setDraft] = useState<AIPanelDraft>(() => readStoredAIPanelDraft());
+  const {
+    mode,
+    style,
+    prompt,
+    activeFeedId,
+    feedPage,
+    promptExpanded,
+    uploadedPreview,
+    uploadedFileName,
+    uploadedFileType,
+    result,
+    fallbackMessage,
+    remaining,
+    loading,
+    error,
+    validationHint,
+    showLoginPrompt,
+    showDailyLimitReached,
+  } = draft;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const feedScrollerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => subscribeAIPanelDraft(setDraft), []);
 
   const activeFeed = useMemo(
     () => STYLE_FEED_ITEMS.find((item) => item.id === activeFeedId) ?? null,
@@ -106,30 +208,42 @@ export default function AIPanel({
     const processed = await processFile(file);
     if (!processed) return;
 
-    if (uploadedPreview) {
-      URL.revokeObjectURL(uploadedPreview);
-    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(reader.error ?? new Error("이미지 읽기에 실패했습니다."));
+      reader.readAsDataURL(processed.file);
+    });
 
-    setUploadedFile(processed.file);
-    setUploadedPreview(URL.createObjectURL(processed.file));
-    setMode("from-upload");
+    updateAIPanelDraft({
+      uploadedPreview: dataUrl,
+      uploadedFileName: processed.file.name || file.name || "upload.png",
+      uploadedFileType: processed.file.type || file.type || "image/png",
+      mode: "from-upload",
+      error: null,
+      validationHint: null,
+    });
   };
 
   const handleSelectFeedItem = (item: StyleFeedItem) => {
     if (activeFeedId === item.id) {
-      setActiveFeedId(null);
-      setStyle("custom");
-      setPromptExpanded(true);
-      setError(null);
-      setValidationHint("스타일 선택을 해제했어요. 프롬프트를 입력해 자유롭게 생성할 수 있습니다.");
+      updateAIPanelDraft({
+        activeFeedId: null,
+        style: "custom",
+        promptExpanded: true,
+        error: null,
+        validationHint: "스타일 선택을 해제했어요. 프롬프트를 입력해 자유롭게 생성할 수 있습니다.",
+      });
       return;
     }
-    setActiveFeedId(item.id);
-    setStyle(item.style);
-    setPrompt("");
-    setPromptExpanded(false);
-    setError(null);
-    setValidationHint(null);
+    updateAIPanelDraft({
+      activeFeedId: item.id,
+      style: item.style,
+      prompt: "",
+      promptExpanded: false,
+      error: null,
+      validationHint: null,
+    });
   };
 
   const scrollCompactFeed = (direction: "prev" | "next") => {
@@ -140,20 +254,27 @@ export default function AIPanel({
   };
 
   const handleGenerate = async () => {
+    if (isAiGenerationRunning()) {
+      updateAIPanelDraft({ validationHint: "이미 생성이 진행 중이에요. 잠시만 기다려주세요." });
+      return;
+    }
     const validationMessage = getGenerateValidationMessage();
     if (validationMessage) {
-      setValidationHint(validationMessage);
+      updateAIPanelDraft({ validationHint: validationMessage });
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    setFallbackMessage(null);
-    setShowLoginPrompt(false);
-    setShowDailyLimitReached(false);
+    updateAIPanelDraft({
+      loading: true,
+      error: null,
+      result: null,
+      fallbackMessage: null,
+      showLoginPrompt: false,
+      showDailyLimitReached: false,
+      validationHint: null,
+    });
 
-    try {
+    startAiGeneration((async () => {
       const formData = new FormData();
       formData.append("prompt", finalPrompt);
       formData.append("style", activeFeed ? style : "custom");
@@ -165,8 +286,13 @@ export default function AIPanel({
         formData.append("canvas_image", blob, "canvas.png");
       }
 
-      if (mode === "from-upload" && uploadedFile) {
-        formData.append("upload_image", uploadedFile);
+      if (mode === "from-upload" && uploadedPreview) {
+        const uploadBlob = await fetch(uploadedPreview).then((res) => res.blob());
+        formData.append(
+          "upload_image",
+          uploadBlob,
+          uploadedFileName || `upload.${uploadedFileType.includes("jpeg") ? "jpg" : "png"}`,
+        );
       }
 
       const headers: HeadersInit = {};
@@ -194,7 +320,7 @@ export default function AIPanel({
           const err = await response.json();
 
           if (err.login_required) {
-            setShowLoginPrompt(true);
+            updateAIPanelDraft({ showLoginPrompt: true });
             return;
           }
 
@@ -204,11 +330,11 @@ export default function AIPanel({
             detail.includes("일시적") ||
             detail.toLowerCase().includes("temporarily")
           ) {
-            setError(e.serverBusy ?? "서버가 일시적으로 혼잡합니다.");
+            updateAIPanelDraft({ error: e.serverBusy ?? "서버가 일시적으로 혼잡합니다." });
             return;
           }
 
-          setShowDailyLimitReached(true);
+          updateAIPanelDraft({ showDailyLimitReached: true });
           return;
         }
 
@@ -218,27 +344,26 @@ export default function AIPanel({
 
       const data = await response.json();
 
-      setResult(data.image);
-
-      if (data.remaining !== undefined && data.daily_limit !== undefined) {
-        setRemaining({
+      updateAIPanelDraft({
+        result: data.image,
+        remaining: data.remaining !== undefined && data.daily_limit !== undefined
+          ? {
           count: data.remaining,
           limit: data.daily_limit,
+            }
+          : remaining,
+        fallbackMessage: data.fallback ? data.fallback_message ?? e.fallbackDefault : null,
+      });
+    })()
+      .catch((err) => {
+        updateAIPanelDraft({
+          error: err instanceof Error ? err.message : e.errorFallback ?? "오류가 발생했습니다.",
         });
-      }
-
-      if (data.fallback) {
-        setFallbackMessage(data.fallback_message ?? e.fallbackDefault);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : e.errorFallback ?? "오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
+      }));
   };
 
   const getGenerateValidationMessage = () => {
-    if (activeFeed && !uploadedFile) return "스타일 변환은 기준 사진이 필요해요. 먼저 사진을 업로드해주세요.";
+    if (activeFeed && !uploadedPreview) return "스타일 변환은 기준 사진이 필요해요. 먼저 사진을 업로드해주세요.";
     if (!activeFeed && !prompt.trim()) return "스타일을 선택하지 않은 경우 만들고 싶은 이미지를 프롬프트로 입력해주세요.";
     return null;
   };
@@ -246,7 +371,7 @@ export default function AIPanel({
   const generateValidationMessage = getGenerateValidationMessage();
 
   useEffect(() => {
-    setValidationHint(generateValidationMessage);
+    updateAIPanelDraft({ validationHint: generateValidationMessage });
   }, [generateValidationMessage]);
 
   return (
@@ -299,10 +424,12 @@ export default function AIPanel({
           <button
             type="button"
             onClick={() => {
-              setActiveFeedId(null);
-              setStyle("custom");
-              setPromptExpanded(true);
-              setValidationHint("스타일 선택을 해제했어요. 프롬프트를 입력해 자유롭게 생성할 수 있습니다.");
+              updateAIPanelDraft({
+                activeFeedId: null,
+                style: "custom",
+                promptExpanded: true,
+                validationHint: "스타일 선택을 해제했어요. 프롬프트를 입력해 자유롭게 생성할 수 있습니다.",
+              });
             }}
             className="mt-3 w-full rounded-2xl border border-zinc-200 bg-white p-2 text-left shadow-sm"
           >
@@ -376,7 +503,7 @@ export default function AIPanel({
             {feedPage > 0 && (
               <button
                 type="button"
-                onClick={() => setFeedPage((page) => Math.max(0, page - 1))}
+                onClick={() => updateAIPanelDraft({ feedPage: Math.max(0, feedPage - 1) })}
                 className="absolute -left-2 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-md backdrop-blur transition hover:-translate-x-0.5 hover:bg-white"
                 aria-label="이전 추천 스타일 보기"
               >
@@ -386,7 +513,7 @@ export default function AIPanel({
             {feedPage < feedPageCount - 1 && (
               <button
                 type="button"
-                onClick={() => setFeedPage((page) => Math.min(feedPageCount - 1, page + 1))}
+                onClick={() => updateAIPanelDraft({ feedPage: Math.min(feedPageCount - 1, feedPage + 1) })}
                 className="absolute -right-2 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-md backdrop-blur transition hover:translate-x-0.5 hover:bg-white"
                 aria-label="다음 추천 스타일 보기"
               >
@@ -430,7 +557,7 @@ export default function AIPanel({
           icon={<Upload className="h-3.5 w-3.5" />}
           label={e.modeUpload ?? "사진 업로드"}
           onClick={() => {
-            setMode("from-upload");
+            updateAIPanelDraft({ mode: "from-upload" });
             fileInputRef.current?.click();
           }}
         />
@@ -495,7 +622,7 @@ export default function AIPanel({
         {activeFeed && !promptExpanded ? (
           <button
             type="button"
-            onClick={() => setPromptExpanded(true)}
+            onClick={() => updateAIPanelDraft({ promptExpanded: true })}
             className="flex w-full items-center justify-between rounded-2xl border border-dashed border-zinc-300 bg-white px-3 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-400 hover:shadow-md"
           >
             <span className="min-w-0">
@@ -517,7 +644,7 @@ export default function AIPanel({
               {activeFeed && (
                 <button
                   type="button"
-                  onClick={() => setPromptExpanded(false)}
+                  onClick={() => updateAIPanelDraft({ promptExpanded: false })}
                   className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
                 >
                   최소화
@@ -527,7 +654,7 @@ export default function AIPanel({
 
             <Textarea
               value={prompt}
-              onChange={(ev) => setPrompt(ev.target.value)}
+              onChange={(ev) => updateAIPanelDraft({ prompt: ev.target.value })}
               placeholder={
                 activeFeed
                   ? e.promptPlaceholderExtra ?? "원하는 디테일을 추가로 입력하세요 (선택)"
@@ -542,6 +669,32 @@ export default function AIPanel({
 
       {validationHint && (
         <p className="rounded-xl bg-amber-50 p-2 text-[11px] text-amber-700">{validationHint}</p>
+      )}
+
+      {loading && (
+        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div className="relative h-2 bg-zinc-100">
+            <div className="absolute inset-y-0 left-0 w-1/2 animate-[pulse_1.2s_ease-in-out_infinite] rounded-r-full bg-zinc-950" />
+            <div className="absolute inset-y-0 left-0 w-full animate-[pulse_1.8s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-zinc-300/80 to-transparent" />
+          </div>
+          <div className="space-y-2 p-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-white">
+                <Sparkles className="size-4 animate-pulse" />
+                <span className="absolute inset-0 animate-ping rounded-full bg-zinc-950/20" />
+              </span>
+              <div>
+                <p className="text-xs font-extrabold">Gemini에 요청을 보냈어요</p>
+                <p className="text-[10px] text-zinc-500">탭을 닫거나 내려도 생성은 계속 진행됩니다.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 text-[10px] font-semibold text-zinc-500">
+              <span className="rounded-full bg-zinc-100 px-2 py-1 text-center">요청 전송</span>
+              <span className="rounded-full bg-zinc-100 px-2 py-1 text-center">이미지 생성</span>
+              <span className="rounded-full bg-zinc-100 px-2 py-1 text-center">배경 정리</span>
+            </div>
+          </div>
+        </div>
       )}
 
       <Button
@@ -571,7 +724,7 @@ export default function AIPanel({
         <div className="relative space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <button
             type="button"
-            onClick={() => setShowDailyLimitReached(false)}
+            onClick={() => updateAIPanelDraft({ showDailyLimitReached: false })}
             className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
           >
             <X className="size-3.5" />
@@ -594,7 +747,7 @@ export default function AIPanel({
         <div className="relative space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
           <button
             type="button"
-            onClick={() => setShowLoginPrompt(false)}
+            onClick={() => updateAIPanelDraft({ showLoginPrompt: false })}
             className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
           >
             <X className="size-3.5" />

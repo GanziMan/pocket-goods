@@ -29,6 +29,7 @@ const api = read("src/lib/api.ts");
 const paymentsApi = read("../api/routers/payments.py");
 const apiMain = read("../api/main.py");
 const rendererApi = read("../api/services/renderer.py");
+const generateApi = read("../api/routers/generate.py");
 
 test("PortOne browser checkout is disabled on all editor order entry points", () => {
   for (const [name, source] of [
@@ -219,4 +220,17 @@ test("mobile editor uses swipeable style feed and fit-to-screen canvas", () => {
   assert.match(editorLayout, /window\.innerHeight - 188/);
   assert.match(useCanvas, /const ZOOM_MIN = 0\.35/);
   assert.match(designCanvas, /px-3 py-4 md:px-16 md:py-16/);
+});
+
+test("AI generation state persists across mobile drawer/tab transitions", () => {
+  assert.match(aiPanel, /AI_PANEL_DRAFT_STORAGE_KEY/);
+  assert.match(aiPanel, /sessionStorage\.setItem\(AI_PANEL_DRAFT_STORAGE_KEY/);
+  assert.match(aiPanel, /aiGenerationPromise/);
+  assert.match(aiPanel, /subscribeAIPanelDraft/);
+  assert.match(aiPanel, /readAsDataURL\(processed\.file\)/);
+  assert.match(aiPanel, /탭을 닫거나 내려도 생성은 계속 진행됩니다/);
+  assert.match(generateApi, /genai\.Client\(api_key=gemini_key\)/);
+  assert.match(generateApi, /client\.aio\.models\.generate_content/);
+  assert.match(generateApi, /_image_has_transparency/);
+  assert.match(generateApi, /rembg 생략/);
 });

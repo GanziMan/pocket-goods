@@ -184,6 +184,15 @@ def _pil_to_part(image: Image.Image, mime: str = "image/png") -> types.Part:
     return types.Part.from_bytes(data=buffer.getvalue(), mime_type=mime)
 
 
+def _image_has_transparency(raw_bytes: bytes) -> bool:
+    try:
+        image = Image.open(io.BytesIO(raw_bytes)).convert("RGBA")
+        alpha_min, alpha_max = image.getchannel("A").getextrema()
+        return alpha_min < 255 and alpha_max > 0
+    except Exception:
+        return False
+
+
 
 
 @router.post("/generate-image")
@@ -290,12 +299,17 @@ async def generate_image(
             for part in response.candidates[0].content.parts:
                 if part.inline_data and part.inline_data.mime_type.startswith("image/"):
                     raw_bytes = part.inline_data.data
-                    logger.info("[generate] 이미지 추출 성공 size=%dB — rembg 누끼 시작", len(raw_bytes))
+                    logger.info("[generate] 이미지 추출 성공 size=%dB", len(raw_bytes))
 
-                    t1 = time.monotonic()
-                    from rembg import remove as rembg_remove
-                    removed = rembg_remove(raw_bytes, session=get_rembg_session())
-                    logger.info("[generate] rembg 완료 (%.1fs)", time.monotonic() - t1)
+                    if _image_has_transparency(raw_bytes):
+                        removed = raw_bytes
+                        logger.info("[generate] 투명 알파 감지 — rembg 생략")
+                    else:
+                        logger.info("[generate] rembg 누끼 시작")
+                        t1 = time.monotonic()
+                        from rembg import remove as rembg_remove
+                        removed = rembg_remove(raw_bytes, session=get_rembg_session())
+                        logger.info("[generate] rembg 완료 (%.1fs)", time.monotonic() - t1)
 
                     image_b64 = base64.b64encode(removed).decode("utf-8")
                     increment_usage(rate_key)
