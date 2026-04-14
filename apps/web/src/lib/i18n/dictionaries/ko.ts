@@ -313,7 +313,7 @@ const ko = {
     textInputLabel: "문구 입력",
     textInputPlaceholder: "원하는 문구를 입력하세요",
     addToCanvas: "캔버스에 추가",
-    defaultText: "나만의 문구",
+    defaultText: "",
     fallbackText: "텍스트",
     textHint: "텍스트를 추가한 뒤 선택하면 오른쪽 패널에서 폰트, 크기, 색상을 변경할 수 있어요.",
     addNameTag: "이름표로 추가",

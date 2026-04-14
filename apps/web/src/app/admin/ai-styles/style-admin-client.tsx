@@ -24,7 +24,7 @@ function validateStyleItems(raw: string): ValidationResult {
         return { ok: false, message: `${index + 1}번째 항목이 객체가 아닙니다.` };
       }
       const record = item as Record<string, unknown>;
-      for (const key of ["id", "kicker", "title", "description", "style", "preview", "basePrompt"]) {
+      for (const key of ["id", "kicker", "title", "description", "shortDescription", "style", "preview", "basePrompt"]) {
         if (typeof record[key] !== "string" || !String(record[key]).trim()) {
           return { ok: false, message: `${index + 1}번째 항목의 ${key} 값이 비어 있습니다.` };
         }

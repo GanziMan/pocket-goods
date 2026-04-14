@@ -315,7 +315,7 @@ const ja = {
     textInputLabel: "テキスト入力",
     textInputPlaceholder: "好きな文字を入力してください",
     addToCanvas: "キャンバスに追加",
-    defaultText: "マイテキスト",
+    defaultText: "",
     fallbackText: "テキスト",
     textHint: "テキストを追加して選択すると、右パネルでフォント、サイズ、色を変更できます。",
     addNameTag: "名前タグを追加",

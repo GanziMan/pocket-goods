@@ -315,7 +315,7 @@ const en = {
     textInputLabel: "Enter text",
     textInputPlaceholder: "Type your message",
     addToCanvas: "Add to Canvas",
-    defaultText: "My text",
+    defaultText: "",
     fallbackText: "Text",
     textHint: "After adding text, select it to change font, size, and color in the right panel.",
     addNameTag: "Add name tag",

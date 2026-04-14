@@ -25,7 +25,7 @@ export default function AssetPanel({
 }: AssetPanelProps) {
   const { t } = useLocale();
   const ap = t.assetPanel;
-  const [inputText, setInputText] = useState(ap.defaultText);
+  const [inputText, setInputText] = useState("");
   const isMobile = className?.includes("border-0");
 
   return (

@@ -49,6 +49,7 @@ type AIPanelDraft = {
   loading: boolean;
   error: string | null;
   validationHint: string | null;
+  adRewarding: boolean;
   showLoginPrompt: boolean;
   showDailyLimitReached: boolean;
 };
@@ -71,6 +72,7 @@ const DEFAULT_AI_PANEL_DRAFT: AIPanelDraft = {
   loading: false,
   error: null,
   validationHint: null,
+  adRewarding: false,
   showLoginPrompt: false,
   showDailyLimitReached: false,
 };
@@ -167,6 +169,7 @@ export default function AIPanel({
     loading,
     error,
     validationHint,
+    adRewarding,
     showLoginPrompt,
     showDailyLimitReached,
   } = draft;
@@ -362,6 +365,44 @@ export default function AIPanel({
       }));
   };
 
+  const handleRewardedAd = async () => {
+    updateAIPanelDraft({ adRewarding: true, error: null, validationHint: "광고를 확인하는 중입니다…" });
+    await new Promise((resolve) => window.setTimeout(resolve, 3200));
+    try {
+      const headers: HeadersInit = {};
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/generation/reward-ad`, {
+        method: "POST",
+        headers,
+      });
+      if (!response.ok) {
+        throw new Error("광고 보상 처리에 실패했습니다.");
+      }
+      const data = await response.json();
+      updateAIPanelDraft({
+        remaining: {
+          count: data.remaining,
+          limit: data.daily_limit,
+        },
+        showDailyLimitReached: false,
+        validationHint: "생성권 1회가 충전되었습니다. 다시 생성해보세요.",
+      });
+    } catch (err) {
+      updateAIPanelDraft({
+        error: err instanceof Error ? err.message : "광고 보상 처리 중 오류가 발생했습니다.",
+      });
+    } finally {
+      updateAIPanelDraft({ adRewarding: false });
+    }
+  };
+
   const getGenerateValidationMessage = () => {
     if (activeFeed && !uploadedPreview) return "스타일 변환은 기준 사진이 필요해요. 먼저 사진을 업로드해주세요.";
     if (!activeFeed && !prompt.trim()) return "스타일을 선택하지 않은 경우 만들고 싶은 이미지를 프롬프트로 입력해주세요.";
@@ -438,7 +479,7 @@ export default function AIPanel({
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
               <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-white/95 px-3 py-2 text-center shadow-sm">
                 <p className="text-sm font-bold">{activeFeed.title}</p>
-                <p className="mt-0.5 text-[10px] text-zinc-500">다시 누르거나 이 영역을 누르면 선택 해제</p>
+                <p className="mt-0.5 text-[10px] text-zinc-500">{activeFeed.shortDescription}</p>
               </div>
             </div>
           </button>
@@ -738,8 +779,18 @@ export default function AIPanel({
           <p className="text-xs leading-relaxed text-amber-700">
             {e.limitDesc}
             <br />
-            {e.limitSuffix}
+            광고를 보면 1회 더 생성할 수 있어요.
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-amber-300 bg-white text-amber-800 hover:bg-amber-100"
+            onClick={handleRewardedAd}
+            disabled={adRewarding}
+          >
+            {adRewarding ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Sparkles className="mr-2 size-4" />}
+            광고 보고 1회 더 만들기
+          </Button>
         </div>
       )}
 

@@ -315,7 +315,7 @@ const ptBR = {
     textInputLabel: "Digite o texto",
     textInputPlaceholder: "Digite sua mensagem",
     addToCanvas: "Adicionar ao Canvas",
-    defaultText: "Meu texto",
+    defaultText: "",
     fallbackText: "Texto",
     textHint: "Após adicionar texto, selecione-o para alterar fonte, tamanho e cor no painel direito.",
     addNameTag: "Adicionar etiqueta",

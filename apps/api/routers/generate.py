@@ -12,11 +12,10 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 
 from services.rate_limit import (
-    DAILY_LIMIT_ANONYMOUS,
-    DAILY_LIMIT_USER,
     check_rate_limit,
+    get_rate_identity,
     get_usage_count,
-    get_user_id_from_token,
+    grant_one_usage,
     increment_usage,
 )
 
@@ -208,16 +207,7 @@ async def generate_image(
     Nano Banana 2로 이미지를 생성합니다.
     """
     # 인증 확인: 토큰이 있으면 user_id 기반, 없으면 IP 기반
-    has_token = request.headers.get("authorization", "").startswith("Bearer ")
-    user_id = get_user_id_from_token(request)
-    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown").split(",")[0].strip()
-
-    if user_id:
-        rate_key = f"user:{user_id}"
-        daily_limit = DAILY_LIMIT_USER
-    else:
-        rate_key = f"ip:{client_ip}"
-        daily_limit = DAILY_LIMIT_ANONYMOUS
+    rate_key, daily_limit, has_token, user_id = get_rate_identity(request)
 
     remaining = check_rate_limit(rate_key, daily_limit)
     if remaining <= 0:
@@ -346,3 +336,23 @@ async def generate_image(
     # 모든 모델 실패
     logger.exception("[generate] 모든 모델 실패: %s", last_error)
     raise HTTPException(status_code=429, detail="AI 서버가 일시적으로 바빠요. 잠시 후 다시 시도해주세요.")
+
+
+@router.post("/generation/reward-ad")
+async def reward_generation_by_ad(request: Request):
+    """
+    Rewarded-ad completion hook.
+
+    The current implementation grants one extra generation credit after the
+    client-side ad gate completes. When a real ad network is added, this endpoint
+    should verify the ad provider callback/token before granting the credit.
+    """
+    rate_key, daily_limit, _has_token, _user_id = get_rate_identity(request)
+    grant_one_usage(rate_key)
+    remaining = check_rate_limit(rate_key, daily_limit)
+    logger.info("[generate] rewarded ad credit key=%s remaining=%d/%d", rate_key, remaining, daily_limit)
+    return JSONResponse({
+        "ok": True,
+        "remaining": remaining,
+        "daily_limit": daily_limit,
+    })

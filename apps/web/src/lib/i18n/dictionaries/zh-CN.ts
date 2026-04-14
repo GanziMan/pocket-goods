@@ -315,7 +315,7 @@ const zhCN = {
     textInputLabel: "输入文字",
     textInputPlaceholder: "输入你的文字",
     addToCanvas: "添加到画布",
-    defaultText: "我的文字",
+    defaultText: "",
     fallbackText: "文字",
     textHint: "添加文字后选中它，即可在右侧面板更改字体、大小和颜色。",
     addNameTag: "添加姓名标签",

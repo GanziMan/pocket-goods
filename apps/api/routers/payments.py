@@ -5,10 +5,11 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from services.renderer import render_canvas, to_png_bytes
+from services.rate_limit import get_rate_identity, reset_usage
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,15 @@ def _render_order_attachments(req: CompletePaymentRequest) -> list[tuple[str, by
     return attachments
 
 
+def _reset_generation_credits(request: Request) -> None:
+    try:
+        rate_key, _daily_limit, _has_token, _user_id = get_rate_identity(request)
+        reset_usage(rate_key)
+        logger.info("[payments] reset generation credits key=%s", rate_key)
+    except Exception as exc:
+        logger.warning("[payments] generation credit reset skipped: %s", exc)
+
+
 def _send_owner_order_email(
     req: CompletePaymentRequest,
     amount: int,
@@ -231,7 +241,7 @@ def _send_owner_order_email(
 
 @router.post("/complete", response_model=CompletePaymentResponse)
 @router.post("/complete-noverify", response_model=CompletePaymentResponse)
-async def complete_payment(req: CompletePaymentRequest):
+async def complete_payment(request: Request, req: CompletePaymentRequest):
     """
     PortOne 결제를 임시 비활성화한 수동 주문 접수 엔드포인트입니다.
     결제 검증은 의도적으로 타지 않고, 버튼 클릭을 주문 완료 분기로 간주합니다.
@@ -276,6 +286,7 @@ async def complete_payment(req: CompletePaymentRequest):
 
     order_time = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=9), "KST"))
     email_sent = _send_owner_order_email(req, expected_amount, order_time, attachments)
+    _reset_generation_credits(request)
 
     logger.info(
         "[payments] received paymentId=%s txId=%s product=%s output=%s receiver=%s emailSent=%s",

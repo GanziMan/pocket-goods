@@ -14,6 +14,7 @@ export type StyleFeedItem = {
   kicker: string;
   title: string;
   description: string;
+  shortDescription: string;
   style: Style;
   preview: string;
   basePrompt: string;
@@ -30,6 +31,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "포근한 인형",
     title: "실바니안",
     description: "보송한 인형 질감과 순한 표정",
+    shortDescription: "보송 인형",
     style: "sylvanian",
     preview: "/ai-feed-previews/sylvanian.svg",
     basePrompt:
@@ -40,6 +42,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "전신 픽셀",
     title: "픽셀",
     description: "Everskies 감성의 전신 픽셀 아트",
+    shortDescription: "전신 픽셀",
     style: "everskies",
     preview: "/ai-feed-previews/everskies.svg",
     basePrompt:
@@ -50,6 +53,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "따뜻한 3D",
     title: "동물의 숲",
     description: "밝은 햇빛과 부드러운 그림자의 3D 캐릭터",
+    shortDescription: "따뜻한 3D",
     style: "animal-crossing",
     preview: "/ai-feed-previews/animal-crossing.svg",
     basePrompt:
@@ -60,6 +64,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "3D 이모지",
     title: "iOS 이모지",
     description: "말랑한 표면 질감의 공식 이모지 느낌",
+    shortDescription: "말랑 이모지",
     style: "ios-emoji",
     preview: "/ai-feed-previews/ios-emoji.svg",
     basePrompt:
@@ -70,6 +75,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "픽셀 RPG",
     title: "메이플",
     description: "스티커에 잘 어울리는 귀여운 픽셀 캐릭터",
+    shortDescription: "귀여운 픽셀",
     style: "maplestory",
     preview: "/ai-feed-previews/maplestory.svg",
     basePrompt:
@@ -80,6 +86,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "라떼 태닝",
     title: "태닝키티",
     description: "귀엽고 단순한 산리오풍 2D 캐릭터",
+    shortDescription: "산리오 감성",
     style: "tanning-kitty",
     preview: "/ai-feed-previews/tanning-kitty.svg",
     basePrompt:
@@ -90,6 +97,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "피너츠 3D",
     title: "스누피",
     description: "Peanuts 감성 3D와 스누피 캐릭터",
+    shortDescription: "피너츠 3D",
     style: "snoopy",
     preview: "/ai-feed-previews/snoopy.svg",
     basePrompt:
@@ -100,6 +108,7 @@ export const STYLE_FEED_ITEMS: StyleFeedItem[] = [
     kicker: "아이소메트릭",
     title: "스노우볼",
     description: "귀엽고 고급스러운 3D 스노우볼",
+    shortDescription: "입체 오르골",
     style: "snowglobe",
     preview: "/ai-feed-previews/snowglobe.svg",
     basePrompt:

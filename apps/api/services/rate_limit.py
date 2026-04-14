@@ -12,7 +12,7 @@ from supabase import create_client as create_supabase_client
 logger = logging.getLogger(__name__)
 
 # IP별 일일 요청 제한 (비로그인)
-DAILY_LIMIT_ANONYMOUS = 2
+DAILY_LIMIT_ANONYMOUS = 5
 # 유저별 일일 요청 제한 (로그인)
 DAILY_LIMIT_USER = 5
 
@@ -34,8 +34,38 @@ def increment_usage(key: str) -> None:
     _usage[key]["count"] += 1
 
 
+def reset_usage(key: str) -> None:
+    today = date.today().isoformat()
+    _usage[key] = {"date": today, "count": 0}
+
+
+def grant_one_usage(key: str) -> None:
+    today = date.today().isoformat()
+    entry = _usage[key]
+    if entry["date"] != today:
+        entry["date"] = today
+        entry["count"] = 0
+        return
+    entry["count"] = max(0, entry["count"] - 1)
+
+
 def get_usage_count(key: str) -> int:
     return _usage[key]["count"]
+
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip() or "unknown"
+    return request.client.host if request.client and request.client.host else "unknown"
+
+
+def get_rate_identity(request: Request) -> tuple[str, int, bool, Optional[str]]:
+    has_token = request.headers.get("authorization", "").startswith("Bearer ")
+    user_id = get_user_id_from_token(request)
+    if user_id:
+        return f"user:{user_id}", DAILY_LIMIT_USER, has_token, user_id
+    return f"ip:{get_client_ip(request)}", DAILY_LIMIT_ANONYMOUS, has_token, None
 
 
 def get_user_id_from_token(request: Request) -> Optional[str]:

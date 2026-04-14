@@ -10,6 +10,7 @@ import AddressSearchFields from "@/components/editor/AddressSearchFields";
 import { useOrderProfile } from "@/hooks/useOrderProfile";
 import type { ProductType } from "@/lib/assets";
 import { API_BASE_URL, readApiError } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 import { PRINT_PRICE_KRW, SHIPPING_FEE_KRW, type OutputSize } from "@/lib/order-pricing";
 import { addOrderCartItem, compactCartPreviewImage, createDefaultQuantities, EMPTY_QUANTITIES } from "@/lib/order-cart";
 import { buildCutlinePreview, drawSmoothClosedPath } from "@/lib/cutline-preview";
@@ -202,11 +203,19 @@ export default function PreviewDialog({
 
     void (async () => {
       try {
+        const headers: HeadersInit = { "Content-Type": "application/json" };
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers.Authorization = `Bearer ${session.access_token}`;
+        }
         const verification = await fetch(
           `${API_BASE_URL}/api/payments/complete-noverify`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({
               paymentId,
               txId: "portone-disabled",

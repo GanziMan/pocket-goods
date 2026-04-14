@@ -22,6 +22,7 @@ const aiStyleFeed = read("src/lib/ai-style-feed.ts");
 const aiStyleAdmin = read("src/app/admin/ai-styles/style-admin-client.tsx");
 const mobileActionBar = read("src/components/editor/MobileActionBar.tsx");
 const designCanvas = read("src/components/canvas/DesignCanvas.tsx");
+const assetPanel = read("src/components/editor/AssetPanel.tsx");
 const cutlinePreview = read("src/lib/cutline-preview.ts");
 const outputSize = read("src/lib/output-size.ts");
 const orderPricing = read("src/lib/order-pricing.ts");
@@ -233,4 +234,23 @@ test("AI generation state persists across mobile drawer/tab transitions", () => 
   assert.match(generateApi, /client\.aio\.models\.generate_content/);
   assert.match(generateApi, /_image_has_transparency/);
   assert.match(generateApi, /rembg 생략/);
+});
+
+test("generation credits support five daily uses, ad rewards, and order reset", () => {
+  assert.match(generateApi, /generation\/reward-ad/);
+  assert.match(aiPanel, /광고 보고 1회 더 만들기/);
+  assert.match(aiPanel, /handleRewardedAd/);
+  assert.match(aiPanel, /adRewarding/);
+  assert.match(paymentsApi, /reset_usage/);
+  assert.match(paymentsApi, /_reset_generation_credits\(request\)/);
+  assert.match(previewDialog, /headers\.Authorization = `Bearer \$\{session\.access_token\}`/);
+  assert.match(cartDialog, /headers\.Authorization = `Bearer \$\{session\.access_token\}`/);
+});
+
+test("selected style card and text tool use simplified defaults", () => {
+  assert.match(aiStyleFeed, /shortDescription/);
+  assert.match(aiPanel, /activeFeed\.shortDescription/);
+  assert.equal(aiPanel.includes("다시 누르거나 이 영역을 누르면 선택 해제"), false);
+  assert.equal(assetPanel.includes("useState(ap.defaultText)"), false);
+  assert.match(assetPanel, /useState\(""\)/);
 });
