@@ -1,7 +1,7 @@
 <div align="center">
   <img src="apps/web/public/logo.png" alt="Pocket Goods" width="220" />
 
-  <p><strong>Web-based custom sticker design and order intake platform</strong></p>
+  <p><strong>브라우저 기반 커스텀 스티커 디자인 및 주문 접수 플랫폼</strong></p>
 
   <p>
     <a href="https://pocket-goods.com/">Production</a>
@@ -16,14 +16,14 @@
 
 ## Overview
 
-Pocket Goods is a split frontend/backend application for designing custom sticker artwork in the browser, generating AI-assisted visual assets, validating print boundaries, and submitting manual production orders.
+Pocket Goods는 브라우저에서 커스텀 스티커 아트워크를 편집하고, AI 기반 이미지 생성을 보조하며, 인쇄 경계 검증과 수동 주문 접수까지 처리하는 frontend/backend 분리형 애플리케이션입니다.
 
-The repository is organized as a lightweight monorepo:
+이 저장소는 가벼운 monorepo 구조로 구성되어 있습니다.
 
-- `apps/web` — Next.js application for the landing page, editor, preview, cart, and order UI
-- `apps/api` — FastAPI service for image generation, print rendering, background removal, order email dispatch, and export endpoints
-- `docs` — operational notes, SQL setup, and implementation plans
-- `openspec` — product and technical specification references
+- `apps/web` — 랜딩 페이지, 디자인 에디터, 미리보기, 주문함, 주문 UI를 담당하는 Next.js 애플리케이션
+- `apps/api` — 이미지 생성, 인쇄 렌더링, 배경 제거, 주문 메일 발송, export endpoint를 담당하는 FastAPI 서비스
+- `docs` — 운영 메모, SQL setup, 구현 계획 문서
+- `openspec` — 제품 및 기술 스펙 참고 문서
 
 ## Architecture
 
@@ -69,31 +69,31 @@ FastAPI service
 
 ### Browser editor
 
-- Fabric.js-based canvas editor for image and text composition
-- A4/A5/A6 output sheet switching without scaling placed objects
-- Text editing and printable pill-style name labels
-- Saved drafts for logged-in users via Supabase, with local fallback
-- Order-cart workflow with single output size per design
+- Fabric.js 기반 캔버스 에디터로 이미지와 텍스트를 배치하고 편집합니다.
+- A4/A5/A6 출력 용지 전환 시 기존 오브젝트의 크기와 비율을 임의로 변경하지 않습니다.
+- 일반 텍스트와 인쇄 가능한 pill-style name label을 지원합니다.
+- 로그인 사용자의 디자인 draft와 주문자/배송 기본값을 Supabase에 저장하며, 비로그인 또는 DB 미적용 환경에서는 local fallback을 사용합니다.
+- 주문함은 디자인별로 하나의 output size만 유지하는 단일 사이즈 수량 흐름을 사용합니다.
 
 ### Print preview and export
 
-- Server-side 300 DPI PNG rendering through FastAPI
-- Fabric text and grouped label rendering in print exports
-- Cutline preview analysis in the browser for separated artwork regions
-- UI-only cart thumbnails with white preview backgrounds while preserving transparent print payloads
+- FastAPI에서 server-side 300 DPI PNG 렌더링을 수행합니다.
+- Fabric text와 grouped label을 인쇄 export에 반영합니다.
+- 브라우저에서 분리된 아트워크 영역을 분석해 cutline preview를 제공합니다.
+- 주문함 썸네일은 시인성을 위해 흰 배경을 합성하지만, 실제 print payload는 투명 배경을 유지합니다.
 
 ### AI-assisted asset generation
 
-- Curated AI style presets maintained from `apps/web/src/lib/ai-style-feed.ts`
-- `/admin/ai-styles` helper page for editing, validating, previewing, copying, and downloading preset JSON
-- Upload/canvas-based prompt flow against the FastAPI generation endpoint
-- Anonymous/user-aware generation limits based on Supabase session availability
+- 에디터의 추천 AI style preset은 `apps/web/src/lib/ai-style-feed.ts`에서 중앙 관리합니다.
+- `/admin/ai-styles` helper page에서 preset JSON을 편집, 검증, 미리보기, 복사, 다운로드할 수 있습니다.
+- 업로드 이미지 또는 현재 캔버스를 기준으로 FastAPI generation endpoint에 prompt를 전달합니다.
+- Supabase session 여부를 기준으로 anonymous/user-aware generation limit을 적용합니다.
 
 ### Manual order intake
 
-- Current production flow uses manual order receipt rather than opening a payment checkout
-- Order submission returns immediate UI completion while SMTP/export work continues in the background
-- Order email includes order metadata and print-ready artwork attachments without UI overlays or cutline markings
+- 현재 production flow는 결제창을 열지 않고 manual order receipt 방식으로 동작합니다.
+- 주문 UI는 유효한 payload 생성 직후 즉시 완료 상태를 보여주고, SMTP/export 작업은 background에서 이어서 처리합니다.
+- 주문 메일에는 주문 metadata와 print-ready artwork attachment가 포함되며, UI overlay나 cutline marking은 합성하지 않습니다.
 
 ## Project Layout
 
@@ -121,7 +121,7 @@ pocket-goods/
 
 ### 1. API service
 
-The API service is typically run with Docker Compose from the repository root.
+API service는 repository root에서 Docker Compose로 실행하는 방식을 기본으로 합니다.
 
 ```bash
 docker compose up --build
@@ -139,7 +139,7 @@ OpenAPI docs:
 http://localhost:8000/docs
 ```
 
-The API container reads environment variables from:
+API container는 아래 파일에서 환경변수를 읽습니다.
 
 ```txt
 apps/api/.env
@@ -159,11 +159,11 @@ Web app:
 http://localhost:3000
 ```
 
-When `NEXT_PUBLIC_API_URL` is not set, local browser traffic falls back to `http://localhost:8000`. Production domains use the configured Railway API fallback in `src/lib/api.ts` to avoid calling a user's local machine.
+`NEXT_PUBLIC_API_URL`이 설정되어 있지 않으면 local browser traffic은 `http://localhost:8000`으로 fallback합니다. Production domain에서는 사용자의 로컬 머신을 호출하지 않도록 `src/lib/api.ts`에 설정된 Railway API fallback을 사용합니다.
 
 ## Environment Variables
 
-### `apps/web/.env` or Vercel project variables
+### `apps/web/.env` 또는 Vercel project variables
 
 ```env
 NEXT_PUBLIC_API_URL=
@@ -171,7 +171,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-### `apps/api/.env` or Railway service variables
+### `apps/api/.env` 또는 Railway service variables
 
 ```env
 GEMINI_API_KEY=
@@ -187,47 +187,47 @@ ORDER_EMAIL_TO=
 ORDER_EMAIL_ALLOW_SKIP=0
 ```
 
-For Gmail SMTP, `ORDER_EMAIL_SMTP_PASSWORD` must be an app password rather than the account password.
+Gmail SMTP를 사용할 경우 `ORDER_EMAIL_SMTP_PASSWORD`에는 계정 비밀번호가 아니라 app password를 넣어야 합니다.
 
 ## Supabase Setup
 
-The web app uses Supabase for authentication and optional persistence of user-specific order profiles and design drafts.
+Web app은 Supabase를 authentication과 사용자별 주문자 정보 / 디자인 draft persistence에 사용합니다.
 
-Apply the SQL in Supabase Dashboard → SQL Editor:
+Supabase Dashboard → SQL Editor에서 아래 SQL을 적용합니다.
 
 ```txt
 docs/supabase-user-persistence.sql
 ```
 
-This creates:
+생성되는 테이블은 다음과 같습니다.
 
 - `public.user_order_profiles`
 - `public.user_design_drafts`
 
-Both tables use Row Level Security policies scoped to the authenticated user.
+두 테이블은 authenticated user 기준 Row Level Security policy를 사용합니다.
 
 ## AI Style Preset Maintenance
 
-Editor style cards are centralized in:
+에디터의 style card는 아래 파일에서 중앙 관리합니다.
 
 ```txt
 apps/web/src/lib/ai-style-feed.ts
 ```
 
-To change the collection:
+컬렉션을 변경하는 방법은 다음과 같습니다.
 
-1. Reorder `STYLE_FEED_ITEMS` to change display order.
-2. Add/remove items to change the visible card set.
-3. Update `preview` to point to a file under `apps/web/public`.
-4. Update `basePrompt` for the generation prompt.
+1. `STYLE_FEED_ITEMS` 배열 순서를 바꾸면 카드 표시 순서가 바뀝니다.
+2. 배열 항목을 추가/삭제하면 노출되는 카드 구성이 바뀝니다.
+3. `preview`는 `apps/web/public` 아래 파일 경로를 가리키도록 수정합니다.
+4. `basePrompt`는 generation prompt를 변경할 때 수정합니다.
 
-A helper route is available for editing and previewing JSON without writing to the server filesystem:
+서버 파일을 직접 수정하지 않고 JSON을 편집/미리보기할 수 있는 helper route도 제공합니다.
 
 ```txt
 /admin/ai-styles
 ```
 
-The helper page is intentionally export-only. Applying a change still requires updating the repository and redeploying.
+이 helper page는 의도적으로 export-only로 동작합니다. 실제 반영은 repository 파일을 수정하고 redeploy하는 절차를 거쳐야 합니다.
 
 ## Verification
 
@@ -247,20 +247,20 @@ API syntax check example:
 python -m py_compile apps/api/services/renderer.py
 ```
 
-The current web regression script covers editor order behavior, production API fallback rules, Supabase persistence hooks, print text rendering contracts, and AI style preset maintainability checks.
+현재 web regression script는 editor order behavior, production API fallback rules, Supabase persistence hooks, print text rendering contracts, AI style preset maintainability checks를 검증합니다.
 
 ## Deployment Notes
 
 - Web frontend: Vercel
-- API service: Railway or equivalent Docker-capable host
+- API service: Railway 또는 Docker-capable host
 - Database/Auth: Supabase
-- Order email: SMTP provider configured on the API service
+- Order email: API service에 설정된 SMTP provider
 
-Frontend environment changes require a Vercel redeploy. API environment changes require an API service restart/redeploy.
+Frontend 환경변수 변경은 Vercel redeploy가 필요합니다. API 환경변수 변경은 API service restart/redeploy가 필요합니다.
 
 ## Operational Notes
 
-- Keep print export rendering server-side; order attachments should not depend on browser screenshots.
-- Cart thumbnails may use white backgrounds for visibility, but print payloads must remain transparent unless explicitly changed.
-- Do not expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend or Vercel public variables.
-- If payment checkout is re-enabled later, preserve the current order email/export contract after payment completion.
+- Print export rendering은 server-side에서 유지합니다. 주문 attachment는 browser screenshot에 의존하지 않아야 합니다.
+- 주문함 thumbnail은 시인성을 위해 흰 배경을 사용할 수 있지만, print payload는 명시적인 변경이 없는 한 transparent 상태를 유지해야 합니다.
+- `SUPABASE_SERVICE_ROLE_KEY`는 frontend나 Vercel public variable에 노출하지 않습니다.
+- 추후 payment checkout을 다시 활성화하더라도, payment completion 이후 현재 order email/export contract는 유지해야 합니다.
