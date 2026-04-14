@@ -1,68 +1,266 @@
-# pocket-goods
-반려동물부터 취미까지, AI로 만드는 나만의 나노 굿즈 스튜디오.
+<div align="center">
+  <img src="apps/web/public/logo.png" alt="Pocket Goods" width="220" />
 
-**Live Site**  
-- https://pocket-goods.com/
+  <p><strong>Web-based custom sticker design and order intake platform</strong></p>
+
+  <p>
+    <a href="https://pocket-goods.com/">Production</a>
+    ·
+    <a href="apps/web/README.md">Web App</a>
+    ·
+    <a href="apps/api/README.md">API Server</a>
+  </p>
+</div>
+
+---
 
 ## Overview
 
-Pocket Goods는 사용자가 반려동물, 캐릭터, 아기 사진 등 다양한 이미지를 활용해  
-직접 키링과 스티커를 디자인할 수 있는 AI 기반 굿즈 제작 서비스입니다.
+Pocket Goods is a split frontend/backend application for designing custom sticker artwork in the browser, generating AI-assisted visual assets, validating print boundaries, and submitting manual production orders.
 
-랜딩 페이지에서 바로 에디터로 진입할 수 있으며,  
-텍스트/스티커/AI 이미지 생성 기능을 통해 개인화된 디자인을 만들 수 있습니다.
+The repository is organized as a lightweight monorepo:
 
-## Features
+- `apps/web` — Next.js application for the landing page, editor, preview, cart, and order UI
+- `apps/api` — FastAPI service for image generation, print rendering, background removal, order email dispatch, and export endpoints
+- `docs` — operational notes, SQL setup, and implementation plans
+- `openspec` — product and technical specification references
 
-- AI 이미지 생성
-- 키링 / 스티커 디자인 편집
-- Fabric.js 기반 캔버스 편집
-- A4/A5/A6 스티커 출력 크기 선택
-- 스티커 칼선 미리보기 및 분리형 아트워크 주의 안내
-- 주문 완료 시 제작자 확인용 주문 메일 발송 흐름
-- 임시 수동 주문 접수 모드(PortOne 결제 연동 비활성화)
-- 로그인 사용자 / 비로그인 사용자별 생성 횟수 제한
-- 300 DPI PNG export
-- 칼선 SVG 생성(현재 주문용 PNG에는 칼선 제외)
-- Supabase Storage 업로드
-- Next.js + FastAPI 분리형 구조
+## Architecture
 
-## Current order workflow
+```txt
+Browser / Next.js
+  ├─ Fabric.js editor state
+  ├─ Supabase auth/session helpers
+  ├─ Local + Supabase persistence for drafts and shipping defaults
+  └─ Manual order and cart UI
 
-스티커 주문은 에디터 미리보기에서 칼선 안정성을 확인한 뒤 주문자/배송 정보를 입력하는 흐름입니다.
-현재 PortOne 결제는 심사/운영 준비를 위해 임시 비활성화되어 있으며, 주문 완료 버튼은 제작자 메일
-(`kju7859@gmail.com`)로 주문 정보를 전송하는 수동 접수 모드로 동작해야 합니다.
-
-제작자 메일에는 주문번호, 주문 시각, 주문자/배송 정보, 선택한 A4/A5/A6 수량과 함께
-인쇄용 이미지 파일이 포함됩니다. 이 인쇄용 이미지는 칼선, 사용자 UI 정보, 주문 시각/번호 텍스트가
-합성되지 않은 디자인 PNG여야 합니다.
-
-## Tech Stack
+FastAPI service
+  ├─ Google GenAI image generation
+  ├─ Pillow/OpenCV print renderer
+  ├─ Background removal pipeline
+  ├─ SMTP order notification
+  └─ Optional Supabase integration
+```
 
 ### Frontend
-- Next.js 16
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Fabric.js
-- Supabase SSR
-- Lucide React
+
+| Area | Stack |
+| --- | --- |
+| Framework | Next.js 16 App Router |
+| Runtime UI | React 19, TypeScript |
+| Styling | Tailwind CSS 4, shadcn-style UI primitives, Base UI, Vaul |
+| Canvas | Fabric.js 7 |
+| Auth / DB client | Supabase SSR / Supabase JS |
+| Image utilities | `@imgly/background-removal`, HEIC conversion, browser canvas APIs |
 
 ### Backend
-- FastAPI
-- Uvicorn
-- Google GenAI
-- Pillow
-- OpenCV
-- Supabase Python SDK
 
-## Project Structure
+| Area | Stack |
+| --- | --- |
+| API | FastAPI, Uvicorn |
+| Image generation | Google GenAI SDK |
+| Rendering | Pillow, NumPy, OpenCV headless |
+| Background removal | rembg, ONNX Runtime |
+| Persistence / Storage | Supabase Python SDK |
+| Notifications | SMTP-based order email dispatch |
+| Container | Docker / Docker Compose |
 
-```bash
+## Key Capabilities
+
+### Browser editor
+
+- Fabric.js-based canvas editor for image and text composition
+- A4/A5/A6 output sheet switching without scaling placed objects
+- Text editing and printable pill-style name labels
+- Saved drafts for logged-in users via Supabase, with local fallback
+- Order-cart workflow with single output size per design
+
+### Print preview and export
+
+- Server-side 300 DPI PNG rendering through FastAPI
+- Fabric text and grouped label rendering in print exports
+- Cutline preview analysis in the browser for separated artwork regions
+- UI-only cart thumbnails with white preview backgrounds while preserving transparent print payloads
+
+### AI-assisted asset generation
+
+- Curated AI style presets maintained from `apps/web/src/lib/ai-style-feed.ts`
+- `/admin/ai-styles` helper page for editing, validating, previewing, copying, and downloading preset JSON
+- Upload/canvas-based prompt flow against the FastAPI generation endpoint
+- Anonymous/user-aware generation limits based on Supabase session availability
+
+### Manual order intake
+
+- Current production flow uses manual order receipt rather than opening a payment checkout
+- Order submission returns immediate UI completion while SMTP/export work continues in the background
+- Order email includes order metadata and print-ready artwork attachments without UI overlays or cutline markings
+
+## Project Layout
+
+```txt
 pocket-goods/
 ├─ apps/
-│  ├─ web/        # Next.js 웹 프론트엔드
-│  └─ api/        # FastAPI 백엔드
+│  ├─ web/
+│  │  ├─ src/app/                 # Next.js app routes
+│  │  ├─ src/components/editor/   # editor, preview, order, cart UI
+│  │  ├─ src/components/canvas/   # Fabric.js canvas hooks and view
+│  │  ├─ src/lib/                 # API, pricing, persistence, style presets
+│  │  └─ public/                  # logo, icons, static preview assets
+│  └─ api/
+│     ├─ routers/                 # FastAPI route modules
+│     ├─ services/                # renderer, storage, fonts, rate limit, rembg
+│     └─ requirements.txt
 ├─ docs/
+│  └─ supabase-user-persistence.sql
 ├─ openspec/
-└─ docker-compose.yml
+├─ docker-compose.yml
+└─ README.md
+```
+
+## Local Development
+
+### 1. API service
+
+The API service is typically run with Docker Compose from the repository root.
+
+```bash
+docker compose up --build
+```
+
+API server:
+
+```txt
+http://localhost:8000
+```
+
+OpenAPI docs:
+
+```txt
+http://localhost:8000/docs
+```
+
+The API container reads environment variables from:
+
+```txt
+apps/api/.env
+```
+
+### 2. Web app
+
+```bash
+cd apps/web
+npm ci
+npm run dev
+```
+
+Web app:
+
+```txt
+http://localhost:3000
+```
+
+When `NEXT_PUBLIC_API_URL` is not set, local browser traffic falls back to `http://localhost:8000`. Production domains use the configured Railway API fallback in `src/lib/api.ts` to avoid calling a user's local machine.
+
+## Environment Variables
+
+### `apps/web/.env` or Vercel project variables
+
+```env
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+### `apps/api/.env` or Railway service variables
+
+```env
+GEMINI_API_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+
+ORDER_EMAIL_SMTP_HOST=smtp.gmail.com
+ORDER_EMAIL_SMTP_PORT=587
+ORDER_EMAIL_SMTP_USER=
+ORDER_EMAIL_SMTP_PASSWORD=
+ORDER_EMAIL_FROM=
+ORDER_EMAIL_TO=
+ORDER_EMAIL_ALLOW_SKIP=0
+```
+
+For Gmail SMTP, `ORDER_EMAIL_SMTP_PASSWORD` must be an app password rather than the account password.
+
+## Supabase Setup
+
+The web app uses Supabase for authentication and optional persistence of user-specific order profiles and design drafts.
+
+Apply the SQL in Supabase Dashboard → SQL Editor:
+
+```txt
+docs/supabase-user-persistence.sql
+```
+
+This creates:
+
+- `public.user_order_profiles`
+- `public.user_design_drafts`
+
+Both tables use Row Level Security policies scoped to the authenticated user.
+
+## AI Style Preset Maintenance
+
+Editor style cards are centralized in:
+
+```txt
+apps/web/src/lib/ai-style-feed.ts
+```
+
+To change the collection:
+
+1. Reorder `STYLE_FEED_ITEMS` to change display order.
+2. Add/remove items to change the visible card set.
+3. Update `preview` to point to a file under `apps/web/public`.
+4. Update `basePrompt` for the generation prompt.
+
+A helper route is available for editing and previewing JSON without writing to the server filesystem:
+
+```txt
+/admin/ai-styles
+```
+
+The helper page is intentionally export-only. Applying a change still requires updating the repository and redeploying.
+
+## Verification
+
+Frontend checks:
+
+```bash
+cd apps/web
+npx tsc --noEmit
+npm run lint
+npm run test
+npm run build
+```
+
+API syntax check example:
+
+```bash
+python -m py_compile apps/api/services/renderer.py
+```
+
+The current web regression script covers editor order behavior, production API fallback rules, Supabase persistence hooks, print text rendering contracts, and AI style preset maintainability checks.
+
+## Deployment Notes
+
+- Web frontend: Vercel
+- API service: Railway or equivalent Docker-capable host
+- Database/Auth: Supabase
+- Order email: SMTP provider configured on the API service
+
+Frontend environment changes require a Vercel redeploy. API environment changes require an API service restart/redeploy.
+
+## Operational Notes
+
+- Keep print export rendering server-side; order attachments should not depend on browser screenshots.
+- Cart thumbnails may use white backgrounds for visibility, but print payloads must remain transparent unless explicitly changed.
+- Do not expose `SUPABASE_SERVICE_ROLE_KEY` to the frontend or Vercel public variables.
+- If payment checkout is re-enabled later, preserve the current order email/export contract after payment completion.
