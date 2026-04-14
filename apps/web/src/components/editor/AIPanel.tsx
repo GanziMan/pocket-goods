@@ -72,6 +72,7 @@ export default function AIPanel({
   const [showDailyLimitReached, setShowDailyLimitReached] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const feedScrollerRef = useRef<HTMLDivElement>(null);
 
   const activeFeed = useMemo(
     () => STYLE_FEED_ITEMS.find((item) => item.id === activeFeedId) ?? null,
@@ -129,6 +130,13 @@ export default function AIPanel({
     setPromptExpanded(false);
     setError(null);
     setValidationHint(null);
+  };
+
+  const scrollCompactFeed = (direction: "prev" | "next") => {
+    const scroller = feedScrollerRef.current;
+    if (!scroller) return;
+    const delta = scroller.clientWidth * 0.82 * (direction === "next" ? 1 : -1);
+    scroller.scrollBy({ left: delta, behavior: "smooth" });
   };
 
   const handleGenerate = async () => {
@@ -280,7 +288,7 @@ export default function AIPanel({
               {activeFeed ? "선택된 스타일을 다시 누르면 해제돼요" : "인기 스타일을 모아뒀어요."}
             </p>
           </div>
-          {!activeFeed && (
+          {!activeFeed && !compact && (
             <div className="text-[10px] font-semibold text-zinc-400">
               {feedPage + 1}/{feedPageCount}
             </div>
@@ -309,7 +317,61 @@ export default function AIPanel({
           </button>
         )}
 
-        {!activeFeed && (
+        {!activeFeed && compact && (
+          <div className="relative mt-3">
+            <button
+              type="button"
+              onClick={() => scrollCompactFeed("prev")}
+              className="absolute -left-2 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-md backdrop-blur"
+              aria-label="이전 추천 스타일 보기"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollCompactFeed("next")}
+              className="absolute -right-2 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-md backdrop-blur"
+              aria-label="다음 추천 스타일 보기"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+            <div
+              ref={feedScrollerRef}
+              className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="listbox"
+              aria-label="AI 이미지 스타일 피드"
+            >
+              {STYLE_FEED_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleSelectFeedItem(item)}
+                  className="group relative h-36 min-w-[74%] snap-center select-none overflow-hidden rounded-2xl border border-zinc-200 bg-white text-left shadow-sm transition-all active:scale-[0.98]"
+                  aria-pressed={activeFeedId === item.id}
+                >
+                  <Image
+                    src={item.preview}
+                    alt={`${item.title} 미리보기`}
+                    fill
+                    sizes="80vw"
+                    loading={item.id === "sylvanian" ? "eager" : "lazy"}
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-white/0" />
+                  <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 shadow-sm backdrop-blur">
+                    {item.kicker}
+                  </div>
+                  <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
+                    <p className="text-center text-sm font-extrabold leading-tight">{item.title}</p>
+                    <p className="mt-0.5 line-clamp-1 text-center text-[10px] text-zinc-500">{item.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!activeFeed && !compact && (
           <div className="relative mt-3">
             {feedPage > 0 && (
               <button

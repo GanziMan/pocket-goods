@@ -70,7 +70,7 @@ export interface TextUpdateProps {
 }
 
 const MAX_HISTORY = 30;
-const ZOOM_MIN = 0.5;
+const ZOOM_MIN = 0.35;
 const ZOOM_MAX = 2.0;
 const ZOOM_STEP = 0.25;
 const BASE_CORNER_SIZE = 13;

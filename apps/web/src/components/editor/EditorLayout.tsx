@@ -23,6 +23,15 @@ import type { OrderCartItem } from "@/lib/order-cart";
 
 type OutputSize = keyof typeof OUTPUT_SIZE_MM;
 
+function getMobileFitZoom(size: OutputSize) {
+  if (typeof window === "undefined") return 0.8;
+  const canvasSize = OUTPUT_CANVAS_SIZE[size];
+  const availableWidth = Math.max(280, window.innerWidth - 36);
+  const availableHeight = Math.max(320, window.innerHeight - 188);
+  const fit = Math.min(availableWidth / canvasSize.width, availableHeight / canvasSize.height, 1);
+  return Math.max(0.35, Math.min(1, Math.floor(fit * 100) / 100));
+}
+
 export default function EditorLayout() {
   const { locale, t } = useLocale();
   const [productType] = useState<ProductType>("sticker");
@@ -141,14 +150,21 @@ export default function EditorLayout() {
   // 저장되지 않은 변경사항 있을 때 브라우저 이탈 경고
   useBeforeUnload(isDirty);
 
-  // 모바일: 80% 줌 고정
+  // 모바일: 현재 출력 용지가 화면에 들어오도록 자동 맞춤
   useEffect(() => {
+    if (!isCanvasReady) return;
     const mq = window.matchMedia("(max-width: 767px)");
-    if (mq.matches) {
-      setZoom(0.8);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCanvasReady]);
+    const fit = () => {
+      if (mq.matches) setZoom(getMobileFitZoom(outputSize));
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    mq.addEventListener("change", fit);
+    return () => {
+      window.removeEventListener("resize", fit);
+      mq.removeEventListener("change", fit);
+    };
+  }, [isCanvasReady, outputSize, setZoom]);
 
   // 모바일에서 채널톡 숨기기
   useEffect(() => {
@@ -372,7 +388,7 @@ export default function EditorLayout() {
       <MobileDrawer
         open={mobilePanel === "assets"}
         onClose={() => setMobilePanel(null)}
-        title={t.assetPanel.mobileAssetTitle}
+        title="이미지·텍스트 추가"
         noPadding
       >
         <AssetPanel

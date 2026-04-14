@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Plus, Trash2, Eye, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Undo2, Redo2, PlusCircle, Trash2, Eye, ShoppingBag, ShoppingCart } from "lucide-react";
 import { useLocale } from "@/lib/i18n/client";
 
 interface MobileActionBarProps {
@@ -30,7 +30,7 @@ export default function MobileActionBar({
         <ActionButton icon={<Undo2 className="w-4 h-4" />} label={tb.undoShort} onClick={onUndo} disabled={!canUndo} />
         <ActionButton icon={<Redo2 className="w-4 h-4" />} label={tb.redoShort} onClick={onRedo} disabled={!canRedo} />
       </div>
-      <ActionButton icon={<Plus className="w-4 h-4" />} label={tb.assets} onClick={onOpenAssets} />
+      <ActionButton icon={<PlusCircle className="w-5 h-5" />} label="+추가" onClick={onOpenAssets} primary />
       <ActionButton icon={<Trash2 className="w-4 h-4" />} label={tb.delete} onClick={onDelete} disabled={!hasSelection} destructive />
       <ActionButton icon={<Eye className="w-4 h-4" />} label={isExporting ? "준비중" : "미리보기"} onClick={onExportPreview} disabled={isExporting} />
       <ActionButton icon={<ShoppingCart className="w-4 h-4" />} label={tb.order} onClick={onOrder} />
@@ -39,12 +39,16 @@ export default function MobileActionBar({
   );
 }
 
-function ActionButton({ icon, label, onClick, disabled, destructive }: {
-  icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean; destructive?: boolean;
+function ActionButton({ icon, label, onClick, disabled, destructive, primary }: {
+  icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean; destructive?: boolean; primary?: boolean;
 }) {
   return (
     <Button variant="ghost" size="sm" onClick={onClick} disabled={disabled}
-      className={`flex flex-col items-center gap-0.5 h-12 w-12 px-0 ${destructive ? "text-red-500 hover:text-red-600 hover:bg-red-50" : ""}`}>
+      className={`flex flex-col items-center gap-0.5 h-12 px-0 ${
+        primary
+          ? "w-14 rounded-2xl bg-zinc-950 text-white shadow-lg shadow-zinc-950/20 hover:bg-zinc-800 hover:text-white"
+          : `w-12 ${destructive ? "text-red-500 hover:text-red-600 hover:bg-red-50" : ""}`
+      }`}>
       {icon}<span className="text-[10px] leading-tight">{label}</span>
     </Button>
   );

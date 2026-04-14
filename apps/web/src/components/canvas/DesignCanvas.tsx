@@ -18,7 +18,7 @@ export default function DesignCanvas({
     <div className="relative h-full w-full overflow-auto bg-[linear-gradient(180deg,#fafafa_0%,#f1f2f4_100%)]">
       <div className="absolute inset-0 opacity-[0.55] [background-image:linear-gradient(rgba(24,24,27,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(24,24,27,0.045)_1px,transparent_1px)] [background-size:32px_32px]" />
 
-      <div className="relative flex min-h-full min-w-full items-center justify-center px-5 py-8 md:px-16 md:py-16">
+      <div className="relative flex min-h-full min-w-full items-center justify-center px-3 py-4 md:px-16 md:py-16">
         <div className="relative mx-auto shrink-0">
           <div className="relative overflow-hidden border-2 border-zinc-950 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)]">
             <canvas ref={canvasRef} />

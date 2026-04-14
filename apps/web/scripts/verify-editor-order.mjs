@@ -20,6 +20,8 @@ const useCanvas = read("src/components/canvas/useCanvas.ts");
 const aiPanel = read("src/components/editor/AIPanel.tsx");
 const aiStyleFeed = read("src/lib/ai-style-feed.ts");
 const aiStyleAdmin = read("src/app/admin/ai-styles/style-admin-client.tsx");
+const mobileActionBar = read("src/components/editor/MobileActionBar.tsx");
+const designCanvas = read("src/components/canvas/DesignCanvas.tsx");
 const cutlinePreview = read("src/lib/cutline-preview.ts");
 const outputSize = read("src/lib/output-size.ts");
 const orderPricing = read("src/lib/order-pricing.ts");
@@ -200,4 +202,21 @@ test("AI style feed copy is collection-oriented and presets are centrally mainta
   assert.match(aiStyleAdmin, /AI 스타일 카드 관리/);
   assert.match(aiStyleAdmin, /기본값 복원/);
   assert.match(aiStyleAdmin, /다운로드/);
+});
+
+test("mobile editor uses swipeable style feed and fit-to-screen canvas", () => {
+  assert.match(aiPanel, /feedScrollerRef/);
+  assert.match(aiPanel, /scrollCompactFeed/);
+  assert.match(aiPanel, /snap-x snap-mandatory/);
+  assert.match(aiPanel, /overflow-x-auto/);
+  assert.match(aiPanel, /STYLE_FEED_ITEMS\.map/);
+  assert.match(mobileActionBar, /label="\+추가"/);
+  assert.match(mobileActionBar, /PlusCircle/);
+  assert.match(mobileActionBar, /primary/);
+  assert.match(editorLayout, /title="이미지·텍스트 추가"/);
+  assert.match(editorLayout, /getMobileFitZoom/);
+  assert.match(editorLayout, /window\.innerWidth - 36/);
+  assert.match(editorLayout, /window\.innerHeight - 188/);
+  assert.match(useCanvas, /const ZOOM_MIN = 0\.35/);
+  assert.match(designCanvas, /px-3 py-4 md:px-16 md:py-16/);
 });
