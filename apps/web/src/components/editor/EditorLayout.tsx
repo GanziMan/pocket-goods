@@ -65,7 +65,6 @@ export default function EditorLayout() {
     addText,
     addNameTag,
     updateSelectedText,
-    updateSelectedOpacity,
     getSelectedImageDataURL,
     replaceSelectedImage,
     deleteSelected,
@@ -405,7 +404,6 @@ export default function EditorLayout() {
           <PropertiesPanel
             selectedInfo={selectedInfo}
             onUpdateText={updateSelectedText}
-            onUpdateOpacity={updateSelectedOpacity}
             onGetSelectedImageDataURL={getSelectedImageDataURL}
             onReplaceSelectedImage={replaceSelectedImage}
           />

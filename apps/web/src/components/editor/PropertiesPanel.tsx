@@ -18,14 +18,13 @@ import { useLocale } from "@/lib/i18n/client";
 interface PropertiesPanelProps {
   selectedInfo: SelectedObjectInfo | null;
   onUpdateText: (props: Partial<TextUpdateProps>) => void;
-  onUpdateOpacity: (opacity: number) => void;
   onGetSelectedImageDataURL: () => string | null;
   onReplaceSelectedImage: (src: string) => Promise<void>;
   className?: string;
 }
 
 export default function PropertiesPanel({
-  selectedInfo, onUpdateText, onUpdateOpacity, onGetSelectedImageDataURL, onReplaceSelectedImage, className,
+  selectedInfo, onUpdateText, onGetSelectedImageDataURL, onReplaceSelectedImage, className,
 }: PropertiesPanelProps) {
   const [removingBg, setRemovingBg] = useState(false);
   const { t } = useLocale();
@@ -63,15 +62,8 @@ export default function PropertiesPanel({
           </div>
         ) : (
           <div className="p-4 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs">{pr.opacity} <span className="text-muted-foreground">{Math.round((selectedInfo.opacity ?? 1) * 100)}%</span></Label>
-              <Slider min={0} max={1} step={0.01} value={[selectedInfo.opacity ?? 1]}
-                onValueChange={(val) => { const v = typeof val === "number" ? val : (val as number[])[0] ?? 1; onUpdateOpacity(v); }} />
-            </div>
-
             {selectedInfo.type === "image" && (
               <>
-                <Separator />
                 <div className="space-y-2">
                   <Label className="text-xs">{pr.imageEdit}</Label>
                   <Button variant="outline" size="sm" className="w-full" onClick={handleRemoveBackground} disabled={removingBg}>
