@@ -19,6 +19,8 @@ npm run dev
 - `/design`은 `src/components/editor/EditorLayout.tsx`에서 에디터 상태를 조율합니다.
 - Fabric.js 캔버스 조작은 `src/components/canvas/useCanvas.ts`가 담당합니다.
 - 캔버스 표시/실측 mm 오버레이는 `src/components/canvas/DesignCanvas.tsx`에 있습니다.
+- 랜딩 CTA, 모바일 최초 빈 캔버스 AI drawer, 버튼 배치 기준은 `../../docs/ux-ai-start-flow.md`의
+  UX 동작 계약과 QA 체크리스트를 기준으로 리뷰합니다.
 - 미리보기, 칼선 안정성 안내, 주문자/배송 폼은 `src/components/editor/PreviewDialog.tsx`에 있습니다.
 - 주문함 묶음 저장 로직은 `src/lib/order-cart.ts`, 가격/배송비는 `src/lib/order-pricing.ts`를 기준으로 합니다.
 - 로그인 사용자의 주문자/배송 정보와 디자인 드래프트는 Supabase DB 테이블(`user_order_profiles`,

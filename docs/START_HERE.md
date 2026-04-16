@@ -10,6 +10,7 @@
 - 모노레포 구조: `apps/web`(Next.js), `apps/api`(FastAPI)
 - 핵심 사용자 흐름: 랜딩(`/`) → 에디터(`/design`) → AI 이미지 생성/편집 → 미리보기/칼선 확인 → 주문 접수 또는 내보내기(`/api/export`)
 - 배포 구조: 프론트(Vercel), API(Railway), 로컬 통합 실행은 `docker-compose.yml`로 가능
+- 모바일 최초 빈 캔버스 AI 시작 흐름과 버튼 배치 리뷰 기준은 `docs/ux-ai-start-flow.md`에 따로 정리되어 있습니다.
 
 ---
 
@@ -115,6 +116,7 @@ npm run dev
    - `apps/web/src/app/design/page.tsx`
 2. **에디터 오케스트레이션**
    - `apps/web/src/components/editor/EditorLayout.tsx`
+   - 모바일 최초 빈 캔버스 진입 시 AI drawer가 먼저 열리는 UX 계약은 `docs/ux-ai-start-flow.md`
 3. **캔버스 핵심 로직**
    - `apps/web/src/components/canvas/useCanvas.ts`
 4. **미리보기/주문 흐름**

@@ -18,14 +18,14 @@ export default function DesignCanvas({
     <div className="relative h-full w-full overflow-auto bg-[linear-gradient(180deg,#fafafa_0%,#f1f2f4_100%)]">
       <div className="absolute inset-0 opacity-[0.55] [background-image:linear-gradient(rgba(24,24,27,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(24,24,27,0.045)_1px,transparent_1px)] [background-size:32px_32px]" />
 
-      <div className="relative flex min-h-full min-w-full items-center justify-center px-3 py-4 md:px-16 md:py-16">
+      <div className="relative flex min-h-full min-w-full items-center justify-center px-3 py-5 md:px-16 md:py-16">
         <div className="relative mx-auto shrink-0">
-          <div className="relative overflow-hidden border-2 border-zinc-950 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.16)]">
+          <div className="relative overflow-hidden rounded-[22px] border border-zinc-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.14)] ring-1 ring-white/80 md:rounded-[28px]">
             <canvas ref={canvasRef} />
             {showGuide && (
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <div className="border border-zinc-200/80 bg-white/90 px-7 py-6 text-center shadow-[0_14px_35px_rgba(15,23,42,0.12)] backdrop-blur">
-                  <div className="mx-auto mb-3 grid size-11 place-items-center bg-zinc-950 text-white shadow-md">
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-4">
+                <div className="max-w-[260px] rounded-3xl border border-zinc-200/80 bg-white/92 px-6 py-5 text-center shadow-[0_14px_35px_rgba(15,23,42,0.12)] backdrop-blur">
+                  <div className="mx-auto mb-3 grid size-11 place-items-center rounded-2xl bg-zinc-950 text-white shadow-md">
                     <MousePointerClick className="size-5" />
                   </div>
                   <p className="text-sm font-bold text-zinc-700">{t.canvas.emptyTitle}</p>

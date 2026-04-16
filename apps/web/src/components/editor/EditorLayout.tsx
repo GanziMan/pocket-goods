@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useCanvas } from "@/components/canvas/useCanvas";
 import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import { useSaveDesign } from "@/hooks/useSaveDesign";
@@ -36,8 +36,10 @@ export default function EditorLayout() {
   const { locale, t } = useLocale();
   const [productType] = useState<ProductType>("sticker");
   const [mobilePanel, setMobilePanel] = useState<"assets" | null>(null);
+  const mobileStartPanelOpenedRef = useRef(false);
   const [isExporting, setIsExporting] = useState(false);
   const [outputSize, setOutputSize] = useState<OutputSize>("A5");
+  const [draftRestoreChecked, setDraftRestoreChecked] = useState(false);
   const [previewTab, setPreviewTab] = useState<"preview" | "order">("preview");
   const [previewPayload, setPreviewPayload] = useState<{
     imageSrc: string;
@@ -188,20 +190,42 @@ export default function EditorLayout() {
   useEffect(() => {
     if (!isCanvasReady) return;
     let cancelled = false;
-    void loadDraft().then((draft) => {
+    setDraftRestoreChecked(false);
+    void loadDraft().then(async (draft) => {
       if (cancelled || !draft) return;
       const savedDate = new Date(draft.savedAt);
       const timeStr = savedDate.toLocaleString(locale);
       const restore = window.confirm(tpl(t.toolbar.restorePrompt, { timeStr }));
       if (restore) {
-        loadDesign(draft.canvasJSON);
+        await loadDesign(draft.canvasJSON);
       }
+    }).finally(() => {
+      if (!cancelled) setDraftRestoreChecked(true);
     });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCanvasReady]);
+
+  // 모바일 최초 빈 캔버스 진입 시 바로 AI 만들기 탭이 보이도록 추가 패널을 연다.
+  useEffect(() => {
+    if (
+      !isCanvasReady ||
+      !draftRestoreChecked ||
+      hasObjects ||
+      mobilePanel !== null ||
+      mobileStartPanelOpenedRef.current
+    ) {
+      return;
+    }
+
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (!mq.matches) return;
+
+    mobileStartPanelOpenedRef.current = true;
+    setMobilePanel("assets");
+  }, [draftRestoreChecked, hasObjects, isCanvasReady, mobilePanel]);
 
   const handleOpenPreview = useCallback(async (initialTab: "preview" | "order" = "preview") => {
     if (isExporting) return;
@@ -286,6 +310,7 @@ export default function EditorLayout() {
       <div className="block md:hidden">
         <MobileHeader
           onSave={save}
+          onOpenCart={() => setCartOpen(true)}
           isDirty={isDirty}
           savedAt={savedAt}
         />
@@ -307,6 +332,26 @@ export default function EditorLayout() {
           {saveWarning && (
             <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-700">
               {saveWarning}
+            </div>
+          )}
+          {!hasObjects && (
+            <div className="shrink-0 border-b border-zinc-200/80 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur md:px-6">
+              <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold text-zinc-900 md:text-sm">처음이라면 AI로 이미지를 만들고 바로 배치해보세요</p>
+                  <p className="mt-0.5 truncate text-[11px] text-zinc-500 md:text-xs">
+                    사진 업로드 → 스타일 선택 → 생성 → 캔버스 추가 순서로 시작할 수 있어요.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setMobilePanel("assets")}
+                  className="shrink-0 rounded-full px-3 md:hidden"
+                >
+                  AI 시작
+                </Button>
+              </div>
             </div>
           )}
           <div className="flex-1 overflow-hidden">
@@ -379,7 +424,7 @@ export default function EditorLayout() {
           onOpenAssets={() => setMobilePanel("assets")}
           onExportPreview={() => handleOpenPreview("preview")}
           onOrder={() => handleOpenPreview("order")}
-          onOpenCart={() => setCartOpen(true)}
+          isStarterMode={!hasObjects}
           isExporting={isExporting}
         />
       </div>

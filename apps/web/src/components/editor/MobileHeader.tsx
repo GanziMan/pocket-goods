@@ -3,24 +3,25 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Save, CheckCheck } from "lucide-react";
+import { Save, CheckCheck, ShoppingBag } from "lucide-react";
 import UserMenu from "@/components/auth/UserMenu";
 import { useLocale } from "@/lib/i18n/client";
 
 interface MobileHeaderProps {
   onSave: () => void;
+  onOpenCart: () => void;
   isDirty: boolean;
   savedAt: Date | null;
 }
 
 export default function MobileHeader({
-  onSave, isDirty, savedAt,
+  onSave, onOpenCart, isDirty, savedAt,
 }: MobileHeaderProps) {
   const { t } = useLocale();
   const tb = t.toolbar;
 
   return (
-    <header className="flex items-center gap-2 px-3 h-14 border-b bg-white shrink-0">
+    <header className="flex items-center gap-2 px-3 h-14 border-b bg-white/95 shadow-sm backdrop-blur shrink-0">
       <Link href="/" className="flex items-center select-none" aria-label={`${t.common.brandName} 홈으로 이동`}>
         <Image src="/logo.png" alt={t.common.brandName} width={98} height={41} priority className="h-7 w-auto" />
       </Link>
@@ -36,7 +37,26 @@ export default function MobileHeader({
           </span>
         ) : null}
 
-        <Button variant="ghost" size="icon" onClick={onSave} className="h-8 w-8"><Save className="w-4 h-4" /></Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onSave}
+          className="h-8 w-8"
+          aria-label={tb.save}
+          title={tb.save}
+        >
+          <Save className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onOpenCart}
+          className="h-8 w-8 rounded-full bg-white shadow-sm"
+          aria-label="주문함 열기"
+          title="주문함"
+        >
+          <ShoppingBag className="w-4 h-4" />
+        </Button>
         <UserMenu compact />
       </div>
     </header>

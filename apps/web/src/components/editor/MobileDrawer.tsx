@@ -24,7 +24,7 @@ export default function MobileDrawer({
 }: MobileDrawerProps) {
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="max-h-[75vh] flex flex-col">
+      <DrawerContent className="max-h-[88vh] flex flex-col">
         <DrawerHeader className="shrink-0 pb-0">
           <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>

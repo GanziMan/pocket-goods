@@ -212,7 +212,7 @@ test("mobile editor uses swipeable style feed and fit-to-screen canvas", () => {
   assert.match(aiPanel, /snap-x snap-mandatory/);
   assert.match(aiPanel, /overflow-x-auto/);
   assert.match(aiPanel, /STYLE_FEED_ITEMS\.map/);
-  assert.match(mobileActionBar, /label="\+추가"/);
+  assert.match(mobileActionBar, /label=\{isStarterMode \? "AI 시작" : "\+추가"\}/);
   assert.match(mobileActionBar, /PlusCircle/);
   assert.match(mobileActionBar, /primary/);
   assert.match(editorLayout, /title="이미지·텍스트 추가"/);
@@ -220,7 +220,19 @@ test("mobile editor uses swipeable style feed and fit-to-screen canvas", () => {
   assert.match(editorLayout, /window\.innerWidth - 36/);
   assert.match(editorLayout, /window\.innerHeight - 188/);
   assert.match(useCanvas, /const ZOOM_MIN = 0\.35/);
-  assert.match(designCanvas, /px-3 py-4 md:px-16 md:py-16/);
+  assert.match(designCanvas, /px-3 py-5 md:px-16 md:py-16/);
+});
+
+test("mobile first empty canvas opens the AI creation surface after draft restore check", () => {
+  assert.match(editorLayout, /mobileStartPanelOpenedRef/);
+  assert.match(editorLayout, /draftRestoreChecked/);
+  assert.match(editorLayout, /setDraftRestoreChecked\(false\)/);
+  assert.match(editorLayout, /finally\(\(\) => \{\s*if \(!cancelled\) setDraftRestoreChecked\(true\);/);
+  assert.match(editorLayout, /window\.matchMedia\("\(max-width: 767px\)"\)/);
+  assert.match(editorLayout, /!draftRestoreChecked[\s\S]*hasObjects[\s\S]*mobileStartPanelOpenedRef\.current/);
+  assert.match(editorLayout, /mobileStartPanelOpenedRef\.current = true;\s*setMobilePanel\("assets"\);/);
+  assert.match(assetPanel, /<Tabs defaultValue="ai"/);
+  assert.match(editorLayout, /<AssetPanel[\s\S]*className="w-full border-0"/);
 });
 
 test("AI generation state persists across mobile drawer/tab transitions", () => {
