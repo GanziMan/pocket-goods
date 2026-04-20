@@ -32,13 +32,28 @@ def _materialize_google_credentials(log_tag: str) -> None:
     credentials_path = Path(tempfile.gettempdir()) / "pocket-goods-gcp-sa-key.json"
     try:
         parsed_credentials = json.loads(credentials_json)
+        if not isinstance(parsed_credentials, dict):
+            raise ValueError("GOOGLE_CREDENTIALS must be a service-account JSON object.")
+        if parsed_credentials.get("type") != "service_account":
+            raise ValueError("GOOGLE_CREDENTIALS.type must be 'service_account'.")
+        if not parsed_credentials.get("client_email") or not parsed_credentials.get("private_key"):
+            raise ValueError("GOOGLE_CREDENTIALS must include client_email and private_key.")
         credentials_path.write_text(
             json.dumps(parsed_credentials),
             encoding="utf-8",
         )
-    except json.JSONDecodeError:
-        # Preserve current Docker entrypoint behavior for preformatted content.
-        credentials_path.write_text(credentials_json, encoding="utf-8")
+    except json.JSONDecodeError as exc:
+        logger.error("[%s] GOOGLE_CREDENTIALS is not valid JSON.", log_tag)
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "GOOGLE_CREDENTIALS가 올바른 JSON이 아닙니다. "
+                "Railway 변수에는 서비스 계정 JSON 전체를 한 줄 JSON 또는 유효한 멀티라인 값으로 넣어주세요."
+            ),
+        ) from exc
+    except ValueError as exc:
+        logger.error("[%s] invalid GOOGLE_CREDENTIALS: %s", log_tag, exc)
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     os.environ[GOOGLE_CREDENTIALS_PATH_ENV] = str(credentials_path)
     logger.info("[%s] Google ADC credentials materialized from GOOGLE_CREDENTIALS", log_tag)
@@ -55,6 +70,12 @@ def get_genai_client(log_tag: str) -> genai.Client:
 
     if gcp_project:
         _materialize_google_credentials(log_tag)
+        # Keep SDK env-based routing in sync with the explicit Client arguments.
+        # This prevents accidental fallback to the Gemini Developer API
+        # (generativelanguage.googleapis.com) when both auth styles exist.
+        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
+        os.environ["GOOGLE_CLOUD_PROJECT"] = gcp_project
+        os.environ["GOOGLE_CLOUD_LOCATION"] = gcp_location
         client = genai.Client(
             vertexai=True,
             project=gcp_project,
