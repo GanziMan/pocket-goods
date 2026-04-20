@@ -199,7 +199,8 @@ test("AI style feed copy is collection-oriented and presets are centrally mainta
   assert.match(aiPanel, /인기 스타일을 모아뒀어요/);
   assert.match(aiPanel, /STYLE_FEED_ITEMS/);
   assert.match(aiStyleFeed, /export const STYLE_FEED_ITEMS/);
-  assert.match(aiStyleFeed, /preview:\s*"\/ai-feed-previews\//);
+  assert.match(aiStyleFeed, /preview:\s*"\/prompt-[^"]+\.png"/);
+  assert.doesNotMatch(aiStyleFeed, /kicker|shortDescription|description:\s*"/);
   assert.match(aiStyleFeed, /serializeStyleFeedItems/);
   assert.match(aiStyleAdmin, /AI 스타일 카드 관리/);
   assert.match(aiStyleAdmin, /기본값 복원/);
@@ -260,8 +261,9 @@ test("generation credits support five daily uses, ad rewards, and order reset", 
 });
 
 test("selected style card and text tool use simplified defaults", () => {
-  assert.match(aiStyleFeed, /shortDescription/);
-  assert.match(aiPanel, /activeFeed\.shortDescription/);
+  assert.doesNotMatch(aiStyleFeed, /shortDescription/);
+  assert.doesNotMatch(aiPanel, /activeFeed\.shortDescription|item\.kicker|item\.description/);
+  assert.match(aiPanel, /object-contain object-center/);
   assert.equal(aiPanel.includes("다시 누르거나 이 영역을 누르면 선택 해제"), false);
   assert.equal(assetPanel.includes("useState(ap.defaultText)"), false);
   assert.match(assetPanel, /useState\(""\)/);

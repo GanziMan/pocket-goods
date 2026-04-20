@@ -474,12 +474,10 @@ export default function AIPanel({
             }}
             className="mt-3 w-full rounded-2xl border border-zinc-200 bg-white p-2 text-left shadow-sm"
           >
-            <div className="relative h-44 overflow-hidden rounded-xl">
-              <Image src={activeFeed.preview} alt={`${activeFeed.title} 선택됨`} fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            <div className="relative h-44 overflow-hidden rounded-xl bg-zinc-50">
+              <Image src={activeFeed.preview} alt={`${activeFeed.title} 선택됨`} fill className="object-contain object-center p-3" />
               <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-white/95 px-3 py-2 text-center shadow-sm">
                 <p className="text-sm font-bold">{activeFeed.title}</p>
-                <p className="mt-0.5 text-[10px] text-zinc-500">{activeFeed.shortDescription}</p>
               </div>
             </div>
           </button>
@@ -523,15 +521,10 @@ export default function AIPanel({
                     fill
                     sizes="80vw"
                     loading={item.id === "sylvanian" ? "eager" : "lazy"}
-                    className="object-cover"
+                    className="object-contain object-center p-3"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-white/0" />
-                  <div className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 shadow-sm backdrop-blur">
-                    {item.kicker}
-                  </div>
                   <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
                     <p className="text-center text-sm font-extrabold leading-tight">{item.title}</p>
-                    <p className="mt-0.5 line-clamp-1 text-center text-[10px] text-zinc-500">{item.description}</p>
                   </div>
                 </button>
               ))}
@@ -576,12 +569,8 @@ export default function AIPanel({
                     fill
                     sizes="120px"
                     loading={item.id === "sylvanian" ? "eager" : "lazy"}
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="object-contain object-center p-2 transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-white/0" />
-                  <div className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-semibold text-zinc-700 shadow-sm backdrop-blur">
-                    {item.kicker}
-                  </div>
                   <div className="absolute inset-x-2 bottom-2 rounded-xl bg-white/95 px-2 py-1.5 shadow-sm backdrop-blur">
                     <p className="text-center text-xs font-bold leading-tight">{item.title}</p>
                   </div>

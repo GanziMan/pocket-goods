@@ -24,7 +24,7 @@ function validateStyleItems(raw: string): ValidationResult {
         return { ok: false, message: `${index + 1}번째 항목이 객체가 아닙니다.` };
       }
       const record = item as Record<string, unknown>;
-      for (const key of ["id", "kicker", "title", "description", "shortDescription", "style", "preview", "basePrompt"]) {
+      for (const key of ["id", "title", "style", "preview", "basePrompt"]) {
         if (typeof record[key] !== "string" || !String(record[key]).trim()) {
           return { ok: false, message: `${index + 1}번째 항목의 ${key} 값이 비어 있습니다.` };
         }
@@ -93,7 +93,7 @@ export default function AiStyleAdminClient({
               <div>
                 <h2 className="text-sm font-extrabold">편집 JSON</h2>
                 <p className="text-xs text-zinc-500">
-                  배열 순서가 실제 카드 순서입니다. 썸네일은 <code>/ai-feed-previews/name.svg</code>처럼 public 경로를 넣으세요.
+                  배열 순서가 실제 카드 순서입니다. 썸네일은 <code>/prompt-name.png</code>처럼 public 경로를 넣으세요.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -131,15 +131,14 @@ export default function AiStyleAdminClient({
               {previewItems.map((item, index) => (
                 <article key={`${item.id}-${index}`} className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
                   <div className="relative h-32 bg-zinc-100">
-                    <Image src={item.preview} alt={`${item.title} 썸네일`} fill className="object-cover" />
+                    <Image src={item.preview} alt={`${item.title} 썸네일`} fill className="object-contain p-3" />
                   </div>
                   <div className="p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[10px] font-bold text-orange-600">{index + 1}. {item.kicker}</p>
+                      <p className="text-[10px] font-bold text-orange-600">{index + 1}</p>
                       <code className="rounded bg-white px-1.5 py-0.5 text-[10px] text-zinc-500">{item.id}</code>
                     </div>
                     <h3 className="mt-1 text-sm font-black">{item.title}</h3>
-                    <p className="mt-1 text-xs text-zinc-600">{item.description}</p>
                     <p className="mt-2 truncate text-[10px] text-zinc-400">{item.preview}</p>
                   </div>
                 </article>
