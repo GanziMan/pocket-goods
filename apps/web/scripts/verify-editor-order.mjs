@@ -199,7 +199,7 @@ test("AI style feed copy is collection-oriented and presets are centrally mainta
   assert.match(aiPanel, /인기 스타일을 모아뒀어요/);
   assert.match(aiPanel, /STYLE_FEED_ITEMS/);
   assert.match(aiStyleFeed, /export const STYLE_FEED_ITEMS/);
-  assert.match(aiStyleFeed, /preview:\s*"\/prompt-[^"]+\.png"/);
+  assert.match(aiStyleFeed, /preview:\s*"\/prompt-[^"]+\.webp"/);
   assert.doesNotMatch(aiStyleFeed, /kicker|shortDescription|description:\s*"/);
   assert.match(aiStyleFeed, /serializeStyleFeedItems/);
   assert.match(aiStyleAdmin, /AI 스타일 카드 관리/);
