@@ -174,6 +174,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ### `apps/api/.env` 또는 Railway service variables
 
 ```env
+# Preferred production auth: Gemini on Vertex AI.
+GCP_LOCATION=global
+GCP_PROJECT_ID=abstract-aloe-490608-n6
+GOOGLE_CREDENTIALS=
+
+# Optional local/dev fallback for the Gemini Developer API.
 GEMINI_API_KEY=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
@@ -186,6 +192,10 @@ ORDER_EMAIL_FROM=
 ORDER_EMAIL_TO=
 ORDER_EMAIL_ALLOW_SKIP=0
 ```
+
+AI 생성은 `GCP_PROJECT_ID`가 있으면 Vertex AI를 우선 사용하고, 없을 때만 `GEMINI_API_KEY`로 fallback합니다.
+Railway에서는 서비스 계정 JSON 전체를 `GOOGLE_CREDENTIALS` 변수에 넣으면 API 컨테이너가
+`GOOGLE_APPLICATION_CREDENTIALS` 파일로 변환해 사용합니다.
 
 Gmail SMTP를 사용할 경우 `ORDER_EMAIL_SMTP_PASSWORD`에는 계정 비밀번호가 아니라 app password를 넣어야 합니다.
 

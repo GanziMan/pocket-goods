@@ -46,8 +46,10 @@
 1. **문서 간 버전 정보 차이 존재**
    - 루트 README와 실제 `apps/web/package.json` 기준 Next.js 버전 표기가 다를 수 있으니,
      실제 실행/의존성 판단은 `package.json`을 우선합니다.
-2. **AI 생성 기능은 외부 키가 없으면 동작하지 않음**
-   - `GEMINI_API_KEY` 미설정 시 `/api/generate-image`는 500 에러를 반환합니다.
+2. **AI 생성 기능은 외부 인증이 없으면 동작하지 않음**
+   - 운영은 Vertex AI 환경변수(`GCP_PROJECT_ID`, `GCP_LOCATION`, `GOOGLE_CREDENTIALS`)를 우선 사용합니다.
+   - `GCP_PROJECT_ID`가 없으면 개발용 fallback으로 `GEMINI_API_KEY`를 사용합니다.
+   - 둘 다 없으면 `/api/generate-image`는 500 에러를 반환합니다.
 3. **스토리지 업로드는 로컬에서 선택 사항**
    - `/api/export`에서 `save_to_storage=false`면 Supabase 없이도 PNG/칼선 미리보기 다운로드가 가능합니다.
 
@@ -93,7 +95,8 @@ npm run dev
 ## 5) 환경 변수 빠른 체크리스트
 
 ### `apps/api/.env`
-- `GEMINI_API_KEY` (AI 생성 필수)
+- `GCP_PROJECT_ID`, `GCP_LOCATION=global`, `GOOGLE_CREDENTIALS` (운영 AI 생성 / Vertex AI 권장)
+- `GEMINI_API_KEY` (개발용 Gemini Developer API fallback)
 - `SUPABASE_URL` (인증/스토리지 연동 시)
 - `SUPABASE_SERVICE_ROLE_KEY` (인증 검증/업로드 시)
 - `ORDER_EMAIL_SMTP_HOST`, `ORDER_EMAIL_SMTP_PORT`, `ORDER_EMAIL_SMTP_USER`, `ORDER_EMAIL_SMTP_PASSWORD`,

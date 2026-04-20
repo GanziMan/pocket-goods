@@ -243,7 +243,7 @@ test("AI generation state persists across mobile drawer/tab transitions", () => 
   assert.match(aiPanel, /subscribeAIPanelDraft/);
   assert.match(aiPanel, /readAsDataURL\(processed\.file\)/);
   assert.match(aiPanel, /탭을 닫거나 내려도 생성은 계속 진행됩니다/);
-  assert.match(generateApi, /genai\.Client\(api_key=gemini_key\)/);
+  assert.match(generateApi, /get_genai_client\("generate"\)/);
   assert.match(generateApi, /client\.aio\.models\.generate_content/);
   assert.match(generateApi, /_image_has_transparency/);
   assert.match(generateApi, /rembg 생략/);

@@ -1,16 +1,15 @@
 import base64
 import io
 import logging
-import os
 import time
 from typing import Optional
 
-from google import genai
 from google.genai import types
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
 
+from services.genai_client import get_genai_client
 from services.rate_limit import (
     check_rate_limit,
     get_rate_identity,
@@ -217,23 +216,7 @@ async def generate_image(
         error_body = {"detail": detail, "login_required": not has_token and user_id is None}
         return JSONResponse(status_code=429, content=error_body)
 
-    # Vertex AI 우선, 없으면 Gemini API 키 fallback
-    gcp_project = os.getenv("GCP_PROJECT_ID")
-    gcp_location = os.getenv("GCP_LOCATION", "us-central1")
-    gemini_key = os.getenv("GEMINI_API_KEY")
-
-    if gcp_project:
-        client = genai.Client(
-            vertexai=True,
-            project=gcp_project,
-            location=gcp_location,
-        )
-        logger.info("[generate] Vertex AI 사용 (project=%s, location=%s)", gcp_project, gcp_location)
-    elif gemini_key:
-        client = genai.Client(api_key=gemini_key)
-        logger.info("[generate] Gemini API 키 사용")
-    else:
-        raise HTTPException(status_code=500, detail="GCP_PROJECT_ID 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
+    client = get_genai_client("generate")
     style_prompt = STYLE_PROMPTS.get(style, STYLE_PROMPTS["everskies"])
 
     # 프롬프트 + 이미지 파트 조합

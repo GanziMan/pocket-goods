@@ -1,7 +1,6 @@
 import base64
 import io
 import logging
-import os
 import time
 from dataclasses import dataclass
 
@@ -11,6 +10,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image, ImageOps
 
+from services.genai_client import get_genai_client
 from services.rembg_session import get_rembg_session
 from services.rate_limit import (
     DAILY_LIMIT_ANONYMOUS,
@@ -174,24 +174,7 @@ def _check_rate_limit_or_respond(ctx: RateLimitContext, log_tag: str) -> JSONRes
 
 
 def _get_gemini_client(log_tag: str) -> genai.Client:
-    gcp_project = os.getenv("GCP_PROJECT_ID")
-    gcp_location = os.getenv("GCP_LOCATION", "us-central1")
-    gemini_key = os.getenv("GEMINI_API_KEY")
-
-    if gcp_project:
-        client = genai.Client(
-            vertexai=True, project=gcp_project, location=gcp_location
-        )
-        logger.info("[%s] Vertex AI 사용 (project=%s)", log_tag, gcp_project)
-    elif gemini_key:
-        client = genai.Client(api_key=gemini_key)
-        logger.info("[%s] Gemini API 키 사용", log_tag)
-    else:
-        raise HTTPException(
-            status_code=500,
-            detail="GCP_PROJECT_ID 또는 GEMINI_API_KEY가 설정되지 않았습니다.",
-        )
-    return client
+    return get_genai_client(log_tag)
 
 
 async def _validate_and_convert_image(
